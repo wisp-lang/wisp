@@ -1,3 +1,4 @@
-(console.log "hello")
-(var test (+ 1 2) )
-(console.log test)
+ 
+(if (object? window)
+  (console.log "Running on Browser")
+  (console.log "Running on server"))
