@@ -1,8 +1,8 @@
 (var fib
   (function (n)
-    ((function (a b count)
+    (loop (a b count) (1 0 n)
       (if (= count 0)
         b
-        (arguments.callee (+ a b) a (- count 1)))) 1 0 n)))
+        (recur (+ a b) a (- count 1))))))
     
 (console.log (fib 10))
