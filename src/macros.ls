@@ -35,31 +35,36 @@
   (when (! ~cond) (do ~rest...)))
   
 (macro loop (args vals rest...)
-  ((function ~args
-    (var recur arguments.callee)
-    ~rest...) ~@vals))
-
-(macro foreach (fn arr)
-  (loop (fn arr count accum) (~fn ~arr 0 null)
-    (if (= count arr.length)
+  ((_tco
+    (function ~args ~rest...)) ~@vals))
+    
+(macro for (n fn)
+  (loop (x accum fn) (0 null ~fn)
+    (if (= ~n x)
       accum
-      (recur fn arr (inc count) (fn arr (get count arr) count accum)))))
+      (recur (inc x) (fn x accum) fn))))
 
-(macro reduce (fn arr)
-  (foreach 
-    (function (arr item count accum)
-      (if (= count 0)
+(macro foreach (arr fn)
+  (do
+    (var arr ~arr)
+    (var l arr.length)
+    (for l
+      (function (i accum)
+        (~fn (get i arr) accum)))))
+
+(macro reduce (arr fn)
+  (foreach ~arr
+    (function (item accum)
+      (if (null? accum)
         item
-        (~fn accum item)))
-    ~arr))
+        (~fn item accum)))))
 
-(macro map (fn arr)
-  (foreach 
-    (function (arr item count accum)
+(macro map (arr fn)
+  (foreach ~arr
+    (function (item accum)
       (if (null? accum)
         (set accum []))
       (accum.push (~fn item))
-      accum)
-    ~arr))
+      accum))))
 
      

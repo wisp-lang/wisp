@@ -7,7 +7,8 @@ try {
   var outfile = process.argv[3];
   var code = fs.readFileSync(infile, 'ascii');
   var macros = fs.readFileSync("src/macros.ls", 'ascii');
-  fs.writeFileSync(outfile, ls._compile(macros + "\n" + code), "ascii");
+  ls._compile(macros);
+  fs.writeFileSync(outfile, ls._compile(code), "ascii");
 }
 catch (err) {
       console.log(err);
