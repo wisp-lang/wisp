@@ -70,3 +70,7 @@
 (macro str (rest...)
   ((function ()
     ((.join (Array.prototype.slice.call arguments)) "")) ~rest...))
+    
+(macro let (args vals rest...)
+  ((function ~args ~rest...) ~@vals))
+
