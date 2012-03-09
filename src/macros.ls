@@ -65,6 +65,8 @@
       (if (null? accum)
         (set accum []))
       (accum.push (~fn item))
-      accum))))
+      accum)))
 
-     
+(macro str (rest...)
+  ((function ()
+    ((.join (Array.prototype.slice.call arguments)) "")) ~rest...))
