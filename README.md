@@ -1,27 +1,25 @@
 # LispyScript
-## Javascript using a Lispy syntax  
-  
-  
-### Why LispyScript? It's fun! It has macros! Compiles to Javascript.  
-  
-  
+
+## Javascript using a Lispy syntax
+
+### Why LispyScript? It's fun! It has macros! Compiles to Javascript.
+
 Hello World!
 
     (console.log "Hello LispyScript!")
-    
-This is a LispyScript expression, which consists of a list enclosed by parenthesis.
-The first element is a function and the second is the argument to the function. And you can
-reference Javascript objects and variables directly from LispyScript.  
   
-
+A LispyScript expression, consists of one or more elements separated by a space char,
+enclosed by parenthesis. The first element must evaluate to a function and the rest of the elements
+are arguments to the function. And you can reference Javascript objects and variables directly from LispyScript.  
+  
 The node server example.
 
     (var http (require "http"))
     (var server
       (http.createServer 
-        (function (req res)
-          (res.writeHead 200 {'Content-Type': 'text/plain'})
-          (res.end "Hello World\n"))))
+        (function (request response)
+          (response.writeHead 200 {'Content-Type': 'text/plain'})
+          (response.end "Hello World\n"))))
     (server.listen 1337 "127.0.0.1")
     (console.log "Server running at http://127.0.0.1:1337/")
 
