@@ -1,18 +1,21 @@
 # LispyScript
-## Javascript using a Lispy syntax
-### Why LispyScript? It's fun! It has macros! Compiles to Javascript.
-
-
+## Javascript using a Lispy syntax  
+  
+  
+### Why LispyScript? It's fun! It has macros! Compiles to Javascript.  
+  
+  
 Hello World!
 
     (console.log "Hello LispyScript!")
     
 This is a LispyScript expression, which consists of a list enclosed by parenthesis.
 The first element is a function and the second is the argument to the function. And you can
-reference Javascript objects and variables directly from LispyScript.
-
+reference Javascript objects and variables directly from LispyScript.  
+  
 
 The node server example.
+
     (var http (require "http"))
     (var server
       (http.createServer 
