@@ -26,17 +26,17 @@
   (- ~num 1))
   
 (macro do (rest...)
-  ((function () ~rest...)))
+  ((function () ~@rest...)))
 
 (macro when (cond rest...)
-  (if ~cond (do ~rest...)))
+  (if ~cond (do ~@rest...)))
 
 (macro unless (cond rest...)
-  (when (! ~cond) (do ~rest...)))
+  (when (! ~cond) (do ~@rest...)))
   
 (macro loop (args vals rest...)
   ((_tco
-    (function ~args ~rest...)) ~@vals))
+    (function ~args ~@rest...)) ~@vals))
     
 (macro for (n fn)
   (loop (x accum fn) (0 null ~fn)
@@ -69,8 +69,8 @@
 
 (macro str (rest...)
   ((function ()
-    ((.join (Array.prototype.slice.call arguments)) "")) ~rest...))
+    ((.join (Array.prototype.slice.call arguments)) "")) ~@rest...))
     
 (macro let (args vals rest...)
-  ((function ~args ~rest...) ~@vals))
+  ((function ~args ~@rest...) ~@vals))
 
