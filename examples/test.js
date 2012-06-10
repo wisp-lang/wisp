@@ -11,5 +11,10 @@ console.log(square(10));
     return console.log(err);
 })(err)}})();
 (typeof(window) === "object") ?
-    console.log("Running on browser") :
-    console.log("Not Running on browser");
+    console.log("Running on browser") 
+    : console.log("Not Running on browser");
+var arr = [1, 2, 3, 4, 5];
+console.log(arr[2]);
+(1 !== 2) ?
+    console.log("Nos are not equal") 
+    : undefined;
