@@ -71,10 +71,10 @@ to which the macro will expand.
 Now let us mimic the Lisp 'let' macro in LispyScript.
     
     (macro let (args vals rest...)
-      ((function ~args ~@rest...) ~@vals))
+      ((function ~args ~rest...) ~@vals))
       
     (let (name email tel) ("John" "john@example.org" "555-555-5555")
-      (console.log (str "Name: " name "\nEmail: " email "\nTel: " tel)))
+      (console.log name) (console.log email) (console.log tel))
 
 The "let" macro is very common in Lisp dialects. It creates a list of lexically scoped variables. It is
 not used in LispyScript because we have the var expression. 
