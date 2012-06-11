@@ -4,6 +4,10 @@
 
 ### Why LispyScript? It's fun! It has macros! Compiles to Javascript.
 
+LispyScript is not a dialect of Lisp. There is no list processing in LispyScript . LispyScript
+is Javascript using a Lispy syntax (a tree syntax). This is so that we can manipulate the syntax tree
+while compiling, in order to support macros.
+
 Hello World! in LispyScript.
 
     (console.log "Hello LispyScript!")
@@ -23,7 +27,7 @@ The 'if' expression takes a conditional expression and one or two more expressio
 The 'if' expression will evaluate
 to the first expression after the condition for a true condition, otherwise second.
       
-The first element can be an anonymous function.
+The first element in an expression can be an anonymous function.
 
     ((function (x y) (+ x y)) 1 2)
     
@@ -44,9 +48,8 @@ underscorejs.
     (var _ (require 'underscore'))
     (_.each [1, 2, 3] (function (elem i list) (console.log elem)))
 
-LispyScript is not a dialect of Lisp. If you know a Lisp language, there is no list processing here, . LispyScript
-is Javascript using a Lispy syntax (a tree syntax). This is so that we can manipulate the syntax tree
-while compiling, to support macros.
+If you noticed we passed a Javascript literal array as the first argument to '_.each'. I could just as well
+have passed in '{one: 1, two: 2, three: 3}' instead.
 
 The node server example in LispyScript.
 
@@ -70,19 +73,26 @@ to which the macro will expand.
 
 Now let us mimic the Lisp 'let' macro in LispyScript.
     
-    (macro let (args vals rest...)
-      ((function ~args ~rest...) ~@vals))
+    (macro let (names vals rest...)
+      ((function ~names ~rest...) ~@vals))
       
     (let (name email tel) ("John" "john@example.org" "555-555-5555")
       (console.log name) (console.log email) (console.log tel))
 
-The "let" macro is very common in Lisp dialects. It creates a list of lexically scoped variables. It is
-not used in LispyScript because we have the var expression. 
-It takes as its argument elements, a list of arguments, a list of initial values and the rest of the
-expressions to be evaluated inside the let. The "let" macro expands into an immediately called anonymous
-function, whose arguments are the let's arguments and the values used to call the function are the values
-passed, and the rest of the expressions form the function body. The "~" char is used to dereference the 
-elements in the macro template. "args" dereferenced as is. However we don't want
-the "vals" argument to be deferenced as is. We only want the elements inside the vals list. (Not
-the parenthesis). So we dereference using "~@".
+The "let" macro creates lexically scoped variables with initial values. It does this by creating
+an anonymous function whose argument names are the required variable names, sets the variables to
+their initial values by calling the function immediately with the values. The macro also wraps the
+required code inside the function. 
+
+Now lets look at the call to the 'let' macro. 'names' will correspond to '(name email tel)'. 'rest...'
+corresponds to '(console.log name) (console.log email) (console.log tel)', which is the rest of the 
+expressions after vals. We want to dereference these values in the macro template, and we do that
+with '~names', '~rest...'. However 'vals' corresponds to ("John" "john@example.org" "555-555-5555").
+But thats not the way we want to dereference it. We need to dereference it without the parenthesis.
+For that we use '~@vals'.
+
+We don't really need 'let' in LispyScript. We have 'var'. But if you need it, you can extend LispyScript
+by adding it to the LispyScript 'macros.ls' file in the src folder. Thats the power of macros. You can
+extend the language itself or create your own domain specific language.
+
  
