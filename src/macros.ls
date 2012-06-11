@@ -1,6 +1,9 @@
 (macro object? (obj)
   (= (typeof ~obj) "object"))
   
+(macro array? (obj)
+  (= (toString.call ~obj) "[object Array]"))
+  
 (macro string? (obj)
   (= (typeof ~obj) "string"))
   

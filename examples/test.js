@@ -18,6 +18,9 @@ console.log(arr[2]);
 (1 !== 2) ?
     console.log("Nos are not equal") 
     : undefined;
-(console === Object(console)) ?
-    console.log("This is an object") 
-    : console.log("Not an object");
+(typeof(console) === "object") ?
+    console.log("This is an ob1") 
+    : console.log("Not an obj");
+(toString.call(console) === "[object Array]") ?
+    console.log("This is an array") 
+    : console.log("Not an array");
