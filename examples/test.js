@@ -24,3 +24,14 @@ console.log(arr[2]);
 (toString.call(console) === "[object Array]") ?
     console.log("This is an array") 
     : console.log("Not an array");
+console.log((10 * 10));
+var i = 2;
+console.log((i++ * i++));
+var _ = require('underscore');
+_.each([1, 2, 3],function(elem,i,list) {
+    return console.log(elem);
+});
+(function(name,email,tel) {
+    console.log(name);
+    return console.log(email);
+})("John","john@example.org","555-555-5555");

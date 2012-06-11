@@ -1,10 +1,10 @@
-
+# yyyy
 (console.log "starting tests..")
 (var square
   (function (n)
     (* n n)))
 (console.log (square 10))
-(try
+(try   #ppppppppp pp
   (console.log "In try")
   (throw "In catch")
   (function (err)
@@ -22,3 +22,17 @@
 (if (array? console)
   (console.log "This is an array")
   (console.log "Not an array"))
+(macro square (x)
+  (* ~x ~x))
+(console.log (square 10))
+(var i 2)
+(console.log (square i++))
+(var _ (require 'underscore'))
+(_.each [1, 2, 3] (function (elem i list) (console.log elem)))
+(macro let (args vals rest...)
+  ((function ~args ~rest...) ~@vals))
+      
+(let (name email tel) ("John" "john@example.org" "555-555-5555")
+  (console.log name) (console.log email))
+
+
