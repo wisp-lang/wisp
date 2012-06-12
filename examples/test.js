@@ -9,21 +9,17 @@ console.log(square(10));
     throw("In catch");
 } catch (err) {(function(err) {
     return console.log(err);
-})(err)}})();
+})(err);}})();
 (typeof(window) === "undefined") ?
-    console.log("Not Running on browser") 
-    : console.log("Running on browser");
+    console.log("Not Running on browser") : console.log("Running on browser");
 var arr = [1, 2, 3, 4, 5];
 console.log(arr[2]);
 (1 !== 2) ?
-    console.log("Nos are not equal") 
-    : undefined;
+    console.log("Nos are not equal") : undefined;
 (typeof(console) === "object") ?
-    console.log("This is an ob1") 
-    : console.log("Not an obj");
+    console.log("This is an ob1") : console.log("Not an obj");
 (toString.call(console) === "[object Array]") ?
-    console.log("This is an array") 
-    : console.log("Not an array");
+    console.log("This is an array") : console.log("Not an array");
 console.log((10 * 10));
 var i = 2;
 console.log((i++ * i++));
@@ -34,4 +30,8 @@ _.each([1, 2, 3],function(elem,i,list) {
 (function(name,email,tel) {
     console.log(name);
     return console.log(email);
-})("John","john@example.org","555-555-5555");
+})("John","john@example.com","555-555-5556");
+(function() {
+    console.log("testing do");
+    return console.log("test again");
+})();

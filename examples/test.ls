@@ -32,7 +32,11 @@
 (macro let (args vals rest...)
   ((function ~args ~rest...) ~@vals))
       
-(let (name email tel) ("John" "john@example.org" "555-555-5555")
+(let (name email tel) ("John" "john@example.com" "555-555-5556")
   (console.log name) (console.log email))
+
+(do
+  (console.log "testing do")
+  (console.log "test again"))
 
 
