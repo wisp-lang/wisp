@@ -2,11 +2,8 @@
 
 ## Javascript using a Lispy syntax
 
-### Why LispyScript? It's fun! It has macros! Compiles to Javascript.
-
-LispyScript is not a dialect of Lisp. There is no list processing in LispyScript . LispyScript
-is Javascript using a Lispy syntax (a tree syntax). This is so that we can manipulate the syntax tree
-while compiling, in order to support macros.
+### Why LispyScript?
+### It's fun! It has macros! Compiles to Javascript.
 
 Hello World! in LispyScript.
 
@@ -23,15 +20,18 @@ A more intricate Hello World!
       (console.log "Hello LispyScript!")
       (alert "Hello LispyScript!"))
 
-The 'if' expression takes a conditional expression and one or two more expressions.
-The 'if' expression will evaluate
-to the first expression after the condition for a true condition, otherwise second.
+You can have expressions within expressions.
+
+An anonymous function in LispyScript.
+
+(function (x) (* x x))
       
 The first element in an expression can be an anonymous function.
 
-    ((function (x y) (+ x y)) 1 2)
+    ((function (x) (* x x)) 2)
     
-In the expression above we are calling an anonymous function immediately with params 1 and 2.
+That was the anonymous function above evaluated immediately with argument 2. Functions
+return the last expression evaluated within the function.
 
 You can set a variable name to a function.
 
@@ -48,7 +48,7 @@ underscorejs.
     (var _ (require 'underscore'))
     (_.each [1, 2, 3] (function (elem i list) (console.log elem)))
 
-If you noticed we passed a Javascript literal array as the first argument to '_.each'. I could just as well
+If you noticed we passed a Javascript literal array as the first argument to '_.each'. You could just as well
 have passed in '{one: 1, two: 2, three: 3}' instead.
 
 The node server example in LispyScript.
@@ -61,6 +61,10 @@ The node server example in LispyScript.
           (response.end "Hello World\n"))))
     (server.listen 1337 "127.0.0.1")
     (console.log "Server running at http://127.0.0.1:1337/")
+
+LispyScript is not a dialect of Lisp. There is no list processing in LispyScript . LispyScript
+is Javascript using a Lispy syntax (a tree syntax). This is so that we can manipulate the syntax tree
+while compiling, in order to support macros.
 
 You can define a macro.
 
@@ -103,10 +107,10 @@ extend the language itself or create your own domain specific language.
 
 ## Using LispyScript
 
-1) Typing "lispy" into command prompt will open the REPL.
+1) Typing "lispy" into the command prompt will open the REPL.
 
 2) Typing "lispy test.ls" will compile "test.ls" into "test.js" in the same folder.
 
-3) Type "lispy src/test.ls lib/test.js" to be explicit.
+3) Type "lispy src/test.ls lib/test.js" to be more explicit.
 
 
