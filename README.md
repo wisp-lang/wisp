@@ -92,7 +92,21 @@ But thats not the way we want to dereference it. We need to dereference it witho
 For that we use '~@vals'.
 
 We don't really need 'let' in LispyScript. We have 'var'. But if you need it, you can extend LispyScript
-by adding it to the LispyScript 'macros.ls' file in the src folder. Thats the power of macros. You can
+by adding this macro to your code. Thats the power of macros. You can
 extend the language itself or create your own domain specific language.
 
- 
+## Installing LispyScript
+
+1) Clone the repository into a folder.
+
+2) Add "path/to/lispiscript/bin" to your path.
+
+## Using LispyScript
+
+1) Typing "lispy" into command prompt will open the REPL.
+
+2) Typing "lispy test.ls" will compile "test.ls" into "test.js" in the same folder.
+
+3) Type "lispy src/test.ls lib/test.js" to be explicit.
+
+
