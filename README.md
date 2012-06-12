@@ -5,6 +5,7 @@
 ### Why LispyScript?
 ### It's fun! It has macros! Compiles to Javascript.
 
+
 Hello World! in LispyScript.
 
     (console.log "Hello LispyScript!")
@@ -24,7 +25,7 @@ You can have expressions within expressions.
 
 An anonymous function in LispyScript.
 
-(function (x) (* x x))
+    (function (x) (* x x))
       
 The first element in an expression can be an anonymous function.
 
