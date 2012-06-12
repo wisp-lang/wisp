@@ -47,7 +47,9 @@ All Javascript functions, objects and literals can be used in LispyScript. Let u
 underscorejs.
 
     (var _ (require 'underscore'))
-    (_.each [1, 2, 3] (function (elem i list) (console.log elem)))
+    (_.each [1, 2, 3]
+      (function (elem i list)
+        (console.log elem)))
 
 If you noticed we passed a Javascript literal array as the first argument to '_.each'. You could just as well
 have passed in '{one: 1, two: 2, three: 3}' instead.
@@ -82,7 +84,9 @@ Now let us mimic the Lisp 'let' macro in LispyScript.
       ((function ~names ~rest...) ~@vals))
       
     (let (name email tel) ("John" "john@example.org" "555-555-5555")
-      (console.log name) (console.log email) (console.log tel))
+      (console.log name)
+      (console.log email)
+      (console.log tel))
 
 The "let" macro creates lexically scoped variables with initial values. It does this by creating
 an anonymous function whose argument names are the required variable names, sets the variables to
@@ -114,4 +118,8 @@ extend the language itself or create your own domain specific language.
 
 3) Type "lispy src/test.ls lib/test.js" to be more explicit.
 
+## Further Reading
 
+See the src folder to see some more lispy sorce code. The 'lispy' command is written in LispyScript,
+in file 'lispy.ls'. So is the REPL, whose sorce is in 'repl.ls'. Some of LispyScript keywords are
+implemented as macros in 'macros.ls'.
