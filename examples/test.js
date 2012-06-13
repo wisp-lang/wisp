@@ -16,7 +16,7 @@ var arr = [1, 2, 3, 4, 5];
 console.log(arr[2]);
 (1 !== 2) ?
     console.log("Nos are not equal") : undefined;
-(typeof(console) === "object") ?
+(typeof("ss") === "object") ?
     console.log("This is an ob1") : console.log("Not an obj");
 (toString.call(console) === "[object Array]") ?
     console.log("This is an array") : console.log("Not an array");
@@ -35,3 +35,6 @@ _.each([1, 2, 3],function(elem,i,list) {
     console.log("testing do");
     return console.log("test again");
 })();
+console.log((function() {
+    return (Array.prototype.slice.call(arguments)).join("");
+})("Hello1"," world1"));

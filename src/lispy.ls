@@ -1,5 +1,4 @@
 (var fs (require "fs"))
-(var path (require "path"))
 (var ls (require (+ __dirname "/ls")))
 (var repl (require (+ __dirname "/repl")))
 
@@ -21,12 +20,9 @@
       
 (var compile 
   (function (infile outfile)
-    (var macrofile (+ (path.join __dirname "../src") "/macros.ls"))
-    (var macros (readFileSyncOrExit macrofile))
     (var source (readFileSyncOrExit infile))
     (var out
       (try
-        (ls._compile macros)
         (ls._compile source)
         (function (err)
           (console.log err)

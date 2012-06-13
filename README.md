@@ -54,6 +54,18 @@ underscorejs.
 If you noticed we passed a Javascript literal array as the first argument to '_.each'. You could just as well
 have passed in '{one: 1, two: 2, three: 3}' instead.
 
+You can access object methods and properties using the "." notation.
+
+    (console.log (.greet {greet: "hello"}))
+    
+ie. If the first element of an expression starts with a ".", it's considered as a property of the
+second element, and the expresion evaluates to the property.
+
+You can also use the 'get' expression to access a property of an object.
+
+    (console.log (get "greet" {greet: "hello"}))
+    (console.log (get 1 [1, 2, 3]))
+    
 The node server example in LispyScript.
 
     (var http (require "http"))

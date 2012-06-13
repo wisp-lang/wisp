@@ -16,7 +16,7 @@
 (console.log (get 2 arr))
 (if (!= 1 2)
   (console.log "Nos are not equal"))
-(if (object? console)
+(if (object? "ss")
   (console.log "This is an ob1")
   (console.log "Not an obj"))
 (if (array? console)
@@ -31,6 +31,7 @@
 (_.each [1, 2, 3] (function (elem i list) (console.log elem)))
 (macro let (args vals rest...)
   ((function ~args ~rest...) ~@vals))
+  
       
 (let (name email tel) ("John" "john@example.com" "555-555-5556")
   (console.log name) (console.log email))
@@ -38,5 +39,7 @@
 (do
   (console.log "testing do")
   (console.log "test again"))
+
+(console.log (str "Hello1" " world1"))
 
 
