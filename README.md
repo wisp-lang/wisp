@@ -90,7 +90,7 @@ The 'array?' conditional is defined as a macro in LispyScript. The 'macro' expre
 its second element, a parameters list in the third element, and the fourth element is the template
 to which the macro will expand.
 
-Now let us mimic the Lisp 'let' macro in LispyScript.
+Now let us create a Lisp like 'let' macro in LispyScript.
     
     (macro let (names vals rest...)
       ((function ~names ~rest...) ~@vals))
@@ -118,13 +118,16 @@ extend the language itself or create your own domain specific language.
 
 ## Installing LispyScript
 
+The compiler equires nodejs and underscorejs installed. However the compiled code is standalone javascript that
+will run anywhere.
+
 1) Clone the repository into a folder.
 
 2) Add "path/to/lispiscript/bin" to your path.
 
 ## Using LispyScript
 
-1) Typing "lispy" into the command prompt will open the REPL.
+1) Typing "lispy" into the command prompt will open a simple REPL.
 
 2) Typing "lispy test.ls" will compile "test.ls" into "test.js" in the same folder.
 
@@ -133,5 +136,5 @@ extend the language itself or create your own domain specific language.
 ## Further Reading
 
 See the src folder to see some more lispy sorce code. The 'lispy' command is written in LispyScript,
-in file 'lispy.ls'. So is the REPL, whose sorce is in 'repl.ls'. Some of LispyScript keywords are
+in file 'lispy.ls'. So is the REPL, whose source is in 'repl.ls'. Some of LispyScript keywords are
 implemented as macros in 'macros.ls'.

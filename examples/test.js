@@ -7,7 +7,7 @@ console.log(square(10));
 (function () {try {
     console.log("In try");
     throw("In catch");
-} catch (err) {(function(err) {
+} catch (err) {return (function(err) {
     return console.log(err);
 })(err);}})();
 (typeof(window) === "undefined") ?
