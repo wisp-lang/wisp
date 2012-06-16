@@ -1,12 +1,16 @@
 # LispyScript
 
-## Javascript using a Lispy syntax
+## A Javascript with Macros!
 
-### Why LispyScript?
-### It's fun! It has macros! Compiles to Javascript.
+Lispyscript is Javascript using a 'Lispy' syntax, and compiles to Javascript.
 
+An inherent problem with Javascript is that it has no
+macro support, like other Lisp like languages. That's because macros manipulate the syntax tree while
+compiling. And this is next to impossible in language like Javascript. In LispyScript we write Javascript
+in a tree structure. If you know Javascript and a Lisp like language, then using LispyScript will be a
+breeze. Even if you don't know a Lispy Language, all you need to learn is to write code in a tree structure.
 
-Hello World! in LispyScript.
+### Hello World! in LispyScript.
 
     (console.log "Hello LispyScript!")
   
@@ -22,6 +26,8 @@ A more intricate Hello World!
       (alert "Hello LispyScript!"))
 
 You can have expressions within expressions.
+
+### Functions
 
 An anonymous function in LispyScript.
 
@@ -42,6 +48,8 @@ You can set a variable name to a function.
     (console.log (square 10))
 
 The 'var' expression takes a variable name as the second element and sets its value to the third.
+
+### LispyScript is Javascript!
 
 All Javascript functions, objects and literals can be used in LispyScript. Let us do an example using
 underscorejs.
@@ -76,6 +84,8 @@ The node server example in LispyScript.
           (response.end "Hello World\n"))))
     (server.listen 1337 "127.0.0.1")
     (console.log "Server running at http://127.0.0.1:1337/")
+    
+### Macros
 
 LispyScript is not a dialect of Lisp. There is no list processing in LispyScript . LispyScript
 is Javascript using a Lispy syntax (a tree syntax). This is so that we can manipulate the syntax tree
