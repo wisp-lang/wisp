@@ -145,8 +145,55 @@ will run anywhere.
 
 3) Type "lispy src/test.ls lib/test.js" to be more explicit.
 
-## Further Reading
+## Reference
 
-See the src folder to see some more lispy sorce code. The 'lispy' command is written in LispyScript,
-in file 'lispy.ls'. So is the REPL, whose source is in 'repl.ls'. Some of LispyScript keywords are
-implemented as macros in 'macros.ls'.
+### Operators
+
+null?, undefined?, boolean?, number?, string?, object?, array?, function?, =, !=, !, >, <, <=, >=, +, -,
+*, /, %, &&, ||.
+
+"=" and "!=" work like "===" and "!==" in Javascript.
+
+### LispyScript Statements
+
+(inc <integer expression>) - Increments an integer.
+
+(dec <integer expression>) - Decrements an integer.
+
+(str <string expression> ...) - Adds up all the strings.
+
+    (var title "TITLE")
+    (console.log
+      (str
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<head>\n"
+        "  <title>" title "</title>\n"     
+        "</head>\n"
+        "<body>\n"
+          "Hello World\n"
+        "</body>\n"
+        "</html>\n"))
+
+(template <arguments> <string expression> ...) - template takes an arguments list, and a set of string 
+expressions, and returns a compiled template function. Call the function with the arguments to expand
+the template.
+
+    (macro reduce (rest...)
+      (Array.prototype.reduce.call ~rest...))
+      
+    (var page
+      (template (title headings)
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<head>\n"
+        "  <title>" title "</title>\n"     
+        "</head>\n"
+        "<body>\n"
+          (reduce headings
+            (function (memo heading)
+              (+ memo (str "<h1>" heading "</h1>\n"))) "")
+        "</body>\n"
+        "</html>\n"))
+    
+    (console.log (page "TITLE" ["heading1", "heading2", "heading3"]))

@@ -43,3 +43,7 @@
 (macro str (rest...)
   ((function ()
     ((.join (Array.prototype.slice.call arguments)) "")) ~rest...))
+
+(macro template (args rest...)
+  (function ~args
+    (str ~rest...)))

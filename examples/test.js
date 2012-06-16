@@ -38,3 +38,17 @@ Array.prototype.forEach.call([1, 2, 3],function(elem,i,list) {
 console.log((function() {
     return (Array.prototype.slice.call(arguments)).join("");
 })("Hello1"," world1"));
+var title = "TITLE";
+console.log((function() {
+    return (Array.prototype.slice.call(arguments)).join("");
+})("<!DOCTYPE html>\n","<html>\n","<head>\n","  <title>",title,"</title>\n","</head>\n","<body>\n","Hello World\n","</body>\n","</html>\n"));
+var page = function(title,headings) {
+    return (function() {
+        return (Array.prototype.slice.call(arguments)).join("");
+    })("<!DOCTYPE html>\n","<html>\n","<head>\n","  <title>",title,"</title>\n","</head>\n","<body>\n",Array.prototype.reduce.call(headings,function(memo,heading) {
+        return (memo + (function() {
+            return (Array.prototype.slice.call(arguments)).join("");
+        })("<h1>",heading,"</h1>\n"));
+    },""),"</body>\n","</html>\n");
+};
+console.log(page("TITLE",["heading1", "heading2", "heading3"]));
