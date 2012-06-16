@@ -28,7 +28,7 @@
 (var i 2)
 (console.log (square i++))
 (var _ (require 'underscore'))
-(_.each [1, 2, 3] (function (elem i list) (console.log elem)))
+(Array.prototype.forEach.call [1, 2, 3] (function (elem i list) (console.log elem)))
 (macro let (args vals rest...)
   ((function ~args ~rest...) ~@vals))
   

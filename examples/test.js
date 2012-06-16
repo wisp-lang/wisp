@@ -24,7 +24,7 @@ console.log((10 * 10));
 var i = 2;
 console.log((i++ * i++));
 var _ = require('underscore');
-_.each([1, 2, 3],function(elem,i,list) {
+Array.prototype.forEach.call([1, 2, 3],function(elem,i,list) {
     return console.log(elem);
 });
 (function(name,email,tel) {

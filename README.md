@@ -6,11 +6,11 @@ Lispyscript is Javascript using a 'Lispy' syntax, and compiles to Javascript.
 
 An inherent problem with Javascript is that it has no
 macro support, like other Lisp like languages. That's because macros manipulate the syntax tree while
-compiling. And this is next to impossible in language like Javascript. In LispyScript we write Javascript
+compiling. And this is next to impossible in a language like Javascript. In LispyScript we write Javascript
 in a tree structure. If you know Javascript and a Lisp like language, then using LispyScript will be a
 breeze. Even if you don't know a Lispy Language, all you need to learn is to write code in a tree structure.
 
-### Hello World! in LispyScript.
+## Hello World! in LispyScript.
 
     (console.log "Hello LispyScript!")
   
@@ -27,7 +27,7 @@ A more intricate Hello World!
 
 You can have expressions within expressions.
 
-### Functions
+## Functions
 
 An anonymous function in LispyScript.
 
@@ -49,17 +49,15 @@ You can set a variable name to a function.
 
 The 'var' expression takes a variable name as the second element and sets its value to the third.
 
-### LispyScript is Javascript!
+## LispyScript is Javascript!
 
-All Javascript functions, objects and literals can be used in LispyScript. Let us do an example using
-underscorejs.
+All Javascript functions, objects and literals can be used in LispyScript. 
 
-    (var _ (require 'underscore'))
-    (_.each [1, 2, 3]
-      (function (elem i list)
+    (Array.prototype.forEach.call [1, 2, 3]
+      (function (elem index list)
         (console.log elem)))
 
-If you noticed we passed a Javascript literal array as the first argument to '_.each'. You could just as well
+If you noticed we passed a Javascript literal array as the first argument to 'forEach'. You could just as well
 have passed in '{one: 1, two: 2, three: 3}' instead.
 
 You can access object methods and properties using the "." notation.
@@ -74,6 +72,10 @@ You can also use the 'get' expression to access a property of an object.
     (console.log (get "greet" {greet: "hello"}))
     (console.log (get 1 [1, 2, 3]))
     
+You can 'set' variables too.
+
+    (set window.onload (function () (alert "Page Loaded")))
+    
 The node server example in LispyScript.
 
     (var http (require "http"))
@@ -85,7 +87,7 @@ The node server example in LispyScript.
     (server.listen 1337 "127.0.0.1")
     (console.log "Server running at http://127.0.0.1:1337/")
     
-### Macros
+## Macros
 
 LispyScript is not a dialect of Lisp. There is no list processing in LispyScript . LispyScript
 is Javascript using a Lispy syntax (a tree syntax). This is so that we can manipulate the syntax tree
