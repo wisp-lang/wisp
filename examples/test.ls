@@ -54,4 +54,6 @@
       "Hello World\n"
     "</body>\n"
     "</html>\n"))
+    
+(include "test1.ls")
 

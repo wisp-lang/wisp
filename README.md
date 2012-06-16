@@ -200,9 +200,15 @@ The unless statement evaluates a set of expressions passed as it arguments when 
 
 ### (each <object> <iterator> [<context>])
 
-each is just a macro that expands to 'Array.prototype.forEach.call'. So it will not work in old browsers.
+each is just a macro that expands to the native 'forEach' function. So it will not work in old browsers.
 For backwards compatibility use a library like 'underscore.js'.
 
+    (each [1, 2, 3]
+      (function (elem index list)
+        (console.log elem)))
+        
+The above example using underscore.js.
+        
     (var _ (require 'underscore'))
     (_.each [1, 2, 3]
       (function (elem index list)
@@ -210,12 +216,27 @@ For backwards compatibility use a library like 'underscore.js'.
 
 ### (map <object> <iterator> [<context>])
 
-map is just a macro that expands to 'Array.prototype.map.call'. So it will not work in old browsers.
+map is just a macro that expands to the native 'map' function. So it will not work in old browsers.
 For backwards compatibility use a library like 'underscore.js'.
 
 ### (reduce <object> <iterator> <memo> [<context>])
 
-reduce is just a macro that expands to 'Array.prototype.reduce.call'. So it will not work in old browsers.
+reduce is just a macro that expands to the native 'reduce' function. So it will not work in old browsers.
 For backwards compatibility use a library like 'underscore.js'.
 
+### (try <expression1> <expression1> ... <catch function>)
+
+Try takes a set of expressions and evaluates them. The last expression must be a function, that
+will be called in case and exception is thrown. The function is called with the error object.
+
+    (var fs (require 'fs'))
+    (try
+      (fs.writeFileSync "text.txt" "Hello World")
+      (function (err)
+        (console.log (+ "Cannot write file " file))
+        (process.exit 1)))
+
+### (include <string filename>)
+
+Includes a file to be compiled with this compilation unit.
 

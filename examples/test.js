@@ -42,3 +42,7 @@ var title = "TITLE";
 console.log((function() {
     return (Array.prototype.slice.call(arguments)).join("");
 })("<!DOCTYPE html>\n","<html>\n","<head>\n","  <title>",title,"</title>\n","</head>\n","<body>\n","Hello World\n","</body>\n","</html>\n"));
+(function(name,email,tel) {
+    console.log(name);
+    return console.log(email);
+})("John","john@example.org","555-555-5555");
