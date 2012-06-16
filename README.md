@@ -147,20 +147,26 @@ will run anywhere.
 
 ## Reference
 
-### Operators
+## Operators
 
 null?, undefined?, boolean?, number?, string?, object?, array?, function?, =, !=, !, >, <, <=, >=, +, -,
 *, /, %, &&, ||.
 
 "=" and "!=" work like "===" and "!==" in Javascript.
 
-### LispyScript Statements
+## LispyScript Statements
 
-(inc <integer expression>) - Increments an integer.
+### (inc <integer expression>)
 
-(dec <integer expression>) - Decrements an integer.
+Increments an integer.
 
-(str <string expression> ...) - Adds up all the strings.
+### (dec <integer expression>)
+
+Decrements an integer.
+
+### (str <string expression> ...)
+
+Adds up all the strings.
 
     (var title "TITLE")
     (console.log
@@ -175,25 +181,41 @@ null?, undefined?, boolean?, number?, string?, object?, array?, function?, =, !=
         "</body>\n"
         "</html>\n"))
 
-(template <arguments> <string expression> ...) - template takes an arguments list, and a set of string 
-expressions, and returns a compiled template function. Call the function with the arguments to expand
-the template.
+### (if <condition> <true expression> <false expression>)
 
-    (macro reduce (rest...)
-      (Array.prototype.reduce.call ~rest...))
-      
-    (var page
-      (template (title headings)
-        "<!DOCTYPE html>\n"
-        "<html>\n"
-        "<head>\n"
-        "  <title>" title "</title>\n"     
-        "</head>\n"
-        "<body>\n"
-          (reduce headings
-            (function (memo heading)
-              (+ memo (str "<h1>" heading "</h1>\n"))) "")
-        "</body>\n"
-        "</html>\n"))
-    
-    (console.log (page "TITLE" ["heading1", "heading2", "heading3"]))
+If takes a conditional expression and evaluates the true expression if the condition is true, or the false
+expression otherwise.
+
+### (do <expression1> <expression2> ...)
+
+The do statement evaluates a set of expressions passed as it arguments.
+
+### (when <condition> <expression1> <expression2> ...)
+
+The when statement evaluates a set of expressions passed as it arguments when the condition is true.
+
+### (unless <condition> <expression1> <expression2> ...)
+
+The unless statement evaluates a set of expressions passed as it arguments when the condition is false.
+
+### (each <object> <iterator> [<context>])
+
+each is just a macro that expands to 'Array.prototype.forEach.call'. So it will not work in old browsers.
+For backwards compatibility use a library like 'underscore.js'.
+
+    (var _ (require 'underscore'))
+    (_.each [1, 2, 3]
+      (function (elem index list)
+        (console.log elem)))
+
+### (map <object> <iterator> [<context>])
+
+map is just a macro that expands to 'Array.prototype.map.call'. So it will not work in old browsers.
+For backwards compatibility use a library like 'underscore.js'.
+
+### (reduce <object> <iterator> <memo> [<context>])
+
+reduce is just a macro that expands to 'Array.prototype.reduce.call'. So it will not work in old browsers.
+For backwards compatibility use a library like 'underscore.js'.
+
+

@@ -44,6 +44,11 @@
   ((function ()
     ((.join (Array.prototype.slice.call arguments)) "")) ~rest...))
 
-(macro template (args rest...)
-  (function ~args
-    (str ~rest...)))
+(macro each (rest...)
+  (Array.prototype.forEach.call ~rest...))
+  
+(macro map (rest...)
+  (Array.prototype.map.call ~rest...))
+  
+(macro reduce (rest...)
+  (Array.prototype.reduce.call ~rest...))

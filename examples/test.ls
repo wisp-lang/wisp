@@ -55,22 +55,3 @@
     "</body>\n"
     "</html>\n"))
 
-(macro reduce (rest...)
-  (Array.prototype.reduce.call ~rest...))
-  
-(var page
-  (template (title headings)
-    "<!DOCTYPE html>\n"
-    "<html>\n"
-    "<head>\n"
-    "  <title>" title "</title>\n"     
-    "</head>\n"
-    "<body>\n"
-      (reduce headings
-        (function (memo heading)
-          (+ memo (str "<h1>" heading "</h1>\n"))) "")
-    "</body>\n"
-    "</html>\n"))
-
-(console.log (page "TITLE" ["heading1", "heading2", "heading3"]))
-
