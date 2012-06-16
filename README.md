@@ -130,7 +130,7 @@ extend the language itself or create your own domain specific language.
 
 ## Installing LispyScript
 
-The compiler equires nodejs and underscorejs installed. However the compiled code is standalone javascript that
+The compiler requires nodejs and underscorejs installed. However the compiled code is standalone javascript that
 will run anywhere.
 
 1) Clone the repository into a folder.
