@@ -224,10 +224,16 @@ For backwards compatibility use a library like 'underscore.js'.
 reduce is just a macro that expands to the native 'reduce' function. So it will not work in old browsers.
 For backwards compatibility use a library like 'underscore.js'.
 
-### (try <expression1> <expression1> ... <catch function>)
+### (function <arguments expression> <expression1> <expression2> ... )
+
+Creates an anonymous function.
+
+### (macro <name> <arguments expression> <template expression>)
+
+### (try <expression1> <expression2> ... <catch function>)
 
 Try takes a set of expressions and evaluates them. The last expression must be a function, that
-will be called in case and exception is thrown. The function is called with the error object.
+will be called in case an exception is thrown. The function is called with the error object.
 
     (var fs (require 'fs'))
     (try
@@ -240,4 +246,7 @@ will be called in case and exception is thrown. The function is called with the 
 
 Includes a file to be compiled with this compilation unit.
 
-This is early days. Your feedback will be appreciated at 
+### Comments
+
+Comments in LispyScript start with a "#" and span the rest of the line.
+
