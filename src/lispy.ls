@@ -23,7 +23,7 @@
     (var source (readFileSyncOrExit infile))
     (var out
       (try
-        (ls._compile source)
+        (ls._compile source infile)
         (function (err)
           (console.log err)
           (process.exit 1))))

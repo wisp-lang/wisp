@@ -53,6 +53,4 @@
 (macro reduce (rest...)
   (Array.prototype.reduce.call ~rest...))
 
-(macro template (str)
-  ((.replace ~str) /<%(.*)%>/g (function (match code) (eval code))))
 
