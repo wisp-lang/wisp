@@ -40,9 +40,9 @@
 (macro unless (cond rest...)
   (when (! ~cond) (do ~rest...)))
   
-(macro str (rest...)
-  ((function ()
-    ((.join (Array.prototype.slice.call arguments)) "")) ~rest...))
+#(macro str (rest...)
+#  ((function ()
+#    ((.join (Array.prototype.slice.call arguments)) "")) ~rest...))
 
 (macro each (rest...)
   (Array.prototype.forEach.call ~rest...))

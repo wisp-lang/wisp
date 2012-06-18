@@ -168,18 +168,20 @@ Decrements an integer.
 
 Adds up all the strings.
 
-    (var title "TITLE")
+    (var title "My Home Page")
     (console.log
-      (str
-        "<!DOCTYPE html>\n"
-        "<html>\n"
-        "<head>\n"
-        "  <title>" title "</title>\n"     
-        "</head>\n"
-        "<body>\n"
-          "Hello World\n"
-        "</body>\n"
-        "</html>\n"))
+      (str "<!DOCTYPE html>
+    <html>
+    <head>
+      <title>" title "</title>
+    </head>
+    <body class=\"test\">
+    Hello World
+    </body>
+    </html>"))
+
+In LispyScript double quoted strings are multiline strings. As you can see above they span multiple lines.
+If you need a double quote inside the string, escape it with \".
 
 ### (if <condition> <true expression> <false expression>)
 
