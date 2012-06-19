@@ -156,14 +156,6 @@ null?, undefined?, boolean?, number?, string?, object?, array?, function?, =, !=
 
 ## LispyScript Statements
 
-### (inc <integer expression>)
-
-Increments an integer.
-
-### (dec <integer expression>)
-
-Decrements an integer.
-
 ### (str <string expression> ...)
 
 Adds up all the strings.
@@ -244,10 +236,6 @@ will be called in case an exception is thrown. The function is called with the e
         (console.log (+ "Cannot write file " file))
         (process.exit 1)))
 
-### (include <string filename>)
-
-Includes a file to be compiled with this compilation unit.
-
 ### (template <argument expression> <string expressions> ... )
 
     (var link
@@ -276,6 +264,9 @@ Includes a file to be compiled with this compilation unit.
          {href:"/products", text:"Products"},
          {href:"/contact", text:"Contact"}]))
 
+### (include <string filename>)
+
+Includes a file to be compiled with this compilation unit.
 
 ### Comments
 
