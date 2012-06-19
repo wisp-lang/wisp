@@ -248,6 +248,35 @@ will be called in case an exception is thrown. The function is called with the e
 
 Includes a file to be compiled with this compilation unit.
 
+### (template <argument expression> <string expressions> ... )
+
+    (var link
+      (template (data)
+        "<li><a href=" (.href data) ">" (.text data) "</a></li>\n"))
+    
+    (var page 
+      (template (title links)
+    "<!DOCTYPE html>
+    <html>
+    <head>
+      <title>" title "</title>
+    </head>
+    <body>
+    <ul class='nav'>"
+    
+    (reduce links (function (memo elem) (+ memo (link elem))) "")
+    
+    "</ul>
+    </body>
+    </html>"))
+    
+    (console.log 
+      (page "My Home Page" 
+        [{href:"/about", text:"About"},
+         {href:"/products", text:"Products"},
+         {href:"/contact", text:"Contact"}]))
+
+
 ### Comments
 
 Comments in LispyScript start with a "#" and span the rest of the line.
