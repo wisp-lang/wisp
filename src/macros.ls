@@ -25,12 +25,6 @@
 (macro null? (obj)
   (= ~obj null))
   
-(macro inc (num)
-  (+ ~num 1))
-  
-(macro dec (num)
-  (- ~num 1))
-  
 (macro do (rest...)
   ((function () ~rest...)))
 
