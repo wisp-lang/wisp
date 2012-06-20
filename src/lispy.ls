@@ -1,3 +1,5 @@
+# The lispy command script
+
 (var fs (require "fs"))
 (var ls (require (+ __dirname "/ls")))
 (var repl (require (+ __dirname "/repl")))
