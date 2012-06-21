@@ -230,10 +230,11 @@ Try takes a set of expressions and evaluates them. The last expression must be a
 will be called in case an exception is thrown. The function is called with the error object.
 
     (var fs (require 'fs'))
+    (var outfile "text.txt")
     (try
-      (fs.writeFileSync "text.txt" "Hello World")
+      (fs.writeFileSync outfile "Hello World")
       (function (err)
-        (console.log (+ "Cannot write file " file))
+        (console.log (+ "Cannot write file " outfile)
         (process.exit 1)))
 
 ### (template (argument expression) (string expressions) ... )
@@ -272,4 +273,6 @@ Includes a file to be compiled with this compilation unit.
 
 Comments in LispyScript start with a "#" and span the rest of the line.
 
-## Discuss LispyScript at [https://groups.google.com/forum/#!forum/lispyscript](https://groups.google.com/forum/#!forum/lispyscript).
+### LispyScript was inspired by [Beating the averages](http://www.paulgraham.com/avg.html).
+
+### Discuss LispyScript at [https://groups.google.com/forum/#!forum/lispyscript](https://groups.google.com/forum/#!forum/lispyscript).
