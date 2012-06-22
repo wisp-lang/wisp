@@ -1,0 +1,30 @@
+{
+  "name": "lispyscript",
+  "description": "A Javascript with macros",
+  "keywords": ["javascript", "language", "lispyscript", "compiler", "lisp"],
+  "author": "Santosh Rajan",
+  "version": "0.1.6",
+  "licenses": [{
+    "type": "MIT",
+    "url": "https://raw.github.com/santoshrajan/lispyscript/master/LICENSE"
+  }],
+  "engines": {
+    "node": ">=0.4.0"
+  },
+  "directories" : {
+    "lib" : "./lib"
+  },
+  "main" : "./lib/ls",
+  "bin": {
+    "lispy": "./bin/lispy"
+  },
+  "homepage": "https://github.com/santoshrajan/lispyscript",
+  "bugs": "https://github.com/santoshrajan/lispyscript/issues",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/santoshrajan/lispyscript.git"
+  },
+  "dependencies": {
+    "underscore": ">=1.0.0"
+  }
+}
