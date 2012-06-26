@@ -1,4 +1,4 @@
-# Some example code snippets
+;; Some example code snippets
 
 (var square
   (function (n)
@@ -29,15 +29,15 @@
   (console.log "console is an array")
   (console.log "console is not an array"))
 
-# The example below shows the dangers of using a macro  
+;; The example below shows the dangers of using a macro  
 (macro square (x)
   (* ~x ~x))
 (console.log (square 10))
-# The code above works fine. Now consider the code below
+;; The code above works fine. Now consider the code below
 (var i 2)
 (console.log (square i++))
-# Oops you got 6! An embarrassing square of a no. Thats because the macro
-# expanded to (* i++ i++) which is multiplying 2 and three!
+;; Oops you got 6! An embarrassing square of a no. Thats because the macro
+;; expanded to (* i++ i++) which is multiplying 2 and three!
 
 (var _ (require 'underscore'))
 (Array.prototype.forEach.call [1, 2, 3] (function (elem i list) (console.log elem)))
@@ -80,4 +80,4 @@
     [{href:"/about", text:"About"},
      {href:"/products", text:"Products"},
      {href:"/contact", text:"Contact"}]))
-    
+

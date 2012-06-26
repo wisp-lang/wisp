@@ -1,5 +1,5 @@
-# List of built in macros for LispyScript. This file is included by
-# default by the LispyScript compiler.
+;; List of built in macros for LispyScript. This file is included by
+;; default by the LispyScript compiler.
 
 (macro object? (obj)
   (= (typeof ~obj) "object"))

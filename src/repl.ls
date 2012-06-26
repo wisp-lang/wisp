@@ -1,5 +1,4 @@
-# A very simple REPL written in LispyScript
-#
+;; A very simple REPL written in LispyScript
 
 (var readline (require "readline"))
 (var ls (require "./ls"))
