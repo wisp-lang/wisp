@@ -130,20 +130,20 @@ extend the language itself or create your own domain specific language.
 
 ## Installing LispyScript
 
-The compiler requires nodejs and underscorejs installed. However the compiled code is standalone javascript that
-will run anywhere.
+The compiler requires [nodejs][] and [npm][] installation. However the compiled
+code is standalone javascript that will run anywhere. To install use npm:
 
-1) Clone the repository into a folder.
+    npm install lispyscript
 
-2) Add "path/to/lispiscript/bin" to your path.
 
 ## Using LispyScript
 
-1) Typing "lispy" into the command prompt will open a simple REPL.
+1. Typing `lispy` into the command prompt will open a simple REPL.
 
-2) Typing "lispy test.ls" will compile "test.ls" into "test.js" in the same folder.
+2. Typing `lispy program.ls` will compile `program.ls` into `program.js` in
+   the same directory.
 
-3) Type "lispy src/test.ls lib/test.js" to be more explicit.
+3. Type `lispy src/program.ls lib/program.js` to be more explicit.
 
 ## Reference
 
@@ -276,3 +276,6 @@ Comments in LispyScript start with a "#" and span the rest of the line.
 ### LispyScript was inspired by [Beating the averages](http://www.paulgraham.com/avg.html).
 
 ### Discuss LispyScript at [https://groups.google.com/forum/#!forum/lispyscript](https://groups.google.com/forum/#!forum/lispyscript).
+
+[nodejs]:http://nodejs.org/
+[npm]:http://npmjs.org/ "Node Package Manager"
