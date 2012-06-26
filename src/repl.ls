@@ -1,11 +1,11 @@
 # A very simple REPL written in LispyScript
-# 
+#
 
 (var readline (require "readline"))
-(var ls (require (+ __dirname "/ls")))
+(var ls (require "./ls"))
 
 (var prefix "lispy> ")
-    
+
 (set exports.runrepl
   (function ()
     (var rl (readline.createInterface process.stdin process.stdout))

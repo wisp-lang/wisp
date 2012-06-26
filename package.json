@@ -16,13 +16,16 @@
   },
   "main" : "./lib/ls",
   "bin": {
-    "lispy": "./bin/lispy"
+    "lispy": "./bin/lispy.js"
   },
   "homepage": "https://github.com/santoshrajan/lispyscript",
   "bugs": "https://github.com/santoshrajan/lispyscript/issues",
   "repository": {
     "type": "git",
     "url": "git://github.com/santoshrajan/lispyscript.git"
+  },
+  "scripts": {
+    "prepublish": "lispy src/lispy.ls lib/lispy.js && lispy src/repl.ls lib/repl.js"
   },
   "dependencies": {
     "underscore": ">=1.0.0"

@@ -1,6 +1,0 @@
-#!/usr/bin/env node
-// The 'lispy' command which in turn runs the compiler
-var path = require('path');
-var fs   = require('fs');
-var lib  = path.join(path.dirname(fs.realpathSync(__filename)), '../lib');
-require(lib + '/lispy').run();
