@@ -1,8 +1,8 @@
 # The lispy command script
 
 (var fs (require "fs"))
-(var ls (require (+ __dirname "/ls")))
-(var repl (require (+ __dirname "/repl")))
+(var ls (require "./ls"))
+(var repl (require "./repl"))
 
 (var readFileSyncOrExit
   (function (file)
@@ -19,8 +19,8 @@
       (function (err)
         (console.log (+ "Cannot write file " file))
         (process.exit 1)))))
-      
-(var compile 
+
+(var compile
   (function (infile outfile)
     (var source (readFileSyncOrExit infile))
     (var out
