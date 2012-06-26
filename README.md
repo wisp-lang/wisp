@@ -271,7 +271,7 @@ Includes a file to be compiled with this compilation unit.
 
 ### Comments
 
-Comments in LispyScript start with a "#" and span the rest of the line.
+Comments in LispyScript start with a `;` and span the rest of the line.
 
 ### LispyScript was inspired by [Beating the averages](http://www.paulgraham.com/avg.html).
 
