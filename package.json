@@ -24,6 +24,9 @@
     "type": "git",
     "url": "git://github.com/santoshrajan/lispyscript.git"
   },
+  "scripts": {
+    "prepublish": "lispy src/lispy.ls lib/lispy.js && lispy src/repl.ls lib/repl.js"
+  },
   "dependencies": {
     "underscore": ">=1.0.0"
   }
