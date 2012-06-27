@@ -31,7 +31,7 @@
         (var jscode
              (try
               (output.write (ls._compile source uri))
-              (exit)))))
+              exit))))
 
     (input.on "error" exit)
     (output.on "error" exit)))
