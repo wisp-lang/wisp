@@ -1,0 +1,169 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>LispyScript</title>
+    <script src="http://codemirror.net/lib/codemirror.js"></script>
+    <script src="http://codemirror.net/mode/scheme/scheme.js"></script>
+    <script src="http://codemirror.net/mode/javascript/javascript.js"></script>
+    <link rel="stylesheet" href="http://codemirror.net/lib/codemirror.css">
+    <link rel="stylesheet" href="http://codemirror.net/theme/ambiance.css">
+    <link rel="stylesheet" href="http://codemirror.net/doc/docs.css">
+
+    <script data-main=./lib/browser type=text/javascript src=http://requirejs.org/docs/release/2.0.2/minified/require.js></script>
+    <script>
+      require.config({
+        paths: {
+          "underscore": "https://raw.github.com/amdjs/underscore/9e944c2dd3e1c64227a260d1974c44a29c38e962/underscore-min"
+        }
+      })
+    </script>
+    <script type=application/lispyscript src=./src/macros.ls></script>
+    <style>
+      html, body {
+        font-size: 12px;
+        margin: 0;
+        padding: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        min-width: 100%;
+        height: 100%;
+        min-height: 100%;
+      }
+
+      .CodeMirror {
+        float: left;
+        width: 50%;
+        height: 100%;
+      }
+
+      .CodeMirror .CodeMirror-scroll {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+<textarea id="input" name="input">
+;; Hello World! in LispyScript.
+(console.log "Hello LispyScript!")
+
+;; A more intricate Hello World!
+(if (undefined? window)
+  (console.log "Hello LispyScript!")
+  (alert "Hello LispyScript!"))
+
+; Functions
+;; An anonymous function in LispyScript
+(function (x) (* x x))
+
+;; The first element in an expression can be an anonymous function.
+((function (x) (* x x)) 2)
+
+;; You can set a variable name to a function.
+(var square
+  (function (x)
+    (* x x)))
+(console.log (square 10))
+
+; LispyScript is Javascript!
+
+(Array.prototype.forEach.call [1, 2, 3]
+  (function (elem index list)
+    (console.log elem)))
+
+;; You can access object methods and properties using the "." notation.
+
+(console.log (.greet {greet: "hello"}))
+
+;; You can also use the 'get' expression to access a property of an object.
+
+(console.log (get "greet" {greet: "hello"}))
+(console.log (get 1 [1, 2, 3]))
+
+;; You can 'set' variables too.
+
+(set window.onload (function () (alert "Page Loaded")))
+
+; Node
+;; The node server example in LispyScript.
+
+(var http (require "http"))
+(var server
+  (http.createServer
+    (function (request response)
+      (response.writeHead 200 {'Content-Type': 'text/plain'})
+      (response.end "Hello World\n"))))
+(server.listen 1337 "127.0.0.1")
+(console.log "Server running at http://127.0.0.1:1337/")
+
+; Macros
+
+;; You can define a macro.
+(macro array? (obj)
+  (= (toString.call ~obj) "[object Array]"))
+
+;; Now let us create a Lisp like 'let' macro in LispyScript.
+
+(macro let (names vals rest...)
+  ((function ~names ~rest...) ~@vals))
+
+(let (name email tel) ("John" "john@example.org" "555-555-5555")
+  (console.log name)
+  (console.log email)
+  (console.log tel))
+
+;; Conditions
+
+(if (= document.readyState "complete")
+  (console.log "loaded")    ;; true expression
+  (console.log "loading"))  ;; optional false expression
+
+;; Do expression
+
+(if (= process.argv.length 2)
+  (do
+    (process.stdin.resume)
+    (process.stdin.setEncoding "utf8")
+    (compile process.stdin process.stdout (process.cwd))))
+
+;; Each macro
+
+(each [1, 2, 3]
+  (function (elem index list)
+    (console.log elem)))
+
+;; Exception handling
+
+(var fs (require 'fs'))
+(var outfile "text.txt")
+(try
+  (fs.writeFileSync outfile "Hello World")
+  (function (e)
+    (console.log (+ "Cannot write file " outfile)
+    (process.exit 1))))
+
+</textarea>
+<textarea id="output" name="output"></textarea>
+    <script>
+      function updatePreview(editor) {
+        output.setValue(require('../lib/ls')._compile(editor.getValue()))
+      }
+      var input = CodeMirror.fromTextArea(document.getElementById("input"), {
+        lineNumbers: true,
+        mode: "scheme",
+        theme: "ambiance",
+        autofocus: true,
+        onChange: updatePreview
+      });
+      var output = CodeMirror.fromTextArea(document.getElementById("output"), {
+        lineNumbers: true,
+        mode: "javascript",
+        theme: "ambiance",
+        readOnly: "nocursor"
+      });
+
+      setTimeout(updatePreview, 1000, input)
+    </script>
+  </body>
+</html>

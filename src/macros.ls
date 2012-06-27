@@ -40,6 +40,15 @@
 (macro map (rest...)
   (Array.prototype.map.call ~rest...))
 
+(macro filter (rest...)
+  (Array.prototype.filter.call ~rest...))
+
+(macro some (rest...)
+  (Array.prototype.some.call ~rest...))
+
+(macro every (rest...)
+  (Array.prototype.every.call ~rest...))
+
 (macro reduce (rest...)
   (Array.prototype.reduce.call ~rest...))
 

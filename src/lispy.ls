@@ -1,8 +1,9 @@
 ;; The lispy command script
 
+(require "./node")
 (var fs (require "fs"))
 (var path (require "path"))
-(var ls (require "./ls"))
+(var ls (require "../lib/ls"))
 (var repl (require "./repl"))
 
 (var exit
