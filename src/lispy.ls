@@ -1,6 +1,7 @@
 ;; The lispy command script
 
 (var fs (require "fs"))
+(var path (require "path"))
 (var ls (require "./ls"))
 (var repl (require "./repl"))
 
@@ -16,7 +17,8 @@
   (function (input output)
     (compile
       (fs.createReadStream input)
-      (fs.createWriteStream output))))
+      (fs.createWriteStream output)
+      (path.resolve input))))
 
 (var compile
   (function (input output uri)
@@ -31,7 +33,7 @@
         (var jscode
              (try
               (output.write (ls._compile source uri))
-              (exit)))))
+              exit))))
 
     (input.on "error" exit)
     (output.on "error" exit)))
@@ -42,7 +44,7 @@
       (do
         (process.stdin.resume)
         (process.stdin.setEncoding "utf8")
-        (compile process.stdin process.stdout)
+        (compile process.stdin process.stdout (process.cwd))
         (setTimeout
           (function ()
             (if (= process.stdin.bytesRead 0)
