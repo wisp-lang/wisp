@@ -4,42 +4,57 @@
 (var ls (require "./ls"))
 (var repl (require "./repl"))
 
-(var readFileSyncOrExit
-  (function (file)
-    (try
-      (fs.readFileSync file)
-      (function (err)
-        (console.log (+ "Cannot open file " file))
-        (process.exit 1)))))
+(var exit
+  (function (error)
+    (if error
+      (do
+        (console.log error)
+        (process.exit 1))
+      (process.exit 0))))
 
-(var writeFileSyncOrExit
-  (function (file str)
-    (try
-      (fs.writeFileSync file str)
-      (function (err)
-        (console.log (+ "Cannot write file " file))
-        (process.exit 1)))))
+(var compileFiles
+  (function (input output)
+    (compile
+      (fs.createReadStream input)
+      (fs.createWriteStream output))))
 
 (var compile
-  (function (infile outfile)
-    (var source (readFileSyncOrExit infile))
-    (var out
-      (try
-        (ls._compile source infile)
-        (function (err)
-          (console.log err)
-          (process.exit 1))))
-    (writeFileSyncOrExit outfile out)))
+  (function (input output uri)
+    (var source "")
+    ;; Accumulate text form input until it ends.
+    (input.on "data"
+      (function (chunck)
+        (set source (+ source (chunck.toString)))))
+    ;; Once input ends try to compile & write to output.
+    (input.on "end"
+      (function ()
+        (var jscode
+             (try
+              (output.write (ls._compile source uri))
+              (exit)))))
+
+    (input.on "error" exit)
+    (output.on "error" exit)))
 
 (set exports.run
   (function ()
     (if (= process.argv.length 2)
-      (repl.runrepl)
+      (do
+        (process.stdin.resume)
+        (process.stdin.setEncoding "utf8")
+        (compile process.stdin process.stdout)
+        (setTimeout
+          (function ()
+            (if (= process.stdin.bytesRead 0)
+              (do
+                (process.stdin.removeAllListeners "data")
+                (repl.runrepl)))) 20))
+
       (if (= process.argv.length 3)
         (do
           (var i (get 2 process.argv))
           (var o (i.replace ".ls" ".js"))
           (if (= i o)
             (console.log "Input file must have extension '.ls'")
-            (compile i o)))
-        (compile (get 2 process.argv) (get 3 process.argv))))))
+            (compileFiles i o)))
+        (compileFiles (get 2 process.argv) (get 3 process.argv))))))
