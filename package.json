@@ -28,6 +28,7 @@
     "prepublish": "lispy src/lispy.ls lib/lispy.js && lispy src/repl.ls lib/repl.js && lispy src/node.ls lib/node.js && lispy src/browser.ls lib/browser.js"
   },
   "dependencies": {
-    "underscore": ">=1.0.0"
+    "underscore": ">=1.0.0",
+    "amd-loader": "~0.0.4"
   }
 }
