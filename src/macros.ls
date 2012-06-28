@@ -1,6 +1,12 @@
 ;; List of built in macros for LispyScript. This file is included by
 ;; default by the LispyScript compiler.
 
+(macro define (rest...)
+  (var ~rest...))
+
+(macro lambda (rest...)
+  (function ~rest...))
+
 (macro object? (obj)
   (= (typeof ~obj) "object"))
 
