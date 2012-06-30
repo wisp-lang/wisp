@@ -1,66 +1,85 @@
 ;; List of built in macros for LispyScript. This file is included by
 ;; default by the LispyScript compiler.
 
+
+(macro new (body...)
+  `(js 'new (~body...)))
+
+(macro throw (rest...)
+  `((function () (js 'throw ~@rest...))))
+
+(macro Array (body...)
+  `(js (symbol "[") (symbols-join ', ~body...) (symbol "]")))
+
 (macro define (rest...)
-  (var ~rest...))
+  `(var ~rest...))
 
 (macro lambda (rest...)
-  (function ~rest...))
+  `(function ~rest...))
+
+(macro var (name value)
+  `(js 'var (set ~name ~value)))
+
+(macro set (name value)
+  `(js ~name '= ~value))
 
 (macro set! (rest...)
-  (set ~@rest...))
+  `(set ~@rest...))
+
+(macro get (field object)
+  `(js ~object (symbol "[") ~field (symbol "]")))
 
 (macro object? (obj)
-  (= (typeof ~obj) "object"))
+  `(= (typeof ~obj) "object"))
 
 (macro array? (obj)
-  (= (toString.call ~obj) "[object Array]"))
+  `(= (toString.call ~obj) "[object Array]"))
 
 (macro string? (obj)
-  (= (toString.call ~obj) "[object String]"))
+  `(= (toString.call ~obj) "[object String]"))
 
 (macro number? (obj)
-  (= (toString.call ~obj) "[object Number]"))
+  `(= (toString.call ~obj) "[object Number]"))
 
 (macro boolean? (obj)
-  (= (typeof ~obj) "boolean"))
+  `(= (typeof ~obj) "boolean"))
 
 (macro function? (obj)
-  (= (toString.call ~obj) "[object Function]"))
+  `(= (toString.call ~obj) "[object Function]"))
 
 (macro undefined? (obj)
-  (= (typeof ~obj) "undefined"))
+  `(= (typeof ~obj) "undefined"))
 
 (macro null? (obj)
-  (= ~obj null))
+  `(= ~obj null))
 
 (macro do (rest...)
-  ((function () ~rest...)))
+  `((function (_) ~rest...)))
 
 (macro when (cond rest...)
-  (if ~cond (do ~rest...)))
+  `(if ~cond (do ~rest...)))
 
 (macro unless (cond rest...)
-  (when (! ~cond) (do ~rest...)))
+  `(when (! ~cond) (do ~rest...)))
 
 (macro each (rest...)
-  (Array.prototype.forEach.call ~rest...))
+  `(Array.prototype.forEach.call ~rest...))
 
 (macro map (rest...)
-  (Array.prototype.map.call ~rest...))
+  `(Array.prototype.map.call ~rest...))
 
 (macro filter (rest...)
-  (Array.prototype.filter.call ~rest...))
+  `(Array.prototype.filter.call ~rest...))
 
 (macro some (rest...)
-  (Array.prototype.some.call ~rest...))
+  `(Array.prototype.some.call ~rest...))
 
 (macro every (rest...)
-  (Array.prototype.every.call ~rest...))
+  `(Array.prototype.every.call ~rest...))
 
 (macro reduce (rest...)
-  (Array.prototype.reduce.call ~rest...))
+  `(Array.prototype.reduce.call ~rest...))
 
 (macro template (args rest...)
-  (function ~args
+  `(function ~args
     (str ~rest...)))
