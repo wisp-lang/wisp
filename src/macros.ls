@@ -7,6 +7,9 @@
 (macro lambda (rest...)
   (function ~rest...))
 
+(macro set! (rest...)
+  (set ~@rest...))
+
 (macro object? (obj)
   (= (typeof ~obj) "object"))
 
