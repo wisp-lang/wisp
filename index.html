@@ -44,8 +44,7 @@
     </style>
   </head>
   <body>
-<textarea id="input" name="input">
-;; Hello World! in LispyScript.
+<script type="text/expamles" id="examples">;; Hello World! in LispyScript.
 (console.log "Hello LispyScript!")
 
 ;; A more intricate Hello World!
@@ -142,22 +141,30 @@
   (function (e)
     (console.log (+ "Cannot write file " outfile)
     (process.exit 1))))
-
-</textarea>
-<textarea id="output" name="output"></textarea>
+</script>
+<div id="input" name="input"></div>
+<div id="output" name="output"></div>
     <script>
       function updatePreview(editor) {
-        output.setValue(require('../lib/ls')._compile(editor.getValue()))
+        var code = editor.getValue()
+        localStorage.buffer = code
+        output.setValue(require('../lib/ls')._compile(code))
       }
-      var input = CodeMirror.fromTextArea(document.getElementById("input"), {
+
+      var input = CodeMirror(document.getElementById("input"), {
         lineNumbers: true,
         mode: "scheme",
         theme: "ambiance",
         autofocus: true,
+        fixedGutter: true,
+        matchBrackets: true,
+        value: localStorage.buffer ||
+               document.getElementById("examples").innerHTML,
         onChange: updatePreview
       });
-      var output = CodeMirror.fromTextArea(document.getElementById("output"), {
+      var output = CodeMirror(document.getElementById("output"), {
         lineNumbers: true,
+        fixedGutter: true,
         mode: "javascript",
         theme: "ambiance",
         readOnly: "nocursor"
