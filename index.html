@@ -2,18 +2,21 @@
   <head>
     <meta charset="utf-8">
     <title>LispyScript</title>
-    <script src="http://codemirror.net/lib/codemirror.js"></script>
-    <script src="http://codemirror.net/mode/scheme/scheme.js"></script>
-    <script src="http://codemirror.net/mode/javascript/javascript.js"></script>
-    <link rel="stylesheet" href="http://codemirror.net/lib/codemirror.css">
-    <link rel="stylesheet" href="http://codemirror.net/theme/ambiance.css">
-    <link rel="stylesheet" href="http://codemirror.net/doc/docs.css">
+    <script src=./support/codemirror-compressed.js></script>
+    <!--
+    <script src=./support/codemirror.net/lib/codemirror.js></script>
+    <script src=./support/codemirror.net/mode/scheme/scheme.js></script>
+    <script src=./support/codemirror.net/mode/javascript/javascript.js></script>
+    -->
+    <link rel=stylesheet href=./support/codemirror.css>
+    <link rel=stylesheet href=./support/ambiance.css>
+    <link rel=stylesheet href=./support/docs.css>
 
-    <script data-main=./lib/browser type=text/javascript src=http://requirejs.org/docs/release/2.0.2/minified/require.js></script>
+    <script data-main=./lib/browser type=text/javascript src=./support/require.js></script>
     <script>
       require.config({
         paths: {
-          "underscore": "https://raw.github.com/amdjs/underscore/9e944c2dd3e1c64227a260d1974c44a29c38e962/underscore-min"
+          "underscore": "../support/underscore-min"
         }
       })
     </script>
@@ -44,7 +47,7 @@
     </style>
   </head>
   <body>
-<script type="text/expamles" id="examples">;; Hello World! in LispyScript.
+<script type=text/expamles id=examples>;; Hello World! in LispyScript.
 (console.log "Hello LispyScript!")
 
 ;; A more intricate Hello World!
@@ -153,8 +156,8 @@
 
       var input = CodeMirror(document.getElementById("input"), {
         lineNumbers: true,
-        mode: "scheme",
         autoClearEmptyLines: true,
+        mode: "clojure",
         theme: "ambiance",
         autofocus: true,
         fixedGutter: true,
