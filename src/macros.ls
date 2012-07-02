@@ -8,7 +8,7 @@
   an instance field, the instance expression will be evaluated,
   then the expr. In all cases the value of expression is returned."
   [binding expression]
-  `(js ~binding '= ~expression))
+  `(js* "~{} = ~{}" ~binding ~expression))
 
 (defmacro get
   "Returns the value mapped to key, not-found or nil if key not present."
@@ -27,6 +27,9 @@
 
 (def-macro-alias def var)
 
+(defmacro defn [name params & expressions]
+          `(def ~name (function ~params ~@expressions)))
+
 (defmacro new
   "The args, if any, are evaluated from left to right, and passed to the
   constructor. The constructed object is returned."
@@ -43,11 +46,31 @@
   [& body]
   (js* "[ ~{} ]" (symbols-join ', ~@body)))
 
-(defmacro defoperator [operator]
+(defmacro def-operator [operator]
   `(defmacro ~operator [left right]
      (js* "~{} ~{} ~{}" '(unquote left) ~operator '(unquote right))))
 
-(defoperator ===)
+(def-operator ===)
+(def-operator ==)
+(def-operator !=)
+(def-operator !==)
+(def-operator >)
+(def-operator >=)
+(def-operator <)
+(def-operator <=)
+
+(def-macro-alias === identical?)
+(def-macro-alias === =)
+
+(defmacro ! [expression] (js* "!~{}" ~expression))
+(def-macro-alias ! not)
+
+(defmacro nil? [value]
+  `(== ~value 'null))
+(defmacro true? [value]
+  `(identical? ~value 'true))
+(defmacro false? [value]
+  `(identical? ~value 'false))
 
 (defmacro def-type-predicate [name type]
   `(defmacro ~name [expression]
@@ -93,6 +116,40 @@
 (defmacro reduce [& body]
   `(Array.prototype.reduce.call ~@body))
 
-(defmacro template (params & body)
+(defmacro template [params & body](def-operator -)
   `(function ~params
-    (str ~@body)))
+             (str ~@body)))
+
+(defmacro def-operator [operator]
+  `(defmacro ~operator
+     ([x y] (js* "~{} ~{} ~{}" '(unquote x) ~operator '(unquote y)))
+     ([x & rest] (~operator '(unquote  x) (~operator '(unquote @rest))))))
+
+(def-operator -)
+(def-operator +)
+(def-operator *)
+(def-operator %)
+(def-operator ||)
+(def-operator &&)
+
+(def-macro-alias || or)
+(def-macro-alias && and)
+
+(defmacro dec [x]
+  `(- ~x 1))
+
+(defmacro inc [x]
+  `(+ ~x 1))
+
+(defmacro zero? [x]
+  `(=== ~x 0))
+
+(defmacro pos? [x]
+  `(> ~x 0))
+
+(defmacro neg? [x]
+  `(< ~x 0))
+
+(defmacro lambda
+  ([params & expressions]
+     (js* "function (~{}) { ~{} }" (symbols-join ', ~@params) ~@expressions)))
