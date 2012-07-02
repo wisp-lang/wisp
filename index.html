@@ -49,11 +49,11 @@
   <body>
   <a href="https://github.com/gozala/lispyscript"><img style="z-index: 3; position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
 <script type=text/expamles id=examples>;; Hello World! in LispyScript.
-(console.log "Hello LispyScript!")
+(.log console "Hello LispyScript!")
 
 ;; A more intricate Hello World!
 (if (undefined? window)
-  (console.log "Hello LispyScript!")
+  (.log console "Hello LispyScript!")
   (alert "Hello LispyScript!"))
 
 ; Functions
@@ -67,84 +67,87 @@
 (var square
   (function (x)
     (* x x)))
-(console.log (square 10))
+(.log console (square 10))
 
 ; LispyScript is Javascript!
 
-(Array.prototype.forEach.call [1, 2, 3]
+(Array.prototype.forEach.call (Array 1 2 3)
   (function (elem index list)
-    (console.log elem)))
+    (.log console elem)))
 
-;; You can access object methods and properties using the "." notation.
+;; You can access object methods and properties using the ".-" notation.
 
-(console.log (.greet {greet: "hello"}))
+(.log console (.-greet {greet: "hello"}))
 
 ;; You can also use the 'get' expression to access a property of an object.
 
-(console.log (get "greet" {greet: "hello"}))
-(console.log (get 1 [1, 2, 3]))
+(.log console (get {greet: "hello"} "greet"))
+(.log console (get (Array 1 2 3) 1))
 
 ;; You can 'set' variables too.
 
-(set window.onload (function () (alert "Page Loaded")))
+(set! window.onload (function () (alert "Page Loaded")))
 
 ; Node
 ;; The node server example in LispyScript.
 
-(var http (require "http"))
-(var server
-  (http.createServer
-    (function (request response)
-      (response.writeHead 200 {'Content-Type': 'text/plain'})
-      (response.end "Hello World\n"))))
-(server.listen 1337 "127.0.0.1")
-(console.log "Server running at http://127.0.0.1:1337/")
+(def http (require "http"))
+(def server
+  (.createServer http
+    (function [request response]
+      (.writeHead response 200 { "Content-Type": "text/plain" })
+      (.end response "Hello World\n"))))
+(.listen server 1337 "127.0.0.1")
+(.log console "Server running at http://127.0.0.1:1337/")
 
 ; Macros
 
 ;; You can define a macro.
-(macro array? (obj)
-  (= (toString.call ~obj) "[object Array]"))
+(defmacro array? [expression]
+  `(=== (.call Object.prototype.toString ~expression) "[object Array]"))
 
 ;; Now let us create a Lisp like 'let' macro in LispyScript.
 
-(macro let (names vals rest...)
-  ((function ~names ~rest...) ~@vals))
+(defmacro let (names values & body)
+  ((function ~names ~@body) ~@values))
 
 (let (name email tel) ("John" "john@example.org" "555-555-5555")
-  (console.log name)
-  (console.log email)
-  (console.log tel))
+  (.log console name)
+  (.log console email)
+  (.log console tel))
 
 ;; Conditions
 
 (if (= document.readyState "complete")
-  (console.log "loaded")    ;; true expression
-  (console.log "loading"))  ;; optional false expression
+  (.log console "loaded")    ;; true expression
+  (.log console "loading"))  ;; optional false expression
 
 ;; Do expression
 
 (if (= process.argv.length 2)
   (do
-    (process.stdin.resume)
-    (process.stdin.setEncoding "utf8")
-    (compile process.stdin process.stdout (process.cwd))))
+    (.resume process.stdin)
+    (.setEncoding process.stdin "utf8")
+    (compile
+     process.stdin
+     process.stdout
+     (.cwd process))))
 
 ;; Each macro
 
-(each [1, 2, 3]
+(each (Array 1 2 3)
   (function (elem index list)
-    (console.log elem)))
+    (.log console elem)))
 
 ;; Exception handling
 
 (var fs (require 'fs'))
 (var outfile "text.txt")
 (try
-  (fs.writeFileSync outfile "Hello World")
+  (.writeFileSync fs outfile "Hello World")
   (function (e)
-    (console.log (+ "Cannot write file " outfile)
-    (process.exit 1))))
+    (.log console (+ "Cannot write file " outfile)
+    (.exit process 1))))
 </script>
 <div id="input" name="input"></div>
 <div id="output" name="output"></div>
@@ -170,6 +173,7 @@
       var output = CodeMirror(document.getElementById("output"), {
         lineNumbers: true,
         fixedGutter: true,
+        matchBrackets: true,
         mode: "javascript",
         theme: "ambiance",
         readOnly: true
