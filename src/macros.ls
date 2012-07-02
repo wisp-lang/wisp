@@ -1,85 +1,98 @@
 ;; List of built in macros for LispyScript. This file is included by
 ;; default by the LispyScript compiler.
 
+(defmacro set!
+  "Assignment special form.
+  When the first operand is a field member access form,
+  the assignment is to the corresponding field. If it is
+  an instance field, the instance expression will be evaluated,
+  then the expr. In all cases the value of expression is returned."
+  [binding expression]
+  `(js ~binding '= ~expression))
 
-(macro new (body...)
-  `(js 'new (~body...)))
+(defmacro get
+  "Returns the value mapped to key, not-found or nil if key not present."
+  ([map key] (js* "~{}[~{}]" ~map ~key))
+  ([map key not-found]
+     (js* "~{} in ~{} ? ~{}[~{}] : ~{}" ~key ~map ~map ~key ~not-found)))
 
-(macro throw (rest...)
-  `((function () (js 'throw ~@rest...))))
+(defmacro def-macro-alias [name alias]
+  `(defmacro ~alias '[& body]
+     (~name '(unquote @body))))
 
-(macro Array (body...)
-  `(js (symbol "[") (symbols-join ', ~body...) (symbol "]")))
+(defmacro def
+  "Defines a varible with given initial value or undefined"
+  ([name] `(def ~name 'undefined))
+  ([name value] (js* "var ~{}" (set! ~name ~value))))
 
-(macro define (rest...)
-  `(var ~rest...))
+(def-macro-alias def var)
 
-(macro lambda (rest...)
-  `(function ~rest...))
+(defmacro new
+  "The args, if any, are evaluated from left to right, and passed to the
+  constructor. The constructed object is returned."
+  [& body]
+  (js* "new ~{}" ~body))
 
-(macro var (name value)
-  `(js 'var (set ~name ~value)))
+(defmacro throw
+  "The expression is evaluated and thrown."
+  [expression]
+  `((function [] (js* "throw ~{}" ~expression))))
 
-(macro set (name value)
-  `(js ~name '= ~value))
+(defmacro Array
+  ;; TODO improve it and avoid (symbols-join)
+  [& body]
+  (js* "[ ~{} ]" (symbols-join ', ~@body)))
 
-(macro set! (rest...)
-  `(set ~@rest...))
+(defmacro defoperator [operator]
+  `(defmacro ~operator [left right]
+     (js* "~{} ~{} ~{}" '(unquote left) ~operator '(unquote right))))
 
-(macro get (field object)
-  `(js ~object (symbol "[") ~field (symbol "]")))
+(defoperator ===)
 
-(macro object? (obj)
-  `(= (typeof ~obj) "object"))
+(defmacro def-type-predicate [name type]
+  `(defmacro ~name [expression]
+     (=== (.call Object.prototype.toString '(unquote expression))
+           (js* "'[object ~{}]'" ~type))))
 
-(macro array? (obj)
-  `(= (toString.call ~obj) "[object Array]"))
+(def-type-predicate object? Object)
+(def-type-predicate null? Null)
+(def-type-predicate undefined? Undefined)
+(def-type-predicate array? Array)
+(def-type-predicate string? String)
+(def-type-predicate regexp? Regexp)
+(def-type-predicate date? Date)
+(def-type-predicate number? Number)
+(def-type-predicate boolean? Boolean)
+(def-type-predicate function? Function)
 
-(macro string? (obj)
-  `(= (toString.call ~obj) "[object String]"))
 
-(macro number? (obj)
-  `(= (toString.call ~obj) "[object Number]"))
+(defmacro do (& body)
+  `((function [] ~@body)))
 
-(macro boolean? (obj)
-  `(= (typeof ~obj) "boolean"))
+(defmacro when [condition & body]
+  `(if ~condition (do ~@body)))
 
-(macro function? (obj)
-  `(= (toString.call ~obj) "[object Function]"))
+(defmacro unless [condition & body]
+  `(when (! ~condition) (do ~@body)))
 
-(macro undefined? (obj)
-  `(= (typeof ~obj) "undefined"))
+(defmacro each [& body]
+  `(Array.prototype.forEach.call ~@body))
 
-(macro null? (obj)
-  `(= ~obj null))
+(defmacro map [& body]
+  `(Array.prototype.map.call ~@body))
 
-(macro do (rest...)
-  `((function (_) ~rest...)))
+(defmacro filter [& body]
+  `(Array.prototype.filter.call ~@body))
 
-(macro when (cond rest...)
-  `(if ~cond (do ~rest...)))
+(defmacro some [& body]
+  `(Array.prototype.some.call ~@body))
 
-(macro unless (cond rest...)
-  `(when (! ~cond) (do ~rest...)))
+(defmacro every [& body]
+  `(Array.prototype.every.call ~@body))
 
-(macro each (rest...)
-  `(Array.prototype.forEach.call ~rest...))
+(defmacro reduce [& body]
+  `(Array.prototype.reduce.call ~@body))
 
-(macro map (rest...)
-  `(Array.prototype.map.call ~rest...))
-
-(macro filter (rest...)
-  `(Array.prototype.filter.call ~rest...))
-
-(macro some (rest...)
-  `(Array.prototype.some.call ~rest...))
-
-(macro every (rest...)
-  `(Array.prototype.every.call ~rest...))
-
-(macro reduce (rest...)
-  `(Array.prototype.reduce.call ~rest...))
-
-(macro template (args rest...)
-  `(function ~args
-    (str ~rest...)))
+(defmacro template (params & body)
+  `(function ~params
+    (str ~@body)))
