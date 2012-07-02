@@ -14,8 +14,8 @@ write code in a tree structure.
 
 ## Hello World! in LispyScript.
 
-```lisp
-(console.log "Hello LispyScript!")
+```clojure
+(.log console "Hello LispyScript!")
 ```
 
 A LispyScript program is made up of expressions in parenthesis. The first
@@ -26,7 +26,7 @@ LispyScript.
 
 A more intricate Hello World!
 
-```lisp
+```clojure
 (if (undefined? window)
   (.log console "Hello LispyScript!")
   (alert "Hello LispyScript!"))
@@ -38,13 +38,13 @@ You can have expressions within expressions.
 
 An anonymous function in LispyScript.
 
-```lisp
+```clojure
 (function [x] (* x x))
 ```
 
 The first element in an expression can be an anonymous function.
 
-```lisp
+```clojure
 ((function [x] (* x x)) 2)
 ```
 
@@ -53,7 +53,7 @@ Functions return the last expression evaluated within the function.
 
 You can set a variable name to a function.
 
-```lisp
+```clojure
 (var square
   (function [x]
     (* x x)))
@@ -67,7 +67,7 @@ value to the third.
 
 All Javascript functions, objects and literals can be used in LispyScript.
 
-```lisp
+```clojure
 (.call Array.prototype.forEach (Array 1 2 3)
   (function [elem index list]
     (.log console elem)))
@@ -79,7 +79,7 @@ instead.
 
 You can access object methods and properties using the ".-" notation.
 
-```lisp
+```clojure
 (.log console (.-greet { greet: "hello" }))
 ```
 
@@ -89,20 +89,20 @@ property.
 
 You can also use the 'get' expression to access a property of an object.
 
-```lisp
+```clojure
 (.log console (get "greet" { greet: "hello" }))
 (.log console (get (Array 1 2 3) 1))
 ```
 
 You can 'set' variables too.
 
-```lisp
+```clojure
 (set! window.onload (function [] (alert "Page Loaded")))
 ```
 
 The node server example in LispyScript.
 
-```lisp
+```clojure
 (def http (require "http"))
 (def server
   (.createServer http
@@ -122,7 +122,7 @@ support macros.
 
 You can define a macro.
 
-```lisp
+```clojure
 (defmacro array? [value]
   `(= (.call Object.prototype.toString ~value) "[object Array]"))
 ```
@@ -133,7 +133,7 @@ element, and the fourth element is the template to which the macro will expand.
 
 Now let us create a Lisp like `let` macro in LispyScript:
 
-```lisp
+```clojure
 (defmacro let (names vals & body)
   `((function ~names ~@body) ~@vals))
 
@@ -197,7 +197,7 @@ Note: `=` and `!=` work like `===` and `!==` in Javascript.
 
 Adds up all the strings.
 
-```lisp
+```clojure
 (var title "My Home Page")
 (console.log
   (str "<!DOCTYPE html>
@@ -248,7 +248,7 @@ not work in old browsers. For backwards compatibility use a library like
 
 The above example using underscore.js.
 
-```lisp
+```clojure
 (var _ (require 'underscore'))
 (.each _ (Array 1 2 3)
   (function (elem index list)
@@ -279,7 +279,7 @@ Try takes a set of expressions and evaluates them. The last expression must be
 a function, that will be called in case an exception is thrown. The function is
 called with the error object.
 
-```lisp
+```clojure
 (def fs (require 'fs'))
 (def outfile "text.txt")
 (try
@@ -291,7 +291,7 @@ called with the error object.
 
 ### (template (argument expression) (string expressions) ... )
 
-```lisp
+```clojure
 (var link
   (template [data]
     "<li><a href=" (.href data) ">" (.text data) "</a></li>\n"))
