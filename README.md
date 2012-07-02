@@ -105,9 +105,11 @@ The node server example in LispyScript.
 ```clojure
 (def http (require "http"))
 (def server
-  (.createServer http
+  ;; Note: Conventional dash-dilimited lispy style traslates to
+  ;; convetional camelCase style in JS (P.S. you can use cameCase too).
+  (.create-server http
     (function [request response]
-      (.writeHead response 200 { "Content-Type": "text/plain" })
+      (.write-head response 200 { "Content-Type": "text/plain" })
       (.end response "Hello World\n"))))
 (.listen server 1337 "127.0.0.1")
 (.log console "Server running at http://127.0.0.1:1337/")
@@ -280,7 +282,7 @@ a function, that will be called in case an exception is thrown. The function is
 called with the error object.
 
 ```clojure
-(def fs (require 'fs'))
+(def fs (require "fs"))
 (def outfile "text.txt")
 (try
   (.writeFileSync fs outfile "Hello World")

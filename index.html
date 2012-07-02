@@ -58,44 +58,46 @@
 
 ; Functions
 ;; An anonymous function in LispyScript
-(function (x) (* x x))
+(function [x] (* x x))
 
 ;; The first element in an expression can be an anonymous function.
-((function (x) (* x x)) 2)
+((function [x] (* x x)) 2)
 
 ;; You can set a variable name to a function.
 (var square
-  (function (x)
+  (function [x]
     (* x x)))
 (.log console (square 10))
 
 ; LispyScript is Javascript!
 
 (Array.prototype.forEach.call (Array 1 2 3)
-  (function (elem index list)
+  (function [elem index list]
     (.log console elem)))
 
 ;; You can access object methods and properties using the ".-" notation.
 
-(.log console (.-greet {greet: "hello"}))
+(.log console (.-greet { greet: "hello" }))
 
 ;; You can also use the 'get' expression to access a property of an object.
 
-(.log console (get {greet: "hello"} "greet"))
+(.log console (get { greet: "hello" } "greet"))
 (.log console (get (Array 1 2 3) 1))
 
 ;; You can 'set' variables too.
 
-(set! window.onload (function () (alert "Page Loaded")))
+(set! window.onload (function [] (alert "Page Loaded")))
 
 ; Node
 ;; The node server example in LispyScript.
 
 (def http (require "http"))
 (def server
-  (.createServer http
+  ;; Note: How conventional dash-dilimited lispy style traslates to
+  ;; convetional camelCase style in JS (P.S. you can use cameCase too)
+  (.create-server http
     (function [request response]
-      (.writeHead response 200 { "Content-Type": "text/plain" })
+      (.write-head response 200 { "Content-Type": "text/plain" })
       (.end response "Hello World\n"))))
 (.listen server 1337 "127.0.0.1")
 (.log console "Server running at http://127.0.0.1:1337/")
@@ -118,7 +120,7 @@
 
 ;; Conditions
 
-(if (= document.readyState "complete")
+(if (= document.ready-state "complete")
   (.log console "loaded")    ;; true expression
   (.log console "loading"))  ;; optional false expression
 
@@ -141,10 +143,10 @@
 
 ;; Exception handling
 
-(var fs (require 'fs'))
+(var fs (require "fs"))
 (var outfile "text.txt")
 (try
-  (.writeFileSync fs outfile "Hello World")
+  (.write-file-sync fs outfile "Hello World")
   (function (e)
     (.log console (+ "Cannot write file " outfile)
     (.exit process 1))))
