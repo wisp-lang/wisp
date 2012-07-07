@@ -27,8 +27,15 @@
 
 (def-macro-alias def var)
 
-(defmacro defn [name params & expressions]
-          `(def ~name (function ~params ~@expressions)))
+(defmacro defn
+  ([name params & body]
+     `(def ~name
+        (function ~params ~@body)))
+  ([name doc params & body]
+     `(def ~name
+        (function ~params ~@body))))
+
+(def-macro-alias defn defn-)
 
 (defmacro new
   "The args, if any, are evaluated from left to right, and passed to the
@@ -153,3 +160,7 @@
 (defmacro lambda
   ([params & expressions]
      (js* "function (~{}) { ~{} }" (symbols-join ', ~@params) ~@expressions)))
+
+(defmacro comment
+  "Comments are ignored"
+  [& comments] `(js* ""))
