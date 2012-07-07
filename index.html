@@ -170,8 +170,14 @@
         matchBrackets: true,
         value: localStorage.buffer ||
                document.getElementById("examples").innerHTML,
-        onChange: updatePreview
+        onChange: updatePreview,
+        onCursorActivity: function() {
+          input.setLineClass(hlLine, null, null);
+          hlLine = input.setLineClass(input.getCursor().line, null, "activeline");
+        }
       });
+      var hlLine = input.setLineClass(0, "activeline");
+
       var output = CodeMirror(document.getElementById("output"), {
         lineNumbers: true,
         fixedGutter: true,
