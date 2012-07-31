@@ -191,6 +191,7 @@
 (def-operator -)
 (def-operator +)
 (def-operator *)
+(def-operator /)
 (def-operator %)
 (def-operator ||)
 (def-operator &&)
