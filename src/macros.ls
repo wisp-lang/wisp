@@ -75,7 +75,7 @@
 (defmacro throw
   "The expression is evaluated and thrown."
   [expression]
-  `((function [] (js* "throw ~{}" ~expression))))
+  `((fn-scope (js* "throw ~{}" ~@expression))))
 
 (defmacro try
   ([expression]
