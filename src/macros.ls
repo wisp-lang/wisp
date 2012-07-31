@@ -70,8 +70,10 @@
 
 (defmacro Array
   ;; TODO improve it and avoid (symbols-join)
-  [& body]
-  (js* "[ ~{} ]" (symbols-join ', ~@body)))
+  ([]
+    (js* "[]"))
+  ([& body]
+    (js* "[ ~{} ]" (symbols-join (symbol ", ") ~@body))))
 
 (defmacro def-operator [operator]
   `(defmacro ~operator [left right]
