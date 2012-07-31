@@ -76,6 +76,26 @@
   "The expression is evaluated and thrown."
   [expression]
   `((function [] (js* "throw ~{}" ~expression))))
+
+(defmacro try
+  ([expression]
+   `(try ~expression (catch 'ignore (void))))
+  ([expression catch-clause]
+   `((fn-scope
+      (js* "try {\n  ~{}\n} ~{}" (expressions ~expression) ~catch-clause))))
+  ([expression catch-clause finally-clause]
+   `((fn-scope
+       (js* "try {\n  ~{}\n} ~{} ~{}"
+            (expressions ~expression) ~catch-clause ~finally-clause)))))
+
+(defmacro catch
+  ([type error & body]
+   `(js* "catch (~{}) {\n  ~{}\n}"
+         ~error (expressions ~@body))))
+
+(defmacro finally [& body]
+  `(js* "finally {\n  ~{}\n}" (statements ~@body)))
+
 (defmacro dispatch
  ([body] `(js* "/~{}/" (symbol ~body))))
 
