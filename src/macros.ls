@@ -22,20 +22,33 @@
 
 (defmacro def
   "Defines a varible with given initial value or undefined"
-  ([name] `(def ~name 'undefined))
+  ([name] `(def ~name (void)))
   ([name value] (js* "var ~{}" (set! ~name ~value))))
 
 (def-macro-alias def var)
 
 (defmacro void [] `(js* "void 0"))
 
+
+
+(defmacro expressions
+  ([body] `(js* "return ~{}" ~body))
+  ([first & rest] `(js* "~{};\n~{}" ~first (expressions ~@rest))))
+
+(defmacro fn
+  [params & body]
+  `(js* "function(~{}) {\n  ~{};\n}"
+        (symbols-join (symbol ", ") ~@params)
+        (expressions ~@body)))
+(def-macro-alias fn function)
+(def-macro-alias fn lambda)
 (defmacro defn
   ([name params & body]
      `(def ~name
-        (function ~params ~@body)))
+        (fn ~params ~@body)))
   ([name doc params & body]
      `(def ~name
-        (function ~params ~@body))))
+        (fn ~params ~@body))))
 
 (def-macro-alias defn defn-)
 
@@ -104,7 +117,7 @@
 
 
 (defmacro do (& body)
-  `((function [] ~@body)))
+  `((fn [] ~@body)))
 
 (defmacro when [condition & body]
   `(if ~condition (do ~@body)))
@@ -131,7 +144,7 @@
   `(Array.prototype.reduce.call ~@body))
 
 (defmacro template [params & body](def-operator -)
-  `(function ~params
+  `(fn ~params
              (str ~@body)))
 
 (defmacro def-operator [operator]
@@ -164,9 +177,6 @@
 (defmacro neg? [x]
   `(< ~x 0))
 
-(defmacro lambda
-  ([params & expressions]
-     (js* "function (~{}) { ~{} }" (symbols-join ', ~@params) ~@expressions)))
 
 (defmacro comment
   "Comments are ignored"
