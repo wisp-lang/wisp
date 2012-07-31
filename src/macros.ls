@@ -49,6 +49,8 @@
   "The expression is evaluated and thrown."
   [expression]
   `((function [] (js* "throw ~{}" ~expression))))
+(defmacro dispatch
+ ([body] `(js* "/~{}/" (symbol ~body))))
 
 (defmacro Array
   ;; TODO improve it and avoid (symbols-join)
