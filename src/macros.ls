@@ -30,6 +30,9 @@
 (defmacro void [] `(js* "void 0"))
 
 
+(defmacro statements
+  ([body] `(js* "~{}" ~body))
+  ([first & rest] `(js* "~{};\n~{};" ~first (statements ~@rest))))
 
 (defmacro expressions
   ([body] `(js* "return ~{}" ~body))
@@ -40,6 +43,12 @@
   `(js* "function(~{}) {\n  ~{};\n}"
         (symbols-join (symbol ", ") ~@params)
         (expressions ~@body)))
+
+(defmacro fn-scope
+  [& body]
+  `(js* "function() {\n  ~{};\n}"
+        (statements ~@body)))
+
 (def-macro-alias fn function)
 (def-macro-alias fn lambda)
 (defmacro if
