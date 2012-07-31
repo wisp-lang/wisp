@@ -42,6 +42,11 @@
         (expressions ~@body)))
 (def-macro-alias fn function)
 (def-macro-alias fn lambda)
+(defmacro if
+  ([condition then] `(if ~condition ~then (void)))
+  ([condition then else]
+   `(js* "~{} ?\n  ~{} :\n  ~{}" ~condition ~then ~else)))
+
 (defmacro defn
   ([name params & body]
      `(def ~name
