@@ -39,13 +39,13 @@ You can have expressions within expressions.
 An anonymous function in LispyScript.
 
 ```clojure
-(function [x] (* x x))
+(fn [x] (* x x))
 ```
 
 The first element in an expression can be an anonymous function.
 
 ```clojure
-((function [x] (* x x)) 2)
+((fn [x] (* x x)) 2)
 ```
 
 That was the anonymous function above evaluated immediately with argument 2.
@@ -54,13 +54,13 @@ Functions return the last expression evaluated within the function.
 You can set a variable name to a function.
 
 ```clojure
-(var square
-  (function [x]
+(def square
+  (fn [x]
     (* x x)))
 (.log console (square 10))
 ```
 
-The 'var' expression takes a variable name as the second element and sets its
+The 'def' expression takes a variable name as the second element and sets its
 value to the third.
 
 ## LispyScript is Javascript!
@@ -69,8 +69,8 @@ All Javascript functions, objects and literals can be used in LispyScript.
 
 ```clojure
 (.call Array.prototype.forEach (Array 1 2 3)
-  (function [elem index list]
-    (.log console elem)))
+  (function [item index list]
+    (.log console item)))
 ```
 
 If you noticed we passed a Javascript literal array as the first argument to
@@ -97,7 +97,7 @@ You can also use the 'get' expression to access a property of an object.
 You can 'set' variables too.
 
 ```clojure
-(set! window.onload (function [] (alert "Page Loaded")))
+(set! window.onload (fn [] (alert "Page Loaded")))
 ```
 
 The node server example in LispyScript.
@@ -108,7 +108,7 @@ The node server example in LispyScript.
   ;; Note: Conventional dash-dilimited lispy style traslates to
   ;; convetional camelCase style in JS (P.S. you can use cameCase too).
   (.create-server http
-    (function [request response]
+    (fn [request response]
       (.write-head response 200 { "Content-Type": "text/plain" })
       (.end response "Hello World\n"))))
 (.listen server 1337 "127.0.0.1")
@@ -136,8 +136,8 @@ element, and the fourth element is the template to which the macro will expand.
 Now let us create a Lisp like `let` macro in LispyScript:
 
 ```clojure
-(defmacro let (names vals & body)
-  `((function ~names ~@body) ~@vals))
+(defmacro let (names values & body)
+  `((function ~names ~@body) ~@values))
 
 (let (name email tel) ("John" "john@example.org" "555-555-5555")
   (.log console name)
@@ -244,16 +244,16 @@ not work in old browsers. For backwards compatibility use a library like
 
 ```lips
 (each (Array 1 2 3)
-  (function [elem index list]
+  (fn [elem index list]
     (.log console elem)))
 ```
 
 The above example using underscore.js.
 
 ```clojure
-(var _ (require 'underscore'))
+(def _ (require 'underscore'))
 (.each _ (Array 1 2 3)
-  (function (elem index list)
+  (fn (elem index list)
     (.log console elem)))
 ```
 
@@ -273,9 +273,9 @@ not work in old browsers. For backwards compatibility use a library like
 
 Creates an anonymous function.
 
-### (macro name (arguments expression) (template expression))
+### (defmacro name (arguments expression) (template expression))
 
-### (try (expression1) (expression2) ... (catch function))
+### (try (expression) (catch Error e expression) (finally expression))
 
 Try takes a set of expressions and evaluates them. The last expression must be
 a function, that will be called in case an exception is thrown. The function is
@@ -286,8 +286,8 @@ called with the error object.
 (def outfile "text.txt")
 (try
   (.writeFileSync fs outfile "Hello World")
-  (function [err]
-    (.log console (+ "Cannot write file " outfile)
+  (catch Error e
+    (.log console (+ "Cannot write file " outfile))
     (.exit console 1)))
 ```
 

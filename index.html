@@ -49,6 +49,7 @@
   <body>
   <a href="https://github.com/gozala/lispyscript"><img style="z-index: 3; position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
 <script type=text/expamles id=examples>;; Hello World! in LispyScript.
+;; Hello World! in LispyScript.
 (.log console "Hello LispyScript!")
 
 ;; A more intricate Hello World!
@@ -58,21 +59,21 @@
 
 ; Functions
 ;; An anonymous function in LispyScript
-(function [x] (* x x))
+(fn [x] (* x x))
 
 ;; The first element in an expression can be an anonymous function.
-((function [x] (* x x)) 2)
+((fn [x] (* x x)) 2)
 
 ;; You can set a variable name to a function.
 (var square
-  (function [x]
+  (fn [x]
     (* x x)))
 (.log console (square 10))
 
 ; LispyScript is Javascript!
 
 (Array.prototype.forEach.call (Array 1 2 3)
-  (function [elem index list]
+  (fn [elem index list]
     (.log console elem)))
 
 ;; You can access object methods and properties using the ".-" notation.
@@ -96,7 +97,7 @@
   ;; Note: How conventional dash-dilimited lispy style traslates to
   ;; convetional camelCase style in JS (P.S. you can use cameCase too)
   (.create-server http
-    (function [request response]
+    (fn [request response]
       (.write-head response 200 { "Content-Type": "text/plain" })
       (.end response "Hello World\n"))))
 (.listen server 1337 "127.0.0.1")
@@ -111,7 +112,7 @@
 ;; Now let us create a Lisp like 'let' macro in LispyScript.
 
 (defmacro let (names values & body)
-  ((function ~names ~@body) ~@values))
+  ((fn ~names ~@body) ~@values))
 
 (let (name email tel) ("John" "john@example.org" "555-555-5555")
   (.log console name)
@@ -138,7 +139,7 @@
 ;; Each macro
 
 (each (Array 1 2 3)
-  (function (elem index list)
+  (fn (elem index list)
     (.log console elem)))
 
 ;; Exception handling
@@ -147,9 +148,9 @@
 (var outfile "text.txt")
 (try
   (.write-file-sync fs outfile "Hello World")
-  (function (e)
-    (.log console (+ "Cannot write file " outfile)
-    (.exit process 1))))
+  (catch Error e
+    (.log console (+ "Cannot write file " outfile))
+    (.exit process 1)))
 </script>
 <div id="input" name="input"></div>
 <div id="output" name="output"></div>
