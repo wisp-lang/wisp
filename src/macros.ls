@@ -27,6 +27,8 @@
 
 (def-macro-alias def var)
 
+(defmacro void [] `(js* "void 0"))
+
 (defmacro defn
   ([name params & body]
      `(def ~name
