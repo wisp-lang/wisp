@@ -36,7 +36,7 @@
 
 (defmacro statements*
   ([body] `(js* "~{}" ~body))
-  ([first & rest] `(js* "~{};\n~{};" ~first (statements* ~@rest))))
+  ([first & rest] `(js* "~{};\n~{}" ~first (statements* ~@rest))))
 
 (defmacro group-statements*
   "Expands each expression a JS statement & groups them via `,` delimiter"
