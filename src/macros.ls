@@ -29,6 +29,11 @@
 
 (defmacro void [] `(js* "void 0"))
 
+(defmacro let*
+  [names values body]
+  `((named-fn* lets ~names ~@body)
+    ~@values))
+
 (defmacro statements*
   ([body] `(js* "~{}" ~body))
   ([first & rest] `(js* "~{};\n~{};" ~first (statements* ~@rest))))
