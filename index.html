@@ -151,7 +151,18 @@
   (catch Error e
     (.log console (+ "Cannot write file " outfile))
     (.exit process 1)))
+
+
+;; Recursive loops
+
+
+(loop [i 0 ]
+  (when (< i 5)
+    (.log console i)
+    ; loop i will take this value
+    (recur (inc i))))
 </script>
+
 <div id="input" name="input"></div>
 <div id="output" name="output"></div>
     <script>
