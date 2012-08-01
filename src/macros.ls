@@ -29,14 +29,31 @@
 
 (defmacro void [] `(js* "void 0"))
 
-
 (defmacro statements*
   ([body] `(js* "~{}" ~body))
   ([first & rest] `(js* "~{};\n~{};" ~first (statements* ~@rest))))
 
+(defmacro group-statements*
+  "Expands each expression a JS statement & groups them via `,` delimiter"
+  ([single] `(js* "~{}" ~single))
+  ([first & rest] `(js* "~{},\n~{}" ~first (group-statements* ~@rest))))
+
+(defmacro grouped-statements*
+  "Expands each expression to a JS statement, gropus them via `,` delimiter
+  and wraps group into parentheses"
+  ([single] `(js* "~{}" ~single))
+  ([first & rest] `(js* "(~{},\n ~{})" ~first (group-statements* ~@rest))))
+
 (defmacro expressions*
   ([body] `(js* "return ~{}" ~body))
   ([first & rest] `(js* "~{};\n~{}" ~first (expressions* ~@rest))))
+
+(defmacro named-fn*
+  [name params & body]
+  `(js* "function ~{}(~{}) {\n  ~{};\n}"
+        ~name
+        (symbols-join (symbol ", ") ~@params)
+        (expressions* ~@body)))
 
 (defmacro fn
   [params & body]
@@ -51,6 +68,7 @@
 
 (def-macro-alias fn function)
 (def-macro-alias fn lambda)
+
 (defmacro if
   ([condition then] `(if ~condition ~then (void)))
   ([condition then else]
@@ -218,3 +236,18 @@
 (defmacro comment
   "Comments are ignored"
   [& comments] `(js* ""))
+
+(defmacro while*
+ "Internal special macro for generating while loops"
+ [condition & body]
+ `(js* "while (~{}) {\n  ~{}\n}" ~condition (statements* ~@body)))
+
+(defmacro loop*
+  "Internal special macro for generating tail optimized recursive loops"
+  [names values body]
+  `((named-fn* loop [~@names]
+    (def recur loop)
+    (while* (= recur loop)
+      (set! recur ~@body))
+    recur) ~@values))
+
