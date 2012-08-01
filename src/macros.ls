@@ -133,8 +133,17 @@
     `(js* "[ ~{} ]" (symbols-join (symbol ", ") ~@body))))
 
 (defmacro def-operator [operator]
-  `(defmacro ~operator [left right]
-     (js* "~{} ~{} ~{}" '(unquote left) ~operator '(unquote right))))
+  `(defmacro ~operator
+     ([x y] (js* "(~{} ~{} ~{})" '(unquote x) ~operator '(unquote y)))
+     ([x & rest] (~operator '(unquote  x) (~operator '(unquote @rest))))))
+
+(def-operator -)
+(def-operator +)
+(def-operator *)
+(def-operator /)
+(def-operator %)
+(def-operator ||)
+(def-operator &&)
 
 (def-operator ===)
 (def-operator ==)
@@ -205,19 +214,6 @@
 (defmacro template [params & body](def-operator -)
   `(fn ~params
              (str ~@body)))
-
-(defmacro def-operator [operator]
-  `(defmacro ~operator
-     ([x y] (js* "~{} ~{} ~{}" '(unquote x) ~operator '(unquote y)))
-     ([x & rest] (~operator '(unquote  x) (~operator '(unquote @rest))))))
-
-(def-operator -)
-(def-operator +)
-(def-operator *)
-(def-operator /)
-(def-operator %)
-(def-operator ||)
-(def-operator &&)
 
 (def-macro-alias || or)
 (def-macro-alias && and)
