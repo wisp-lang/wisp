@@ -30,24 +30,24 @@
 (defmacro void [] `(js* "void 0"))
 
 
-(defmacro statements
+(defmacro statements*
   ([body] `(js* "~{}" ~body))
-  ([first & rest] `(js* "~{};\n~{};" ~first (statements ~@rest))))
+  ([first & rest] `(js* "~{};\n~{};" ~first (statements* ~@rest))))
 
-(defmacro expressions
+(defmacro expressions*
   ([body] `(js* "return ~{}" ~body))
-  ([first & rest] `(js* "~{};\n~{}" ~first (expressions ~@rest))))
+  ([first & rest] `(js* "~{};\n~{}" ~first (expressions* ~@rest))))
 
 (defmacro fn
   [params & body]
   `(js* "function(~{}) {\n  ~{};\n}"
         (symbols-join (symbol ", ") ~@params)
-        (expressions ~@body)))
+        (expressions* ~@body)))
 
-(defmacro fn-scope
+(defmacro fn-scope*
   [& body]
   `(js* "function() {\n  ~{};\n}"
-        (statements ~@body)))
+        (statements* ~@body)))
 
 (def-macro-alias fn function)
 (def-macro-alias fn lambda)
@@ -75,28 +75,28 @@
 (defmacro throw
   "The expression is evaluated and thrown."
   [expression]
-  `((fn-scope (js* "throw ~{}" ~@expression))))
+  `((fn-scope* (js* "throw ~{}" ~expression))))
 
 (defmacro try
   ([expression]
    `(try ~expression (catch 'ignore (void))))
   ([expression catch-clause]
-   `((fn-scope
-      (js* "try {\n  ~{}\n} ~{}" (expressions ~expression) ~catch-clause))))
+   `((fn-scope*
+      (js* "try {\n  ~{}\n} ~{}" (expressions* ~expression) ~catch-clause))))
   ([expression catch-clause finally-clause]
-   `((fn-scope
+   `((fn-scope*
        (js* "try {\n  ~{}\n} ~{} ~{}"
-            (expressions ~expression) ~catch-clause ~finally-clause)))))
+            (expressions* ~expression) ~catch-clause ~finally-clause)))))
 
 (defmacro catch
   ([type error & body]
    `(js* "catch (~{}) {\n  ~{}\n}"
-         ~error (expressions ~@body))))
+         ~error (expressions* ~@body))))
 
 (defmacro finally [& body]
-  `(js* "finally {\n  ~{}\n}" (statements ~@body)))
+  `(js* "finally {\n  ~{}\n}" (statements* ~@body)))
 
-(defmacro dispatch
+(defmacro dispatch*
  ([body] `(js* "/~{}/" (symbol ~body))))
 
 (defmacro re-pattern
