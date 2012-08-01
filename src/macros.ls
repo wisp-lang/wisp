@@ -12,9 +12,9 @@
 
 (defmacro get
   "Returns the value mapped to key, not-found or nil if key not present."
-  ([map key] (js* "~{}[~{}]" ~map ~key))
+  ([map key] `(js* "~{}[~{}]" ~map ~key))
   ([map key not-found]
-     (js* "~{} in ~{} ? ~{}[~{}] : ~{}" ~key ~map ~map ~key ~not-found)))
+     `(js* "~{} in ~{} ? ~{}[~{}] : ~{}" ~key ~map ~map ~key ~not-found)))
 
 (defmacro def-macro-alias [name alias]
   `(defmacro ~alias '[& body]
@@ -93,7 +93,7 @@
   "The args, if any, are evaluated from left to right, and passed to the
   constructor. The constructed object is returned."
   [& body]
-  (js* "new ~{}" ~body))
+  `(js* "new ~{}" ~body))
 
 (defmacro throw
   "The expression is evaluated and thrown."
@@ -128,9 +128,9 @@
 (defmacro Array
   ;; TODO improve it and avoid (symbols-join)
   ([]
-    (js* "[]"))
+    `(js* "[]"))
   ([& body]
-    (js* "[ ~{} ]" (symbols-join (symbol ", ") ~@body))))
+    `(js* "[ ~{} ]" (symbols-join (symbol ", ") ~@body))))
 
 (defmacro def-operator [operator]
   `(defmacro ~operator [left right]
@@ -148,7 +148,7 @@
 (def-macro-alias === identical?)
 (def-macro-alias === =)
 
-(defmacro ! [expression] (js* "!~{}" ~expression))
+(defmacro ! [expression] `(js* "!~{}" ~expression))
 (def-macro-alias ! not)
 
 (defmacro nil? [value]
