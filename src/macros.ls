@@ -29,10 +29,18 @@
 
 (defmacro void [] `(js* "void 0"))
 
-(defmacro let*
-  [names values body]
-  `((named-fn* lets ~names ~@body)
-    ~@values))
+(defmacro def-bindings*
+  "Defines bindings"
+  ([name value] `(def ~name ~value))
+  ([name value & bindings]
+   `(statements*
+     (def ~name ~value)
+     (def-bindings* ~@bindings))))
+
+(defmacro let [bindings & body]
+  `((fn []
+      (def-bindings* ~@bindings)
+      ~@body)))
 
 (defmacro statements*
   ([body] `(js* "~{}" ~body))
