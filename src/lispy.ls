@@ -49,11 +49,10 @@
          20))
 
       (if (= process.argv.length 3)
+        (require (.resolve path (get process.argv 2)))
         (compile
          (.create-read-stream fs (get process.argv 2))
+         (if (= (get process.argv 3) "-")
          process.stdout
-         (.resolve path (get process.argv 2)))
-        (compile
-         (.create-read-stream fs (get process.argv 2))
-         (.create-write-stream fs (get process.argv 3))
+         (.create-write-stream fs (get process.argv 3)))
          (.resolve path (get process.argv 2)))))))
