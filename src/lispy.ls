@@ -15,14 +15,6 @@
       (.exit process 1))
     (.exit process 0)))
 
-(defn compile-files
-  "Compiles input file to an output file"
-  [input output]
-  (compile
-   (.create-read-stream fs input)
-   (.create-write-stream fs output)
-   (.resolve path input)))
-
 (defn compile
   "Compiles lispy from input and writes it to output"
   [input output uri]
@@ -57,9 +49,11 @@
          20))
 
       (if (= process.argv.length 3)
-        (let [i (get process.argv 2)
-              o (.replace i ".ls" ".js")]
-          (if (= i o)
-            (.log console "Input file must have extension '.ls'")
-            (compile-files i o)))
-        (compile-files (get process.argv 2) (get process.argv 3))))))
+        (compile
+         (.create-read-stream fs (get process.argv 2))
+         process.stdout
+         (.resolve path (get process.argv 2)))
+        (compile
+         (.create-read-stream fs (get process.argv 2))
+         (.create-write-stream fs (get process.argv 3))
+         (.resolve path (get process.argv 2)))))))
