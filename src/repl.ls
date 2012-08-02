@@ -1,28 +1,33 @@
 ;; A very simple REPL written in LispyScript
 
 (require "./node")
-(var readline (require "readline"))
-(var ls (require "../lib/ls"))
+(def readline (require "readline"))
+(def ls (require "../lib/ls"))
 
-(var prefix "lispy> ")
+(def prefix "lispy> ")
 
-(set exports.runrepl
-  (function ()
-    (var rl (readline.createInterface process.stdin process.stdout))
-    (rl.on 'line'
-      (function (line)
-        (try
-          (var l (ls._compile line))
-          (console.log (eval l))
-          (function (err)
-            (console.log err)))
-        (rl.setPrompt prefix prefix.length)
-        (rl.prompt)))
-    (rl.on 'close'
-      (function ()
-        (console.log "Bye!")
-        (process.exit 0)))
-    (console.log (str prefix 'LispyScript REPL v' ls.version))
-    (rl.setPrompt prefix prefix.length)
-    (rl.prompt)))
+(defn run-repl
+  "Starts lispyscipt repl"
+  []
+  (def rl
+    (.create-interface readline process.stdin process.stdout))
 
+  (.on rl :line
+       (fn [line]
+         (try
+           (.log console (eval (ls._compile line)))
+           (catch Error error (.error console error)))
+
+         (.set-prompt rl prefix prefix.length)
+         (.prompt rl)))
+
+  (.on rl :close
+       (fn []
+        (.log console "Bye!")
+        (.exit process 0)))
+
+  (.log console (str prefix "LispyScript REPL v" ls.version))
+  (.set-prompt rl prefix prefix.length)
+  (.prompt rl))
+
+(set! exports.run-repl run-repl)

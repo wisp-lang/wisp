@@ -1,61 +1,65 @@
-(define (function (require exports module)
+(define (fn [require exports module]
 
-(var ls (require "../lib/ls"))
+(def ls (require "../lib/ls"))
 
-(set exports.eval
-  (function (code url)
-    (eval (ls._compile code url))))
+(set! exports.eval
+      (fn [code url] (eval (ls._compile code url))))
 
 ;; Running code does not provide access to this scope.
-(set exports.run
-  (function (code url)
-    ((Function (ls._compile code url)))))
+(set! exports.run
+      (fn (code url)
+        ((Function (ls._compile code url)))))
 
 ;; If we're not in a browser environment, we're finished with the public API.
 ;; return unless window?
 ;;
 ;; Load a remote script from the current domain via XHR.
-(set exports.load
-  (function (url callback)
-    (var request
+(set! exports.load
+  (fn (url callback)
+    (def request
       (if window.XMLHttpRequest
         (new XMLHttpRequest)
         (new ActiveXObject "Microsoft.XMLHTTP")))
-    (request.open "GET" url true)
-    (if request.overrideMimeType (request.overrideMimeType "text/plain"))
-    (set request.onreadystatechange
-      (function ()
-        (if (= request.readyState 4)
-          (if (|| (= request.status 0) (= request.status 200))
-            (callback (exports.run request.responseText url))
-            (callback "Could not load")))))
-    (request.send null)))
+
+    (.open request :GET url true)
+
+    (if request.override-mime-type
+      (.override-mime-type request "application/lispyscript"))
+
+    (set! request.onreadystatechange
+          (fn []
+            (if (= request.ready-state 4)
+              (if (or (= request.status 0)
+                      (= request.status 200))
+                (callback (exports.run request.response-text url))
+                (callback "Could not load")))))
+
+    (.send request null)))
 
 ;; Activate LispyScript in the browser by having it compile and evaluate
 ;; all script tags with a content-type of `application/lispyscript`.
 ;; This happens on page load.
-(var runScripts
-  (function ()
-    (var scripts
-      (filter
-        (document.getElementsByTagName "script")
-        (function (script) (= script.type "application/lispyscript"))))
+(defn run-scripts
+  "Compiles and exectues all scripts that have type application/lispyscript
+  type"
+  []
+  (def scripts
+    (filter (document.get-elements-by-tag-name :script)
+            (fn [script] (= script.type "application/lispyscript"))))
 
-    (var next
-      (function ()
-        (if scripts.length
-          (do
-            (var script (scripts.shift))
-            (if script.src
-              (exports.load script.src next)
-              (next (exports.run script.innerHTML)))))))
+  (defn next []
+    (if scripts.length
+      (let [script (.shift scripts)]
+        (if script.src
+          (.load exports script.src next)
+          (next (.run exports script.innerHTML))))))
 
-    (next)))
+  (next))
 
 ;; Listen for window load, both in browsers and in IE.
-(if (|| (= document.readyState "complete")
-        (= document.readyState "interactive"))
-  (runScripts)
-  (if window.addEventListener
-    (addEventListener "DOMContentLoaded" runScripts false)
-    (attachEvent "onload" runScripts)))))
+(if (or (= document.ready-state :complete)
+        (= document.ready-state :interactive))
+  (run-scripts)
+  (if window.add-event-listener
+    (.add-event-listener window :DOMContentLoaded run-scripts false)
+    (.attach-event :onload run-scripts)))))

@@ -1,63 +1,65 @@
 ;; The lispy command script
 
 (require "./node")
-(var fs (require "fs"))
-(var path (require "path"))
-(var ls (require "../lib/ls"))
-(var repl (require "./repl"))
+(def fs (require "fs"))
+(def path (require "path"))
+(def ls (require "../lib/ls"))
+(def repl (require "./repl"))
 
-(var exit
-  (function (error)
-    (if error
-      (do
-        (console.log error)
-        (process.exit 1))
-      (process.exit 0))))
+(defn exit
+  "Takes care of exiting node and printing erros if encounted"
+  [error]
+  (if error
+    (do
+      (.log console error)
+      (.exit process 1))
+    (.exit process 0)))
 
-(var compileFiles
-  (function (input output)
-    (compile
-      (fs.createReadStream input)
-      (fs.createWriteStream output)
-      (path.resolve input))))
+(defn compile-files
+  "Compiles input file to an output file"
+  [input output]
+  (compile
+   (.create-read-stream fs input)
+   (.create-write-stream fs output)
+   (.resolve path input)))
 
-(var compile
-  (function (input output uri)
-    (var source "")
-    ;; Accumulate text form input until it ends.
-    (input.on "data"
-      (function (chunck)
-        (set source (+ source (chunck.toString)))))
-    ;; Once input ends try to compile & write to output.
-    (input.on "end"
-      (function ()
-        (var jscode
-             (try
-              (output.write (ls._compile source uri))
-              exit))))
+(defn compile
+  "Compiles lispy from input and writes it to output"
+  [input output uri]
+  (def source "")
+  ;; Accumulate text form input until it ends.
+  (.on input :data
+       (fn [chunck]
+         (set! source (str source (.to-string chunck)))))
 
-    (input.on "error" exit)
-    (output.on "error" exit)))
+  ;; Once input ends try to compile & write to output.
+  (.on input :end
+       (fn []
+         (try (.write output (ls._compile source uri))
+           (catch Error e (exit e)))))
 
-(set exports.run
-  (function ()
+  (.on input :error exit)
+  (.on output :error exit))
+
+(set! exports.run
+  (fn []
     (if (= process.argv.length 2)
       (do
-        (process.stdin.resume)
-        (process.stdin.setEncoding "utf8")
-        (compile process.stdin process.stdout (process.cwd))
+        (.resume process.stdin)
+        (.set-encoding process.stdin :utf8)
+        (compile process.stdin process.stdout (.cwd process))
         (setTimeout
-          (function ()
-            (if (= process.stdin.bytesRead 0)
-              (do
-                (process.stdin.removeAllListeners "data")
-                (repl.runrepl)))) 20))
+         (fn ()
+           (if (= process.stdin.bytes-read 0)
+             (do
+               (.remove-all-listeners process.stdin :data)
+               (.run-repl repl))))
+         20))
 
       (if (= process.argv.length 3)
-        (do
-          (var i (get 2 process.argv))
-          (var o (i.replace ".ls" ".js"))
+        (let [i (get process.argv 2)
+              o (.replace i ".ls" ".js")]
           (if (= i o)
-            (console.log "Input file must have extension '.ls'")
-            (compileFiles i o)))
-        (compileFiles (get 2 process.argv) (get 3 process.argv))))))
+            (.log console "Input file must have extension '.ls'")
+            (compile-files i o)))
+        (compile-files (get process.argv 2) (get process.argv 3))))))

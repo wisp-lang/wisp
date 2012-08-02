@@ -1,18 +1,20 @@
 (require "amd-loader")
-(var fs (require "fs"))
-(var ls (require "../lib/ls"))
+(def fs (require "fs"))
+(def ls (require "../lib/ls"))
 
-(set global.define
-  (function ()
-    (var factory (Array.prototype.slice.call arguments -1))
+(set! global.define
+  (fn []
+    (def factory (.call Array.prototype.slice arguments -1))
     (factory require exports module)))
+
 
 ;; Register `.ls` file extension so that `ls`
 ;; modules can be simply required.
-(set require.extensions[".ls"]
-  (function (module filename)
-    (var code (fs.readFileSync filename "utf8"))
-    (module._compile (ls._compile code filename) filename)))
+(set! (get require.extensions ".ls")
+  (fn [module filename]
+    (def code (.read-file-sync fs filename :utf8))
+    (._compile module (._compile ls code filename) filename)))
 
 ;; Load macros to be included into a compiler.
 (require "../src/macros")
+
