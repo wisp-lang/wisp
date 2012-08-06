@@ -78,13 +78,13 @@
   [name params & body]
   `(js* "function ~{}(~{}) {\n  ~{};\n}"
         ~name
-        (symbols-join (symbol ", ") ~@params)
+        (symbols-join (symbol* ", ") ~@params)
         (expressions* ~@body)))
 
 (defmacro fn
   [params & body]
   `(js* "function(~{}) {\n  ~{};\n}"
-        (symbols-join (symbol ", ") ~@params)
+        (symbols-join (symbol* ", ") ~@params)
         (expressions* ~@body)))
 
 (defmacro fn-scope*
@@ -141,17 +141,17 @@
   `(js* "finally {\n  ~{}\n}" (statements* ~@body)))
 
 (defmacro dispatch*
- ([body] `(js* "/~{}/" (symbol ~body))))
+ ([body] `(js* "/~{}/" (symbol* ~body))))
 
 (defmacro re-pattern
- ([body] `(js* "/~{}/" (symbol ~body))))
+ ([body] `(js* "/~{}/" (symbol* ~body))))
 
 (defmacro Array
   ;; TODO improve it and avoid (symbols-join)
   ([]
     `(js* "[]"))
   ([& body]
-    `(js* "[ ~{} ]" (symbols-join (symbol ", ") ~@body))))
+    `(js* "[ ~{} ]" (symbols-join (symbol* ", ") ~@body))))
 
 (defmacro def-operator [operator]
   `(defmacro ~operator
