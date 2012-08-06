@@ -183,27 +183,38 @@
 
 (defmacro nil? [value]
   `(== ~value 'null))
+(defmacro null? [value]
+  `(= ~value 'null))
+(defmacro undefined? [value]
+  `(= ~value 'undefined))
 (defmacro true? [value]
   `(identical? ~value 'true))
 (defmacro false? [value]
   `(identical? ~value 'false))
+(defmacro object? [value]
+  `(and ~value (type-of? ~value "object")))
+
+(defmacro type-of? [value type]
+  `(= (typeof ~value) ~type))
+
+(defmacro def-typeof-predicate [name type]
+  `(defmacro ~name [expression]
+    (type-of? '(unquote expression) ~type)))
 
 (defmacro def-type-predicate [name type]
   `(defmacro ~name [expression]
      (=== (.call Object.prototype.toString '(unquote expression))
            (js* "'[object ~{}]'" ~type))))
 
-(def-type-predicate object? Object)
-(def-type-predicate null? Null)
-(def-type-predicate undefined? Undefined)
-(def-type-predicate array? Array)
+(def-typeof-predicate boolean? "boolean")
+(def-typeof-predicate function? "function")
+
 (def-type-predicate string? String)
+(def-type-predicate array? Array)
 (def-type-predicate regexp? Regexp)
 (def-type-predicate date? Date)
 (def-type-predicate number? Number)
-(def-type-predicate boolean? Boolean)
-(def-type-predicate function? Function)
-
+(def-type-predicate arguments? Arguments)
 
 (defmacro do (& body)
   `((fn [] ~@body)))
