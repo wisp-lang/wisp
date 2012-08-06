@@ -175,6 +175,10 @@
       var input = CodeMirror(document.getElementById("input"), {
         lineNumbers: true,
         autoClearEmptyLines: true,
+        tabSize: 2,
+        indentWithTabs: false,
+        electricChars: true,
+        autoClearEmptyLines: true,
         mode: "clojure",
         theme: "ambiance",
         autofocus: true,
