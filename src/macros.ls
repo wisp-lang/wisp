@@ -42,9 +42,22 @@
       (def-bindings* ~@bindings)
       ~@body)))
 
+(defmacro invoke-method*
+  ([name target]
+    `(js* "~{}.~{}()" ~target ~name))
+  ([name target & args]
+    `(js* "~{}.~{}(~{})" ~target ~name (group* ~@args))))
+
 (defmacro statements*
   ([body] `(js* "~{}" ~body))
   ([first & rest] `(js* "~{};\n~{}" ~first (statements* ~@rest))))
+
+(defmacro group*
+  "Expands each expression & groups with `,` delimiter"
+  ([] `(js* "" ""))
+  ([expression] `(js* "~{}" ~expression))
+  ([expression & expressions]
+    `(js* "~{}, ~{}" ~expression (group* ~@expressions))))
 
 (defmacro group-statements*
   "Expands each expression a JS statement & groups them via `,` delimiter"
@@ -254,9 +267,9 @@
 (defmacro loop*
   "Internal special macro for generating tail optimized recursive loops"
   [names values body]
-  `((named-fn* loop [~@names]
-    (def recur loop)
-    (while* (= recur loop)
-      (set! recur ~@body))
-    recur) ~@values))
+  `((named-fn* 'loop [~@names]
+    (def recur 'loop)
+    (while* (= 'recur 'loop)
+      (set! 'recur (grouped-statements* ~@body)))
+    'recur) ~@values))
 
