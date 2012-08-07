@@ -1,49 +1,68 @@
+(include "./macros")
 (import (empty? first rest cons list reverse) "../src/list")
 
-(test "list"
-   (let [actual (list 1 2 3 4)]
-     (.equal assert (empty? actual) false
-             "non empty list returns false on empty?")
+(test
+ ("list"
+  (equal? (empty? (list 1 2 3 4)) false
+          "non empty list returns false on empty?")
 
-     (.equal assert (.-length actual) 4
-             "list has expected length")
+  (equal? (.-length (list 1 2 3 4)) 4
+          "list has expected length")
 
-     (.equal assert (first actual) 1
-             "first returns first item in the list")
+  (equal? (first (list 1 2 3 4)) 1
+          "first returns first item in the list")
 
-     (.deep-equal assert (rest actual) (list 2 3 4)
-             "rest returns rest items")
+  (deep-equal? (rest (list 1 2 3 4)) (list 2 3 4)
+               "rest returns rest items")
 
-     (.equal assert (.to-string actual) "(1 2 3 4)"
-             "stringification returs list")
+  (equal? (.to-string (list 1 2 3 4)) "(1 2 3 4)"
+          "stringification returs list")
 
-     (.ok assert (empty? (list))
-                 "list without arguments creates empty list")
+  (assert (empty? (list))
+          "list without arguments creates empty list"))
 
-     ))
 
-(test "cons"
-  (.equal assert
-          (empty? (cons 1 (list)))
-          false
+ ("cons"
+  (equal? (empty? (cons 1 (list))) false
           "cons creates non-empty list")
 
-  (.deep-equal assert
-               (cons 1 (list 2 3))
-               (list 1 2 3)
+  (deep-equal? (cons 1 (list 2 3)) (list 1 2 3)
                "cons returns new list prefixed with first argument"))
 
-(test "reverse"
-  (.deep-equal assert
-               (reverse (list 1 2 3 4))
-               (list 4 3 2 1)
+ ("reverse"
+  (deep-equal? (reverse (list 1 2 3 4)) (list 4 3 2 1)
                "reverse reverses order of items"))
 
-(test "first rest"
-      (.equal assert (empty? (rest (list))) true
-              "rest of the empty list is empty list")
+ ("first rest"
+         (assert (empty? (rest (list)))
+                 "rest of the empty list is empty list")
 
-      (.deep-equal assert
-              (rest (rest (list)))
-              (list)
-              "multiple rests still return empty list"))
+         (deep-equal? (rest (rest (list))) (list)
+                      "multiple rests still return empty list"))
+
+
+ ("list"
+  (equal? (empty? (list 1 2 3 4)) false
+          "non empty list returns false on empty?")
+
+  (equal? (.-length (list 1 2 3 4)) 4
+          "list has expected length")
+
+  (equal? (first (list 1 2 3 4)) 1
+          "first returns first item in the list")
+
+  (deep-equal? (rest (list 1 2 3 4)) (list 2 3 4)
+               "rest returns rest items")
+
+  (equal? (.to-string (list 1 2 3 4)) "(1 2 3 4)"
+          "stringification returs list")
+
+  (assert (empty? (list))
+          "list without arguments creates empty list"))
+
+ ("cons"
+  (equal? (empty? (cons 1 (list))) false
+          "cons creates non-empty list")
+
+  (deep-equal? (cons 1 (list 2 3)) (list 1 2 3)
+               "cons returns new list prefixed with first argument")))
