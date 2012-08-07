@@ -1,33 +1,41 @@
 ;; A very simple REPL written in LispyScript
 
 (require "./node")
-(def readline (require "readline"))
+(def repl (require "repl"))
+(def vm (require "vm"))
 (def ls (require "../lib/ls"))
 
-(def prefix "lispy> ")
+(defn dictionary []
+  (loop [key-values (.call Array.prototype.slice arguments)
+         result {}]
+    (if (.-length key-values)
+      (do
+        (set! (get result (get key-values 0))
+              (get key-values 1))
+        (recur (.slice key-values 2) result))
+      result)))
 
-(defn run-repl
+(defn evaluate [code context file callback]
+  (try
+    (callback
+     null
+     (.run-in-this-context
+      vm
+      ;; Strip out first and last chars since node repl module
+      ;; wraps code passed to eval function '()'.
+      (._compile ls (.substring code 1 (- (.-length code) 2)) file)
+      file))
+    (catch Error error (callback error))))
+
+(defn start
   "Starts lispyscipt repl"
   []
-  (def rl
-    (.create-interface readline process.stdin process.stdout))
+  (.log console (str "LispyScript REPL v" ls.version))
+  (.start repl (dictionary
+                :prompt "lispy> "
+                :ignoreUndefined true
+                :useGlobal true
+                :eval evaluate
+                )))
 
-  (.on rl :line
-       (fn [line]
-         (try
-           (.log console (eval (ls._compile line)))
-           (catch Error error (.error console error)))
-
-         (.set-prompt rl prefix prefix.length)
-         (.prompt rl)))
-
-  (.on rl :close
-       (fn []
-        (.log console "Bye!")
-        (.exit process 0)))
-
-  (.log console (str prefix "LispyScript REPL v" ls.version))
-  (.set-prompt rl prefix prefix.length)
-  (.prompt rl))
-
-(set! exports.run-repl run-repl)
+(set! exports.start start)
