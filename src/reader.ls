@@ -591,9 +591,9 @@
 
 
 (def __tag-table__ 
-  (new Map
-       "uuid" read-uuid
-       "queue" read-queue))
+  (let [result {}]
+    (set! result.uuid read-uuid)
+    (set! result.queue read-queue)))
 
 
 (defn maybe-read-tagged-type
