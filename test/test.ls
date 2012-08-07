@@ -1,4 +1,5 @@
-(import "./macros")
-(set! (get exports "test list") (require "./list"))
+(include "./macros")
 
-(.run (import "test") exports)
+(test-suite
+ "test list" (import "./list")
+ "test reader" (import "./reader"))
