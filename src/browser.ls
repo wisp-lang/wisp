@@ -62,4 +62,4 @@
   (run-scripts)
   (if window.add-event-listener
     (.add-event-listener window :DOMContentLoaded run-scripts false)
-    (.attach-event :onload run-scripts)))))
+    (.attach-event window :onload run-scripts)))))
