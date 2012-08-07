@@ -5,6 +5,7 @@
 (def path (require "path"))
 (def ls (require "../lib/ls"))
 (def repl (require "./repl"))
+(def Module (get (require "module") "Module"))
 
 (defn exit
   "Takes care of exiting node and printing erros if encounted"
@@ -33,6 +34,7 @@
   (.on input :error exit)
   (.on output :error exit))
 
+
 (set! exports.run
   (fn []
     (if (= process.argv.length 2)
@@ -49,7 +51,9 @@
          20))
 
       (if (= process.argv.length 3)
-        (require (.resolve path (get process.argv 2)))
+        ;; Loading module as main one, same way as nodejs does it:
+        ;; https://github.com/joyent/node/blob/master/lib/module.js#L489-493
+        (Module._load (.resolve path (get process.argv 2)) null true)
         (compile
          (.create-read-stream fs (get process.argv 2))
          (if (= (get process.argv 3) "-")
