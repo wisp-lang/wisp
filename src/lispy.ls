@@ -47,7 +47,7 @@
            (if (= process.stdin.bytes-read 0)
              (do
                (.remove-all-listeners process.stdin :data)
-               (.run-repl repl))))
+               (.start repl))))
          20))
 
       (if (= process.argv.length 3)

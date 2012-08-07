@@ -14,7 +14,7 @@
     (def code (.read-file-sync fs filename :utf8))
     (._compile module (._compile ls code filename) filename)))
 
-;; Load macros only after everything else has beig set up.
+;; Load macros only after everything else has being set up.
 (require "../src/macros")
 (require "../src/node-macros")
 

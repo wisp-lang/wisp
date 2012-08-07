@@ -3,7 +3,7 @@
   "description": "A Javascript with macros",
   "keywords": ["javascript", "language", "lispyscript", "compiler", "lisp"],
   "author": "Santosh Rajan",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "licenses": [{
     "type": "MIT",
     "url": "https://raw.github.com/santoshrajan/lispyscript/master/LICENSE"
