@@ -48,6 +48,9 @@
   ([name target & args]
     `(js* "~{}.~{}(~{})" ~target ~name (group* ~@args))))
 
+(defmacro get-property*
+  ([target name] `(js* "~{}.~{}" ~target ~name)))
+
 (defmacro statements*
   ([body] `(js* "~{}" ~body))
   ([first & rest] `(js* "~{};\n~{}" ~first (statements* ~@rest))))
