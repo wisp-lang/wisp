@@ -635,3 +635,4 @@
     (symbol? name) (str "\uFDD0" "'" (.substr name 2))
     :else (str "\uFDD0" "'" name)))
 
+(export read read-from-string)
