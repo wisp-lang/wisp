@@ -90,7 +90,7 @@
 
 ;; Define alias for the clojures alength.
 (defmacro alength [source]
-  `(.-length source))
+  `(.-length ~source))
 
 (declare nil)
 
@@ -228,11 +228,11 @@
       0
       (let [negate (if (identical? "-" (aget groups 1)) -1 1)
             a (cond
-               (aget groups 3) (array (aget groups 3) 10)
-               (aget groups 4) (array (aget groups 4) 16)
-               (aget groups 5) (array (aget groups 5) 8)
-               (aget groups 7) (array (aget groups 7) (parse-int (aget groups 7)))
-               :default (array nil nil))
+               (aget groups 3) (Array (aget groups 3) 10)
+               (aget groups 4) (Array (aget groups 4) 16)
+               (aget groups 5) (Array (aget groups 5) 8)
+               (aget groups 7) (Array (aget groups 7) (parse-int (aget groups 7)))
+               :default (Array nil nil))
             n (aget a 0)
             radix (aget a 1)]
         (if (nil? n)
@@ -252,13 +252,20 @@
   (parse-float s))
 
 (defn- re-matches
-  [re s]
-  (let [matches (.exec re s)]
+  [pattern source]
+  (let [matches (.exec pattern source)]
     (when (and (not (nil? matches))
-               (identical? (aget matches 0) s))
+               (identical? (aget matches 0) source))
       (if (== (alength matches) 1)
         (aget matches 0)
         matches))))
+
+(defn- match-number
+  [s]
+  (cond
+   (re-matches int-pattern s) (match-int s)
+   (re-matches ratio-pattern s) (match-ratio s)
+   (re-matches float-pattern s) (match-float s)))
 
 (defn escape-char-map [c]
   (cond
