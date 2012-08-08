@@ -362,13 +362,13 @@
               (let [mret (macrofn rdr ch)]
                 (recur (if (identical? mret rdr)
                          a
-                         (.concat mret a))))
+                         (.concat a (Array mret)))))
               (do
                 (unread rdr ch)
                 (let [o (read rdr true nil recursive?)]
                   (recur (if (identical? o rdr) 
                            a 
-                           (.concat a o)))))))))))
+                           (.concat a (Array o))))))))))))
 
 ;; data structure readers
 
