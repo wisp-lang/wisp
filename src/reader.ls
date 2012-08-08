@@ -480,12 +480,23 @@
         (keyword (.substring ns 0 (.indexOf ns "/")) name)
         (keyword token)))))
 
+(defn dictionary []
+  (loop [key-values (.call Array.prototype.slice arguments)
+         result {}]
+    (if (.-length key-values)
+      (do
+        (set! (get result (get key-values 0))
+              (get key-values 1))
+        (recur (.slice key-values 2) result))
+      result)))
+
+
 (defn desugar-meta
   [f]
   (cond
-   (symbol? f) (new Map :tag f)
-   (string? f) (new Map :tag f)
-   (keyword? f) (new Map f true)
+   (symbol? f) (dictionary :tag f)
+   (string? f) (dictionary :tag f)
+   (keyword? f) (dictionary f true)
    :else f))
 
 (defn wrapping-reader
@@ -598,10 +609,8 @@
 
 
 (def __tag-table__ 
-  (let [result {}]
-    (set! result.uuid read-uuid)
-    (set! result.queue read-queue)))
-
+  (dictionary :uuid read-uuid
+              :queue read-queue))
 
 (defn maybe-read-tagged-type
   [rdr initch]
