@@ -528,6 +528,19 @@
      :default
       (recur (.concat buffer ch) (read-char reader)))))
 
+(defn read-unquote
+  "Reads unquote form ~form or ~(foo bar)"
+  [reader _]
+  (let [ch (read-char reader)]
+    (if (not ch)
+      (reader-error reader "EOF while reading character")
+      (if (identical? ch "@")
+        (list unquote-splicing (read reader true nil true))
+        (do
+          (unread reader ch)
+          (list unquote (read reader true nil true)))))))
+
+
 (defn special-symbols [t not-found]
   (cond
    (identical? t "nil") nil
@@ -617,7 +630,7 @@
    (identical? c "\@") (wrapping-reader deref)
    (identical? c "\^") read-meta
    (identical? c "\`") not-implemented
-   (identical? c "\~") not-implemented
+   (identical? c "\~") read-unquote
    (identical? c "\(") read-list
    (identical? c "\)") read-unmatched-delimiter
    (identical? c "\[") read-vector
