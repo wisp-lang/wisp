@@ -170,6 +170,43 @@
 
 (declare read macros dispatch-macros)
 
+;;
+(defn Symbol
+  "Symbol type"
+  [name ns]
+  (set! this.name name)
+  (set! this.ns ns)
+  this)
+(set! Symbol.prototype.to-string
+      (fn [] this.name))
+
+
+
+(defn ^boolean symbol? [x]
+  (.prototype-of? Symbol.prototype x))
+
+(defn ^boolean keyword? [x]
+  (and (string? x)
+       (identical? (.char-at x 0) "\uA789")))
+
+(defn symbol
+  "Returns a Symbol with the given namespace and name."
+  [name]
+  (cond
+    (symbol? name) name
+    (keyword? name) (new Symbol (.substr name 1))
+    :else (new Symbol name)))
+
+
+(defn keyword
+  "Returns a Keyword with the given namespace and name. Do not use :
+  in the keyword strings, it will be added automatically."
+  [name]
+  (cond
+    (keyword? name) name
+    (symbol? name) (str "\uA789" (.substr name 1))
+    :else (str "\uA789" name)))
+
 ;; read helpers
 
 ;; TODO: Line numbers
@@ -624,31 +661,8 @@
 
 
 
-(defn ^boolean symbol? [x]
-  (and (string? x)
-       (identical? (.char-at x 0) "\uFDD1")))
-
-(defn ^boolean keyword? [x]
-  (and (string? x)
-       (identical? (.char-at x 0) "\uFDD0")))
 
 
-(defn symbol
-  "Returns a Symbol with the given namespace and name."
-  [name]
-  (cond
-    (symbol? name) name
-    (keyword? name) (str "\uFDD1" "'" (.substr name 2))
-    :else (str "\uFDD1" "'" name)))
 
-
-(defn keyword
-  "Returns a Keyword with the given namespace and name. Do not use :
-  in the keyword strings, it will be added automatically."
-  [name]
-  (cond
-    (keyword? name) name
-    (symbol? name) (str "\uFDD0" "'" (.substr name 2))
-    :else (str "\uFDD0" "'" name)))
 
 (export read read-from-string)
