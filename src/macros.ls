@@ -179,17 +179,17 @@
 (def-operator <=)
 
 (def-macro-alias === identical?)
-(def-macro-alias === =)
+(def-macro-alias == =)
 
 (defmacro ! [expression] `(js* "!~{}" ~expression))
 (def-macro-alias ! not)
 
 (defmacro nil? [value]
-  `(== ~value 'null))
-(defmacro null? [value]
   `(= ~value 'null))
+(defmacro null? [value]
+  `(identical? ~value 'null))
 (defmacro undefined? [value]
-  `(= ~value 'undefined))
+  `(identical? ~value 'undefined))
 (defmacro true? [value]
   `(identical? ~value 'true))
 (defmacro false? [value]
@@ -198,7 +198,7 @@
   `(and ~value (type-of? ~value "object")))
 
 (defmacro type-of? [value type]
-  `(= (typeof ~value) ~type))
+  `(identical? (typeof ~value) ~type))
 
 (defmacro def-typeof-predicate [name type]
   `(defmacro ~name [expression]
@@ -206,7 +206,7 @@
 
 (defmacro def-type-predicate [name type]
   `(defmacro ~name [expression]
-     (=== (.call Object.prototype.toString '(unquote expression))
+     (identical? (.call Object.prototype.toString '(unquote expression))
            (js* "'[object ~{}]'" ~type))))
 
 (def-typeof-predicate boolean? "boolean")
@@ -260,7 +260,7 @@
   `(+ ~x 1))
 
 (defmacro zero? [x]
-  `(=== ~x 0))
+  `(identical? ~x 0))
 
 (defmacro pos? [x]
   `(> ~x 0))
@@ -283,7 +283,7 @@
   [names values body]
   `((named-fn* 'loop [~@names]
     (def recur 'loop)
-    (while* (= 'recur 'loop)
+    (while* (identical? 'recur 'loop)
       (set! 'recur (grouped-statements* ~@body)))
     'recur) ~@values))
 
