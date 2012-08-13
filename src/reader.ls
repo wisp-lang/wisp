@@ -217,6 +217,11 @@
     (symbol? name) (str "\uA789" (.substr name 1))
     :else (str "\uA789" name)))
 
+(def unquote (symbol "unquote"))
+(def unquote-splicing (symbol "unquote-splicing"))
+(def quote (symbol "quote"))
+(def deref (symbol "deref"))
+
 ;; read helpers
 
 ;; TODO: Line numbers
@@ -575,8 +580,8 @@
    (identical? c "\"") read-string
    (identical? c "\:") read-keyword
    (identical? c "\;") not-implemented ;; never hit this
-   (identical? c "\'") (wrapping-reader :quote)
-   (identical? c "\@") (wrapping-reader :deref)
+   (identical? c "\'") (wrapping-reader quote)
+   (identical? c "\@") (wrapping-reader deref)
    (identical? c "\^") read-meta
    (identical? c "\`") not-implemented
    (identical? c "\~") not-implemented
@@ -660,7 +665,15 @@
 
 
 
+(defn ^boolean unquote?
+  "Returns true if it's unquote form: ~foo"
+  [form]
+  (and (list? form) (identical? (first form) unquote)))
 
+(defn ^boolean unquote-splicing?
+  "Returns true if it's unquote-splicing form: ~@foo"
+  [form]
+  (and (list? form) (identical? (first form) unquote-splicing)))
 
 
 
