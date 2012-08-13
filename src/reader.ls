@@ -602,7 +602,7 @@
 (defn read-meta
   [rdr _]
   (let [m (desugar-meta (read rdr true nil true))]
-    (if (not (map? m))
+    (if (not (object? m))
       (reader-error rdr "Metadata must be Symbol, Keyword, String or Map"))
     (let [o (read rdr true nil true)]
       (if (object? o)
