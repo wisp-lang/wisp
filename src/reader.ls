@@ -202,6 +202,17 @@
         (recur (.slice key-values 2) result))
       result)))
 
+(defn with-meta
+  "Returns identical value with given metadata associated to it."
+  [value metadata]
+  (set! value.metadata metadata)
+  value)
+
+(defn meta
+  "Returns the metadata of the given value or nil if there is no metadata."
+  [value]
+  (if (object? value) (.-metadata value)))
+
 ;;
 (defn Symbol
   "Symbol type"
