@@ -722,5 +722,10 @@
   (and (list? form) (identical? (first form) unquote-splicing)))
 
 
+(export read read-from-string
+        symbol symbol?
+        keyword keyword?
+        quote deref
+        unquote unquote?
+        unquote-splicing unquote-splicing?)
 
-(export read read-from-string)
