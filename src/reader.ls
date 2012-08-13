@@ -170,6 +170,28 @@
 
 (declare read macros dispatch-macros)
 
+;; STD functions
+
+(defn merge
+  "Returns a dictionary that consists of the rest of the maps conj-ed onto
+  the first. If a key occurs in more than one map, the mapping from
+  the latter (left-to-right) will be the mapping in the result."
+  []
+  (Object.create
+   Object.prototype
+   (reduce
+    arguments
+    (fn [descriptor dictionary]
+      (if (object? dictionary)
+      	(each
+       	(Object.keys dictionary)
+         (fn [name]
+           (set!
+            (get descriptor name)
+            (Object.get-own-property-descriptor dictionary name)))))
+      descriptor)
+    (Object.create Object.prototype))))
+
 (defn dictionary []
   (loop [key-values (.call Array.prototype.slice arguments)
          result {}]
