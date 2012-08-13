@@ -409,11 +409,11 @@
 (defn read-map
   [rdr _]
   (let [l (read-delimited-list "}" rdr true)]
-    (if (odd? (count l))
-      (reader-error 
-       rdr 
+    (if (odd? (.-length l))
+      (reader-error
+       rdr
        "Map literal must contain an even number of forms"))
-    (apply hash-map l)))
+    (apply dictionary l)))
 
 (defn read-number
   [reader initch]
