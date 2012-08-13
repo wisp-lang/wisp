@@ -16,7 +16,7 @@
                list this]
           (if (empty? list)
             (str "(" (.substr result 1) ")")
-            (recur 
+            (recur
              (str result " " (first list))
              (rest list))))))
 
@@ -454,8 +454,8 @@
               (do
                 (unread rdr ch)
                 (let [o (read rdr true nil recursive?)]
-                  (recur (if (identical? o rdr) 
-                           a 
+                  (recur (if (identical? o rdr)
+                           a
                            (.concat a (Array o))))))))))))
 
 ;; data structure readers
@@ -476,8 +476,8 @@
     (if dm
       (dm rdr _)
       (let [obj (maybe-read-tagged-type rdr ch)]
-        (if obj 
-          obj 
+        (if obj
+          obj
           (reader-error rdr "No dispatch macro for " ch))))))
 
 (defn read-unmatched-delimiter
@@ -568,7 +568,7 @@
         token (aget a 0)
         ns (aget a 1)
         name (aget a 2)]
-    (if (or 
+    (if (or
          (and (not (undefined? ns))
               (identical? (.substring ns
                                       (- (.-length ns) 2)
@@ -662,12 +662,12 @@
   (loop []
     (let [ch (read-char reader)]
       (cond
-       (nil? ch) (if eof-is-error 
+       (nil? ch) (if eof-is-error
                    (reader-error reader "EOF") sentinel)
        (whitespace? ch) (recur)
-       (comment-prefix? ch) (read (read-comment reader ch) 
-                             eof-is-error 
-                             sentinel 
+       (comment-prefix? ch) (read (read-comment reader ch)
+                             eof-is-error
+                             sentinel
                              is-recursive)
        :else (let [f (macros ch)
                    res (cond
@@ -698,7 +698,7 @@
     (reader-error nil "Queue literal expects a vector for its elements.")))
 
 
-(def __tag-table__ 
+(def __tag-table__
   (dictionary :uuid read-uuid
               :queue read-queue))
 
