@@ -170,6 +170,16 @@
 
 (declare read macros dispatch-macros)
 
+(defn dictionary []
+  (loop [key-values (.call Array.prototype.slice arguments)
+         result {}]
+    (if (.-length key-values)
+      (do
+        (set! (get result (get key-values 0))
+              (get key-values 1))
+        (recur (.slice key-values 2) result))
+      result)))
+
 ;;
 (defn Symbol
   "Symbol type"
@@ -516,17 +526,6 @@
       (if (and (not (nil? ns)) (> (.-length ns) 0))
         (keyword (.substring ns 0 (.indexOf ns "/")) name)
         (keyword token)))))
-
-(defn dictionary []
-  (loop [key-values (.call Array.prototype.slice arguments)
-         result {}]
-    (if (.-length key-values)
-      (do
-        (set! (get result (get key-values 0))
-              (get key-values 1))
-        (recur (.slice key-values 2) result))
-      result)))
-
 
 (defn desugar-meta
   [f]
