@@ -92,6 +92,9 @@
 (defmacro alength [source]
   `(.-length ~source))
 
+(defn ^boolean odd? [n]
+  (identical? (% n 2) 1))
+
 (declare nil)
 
 (defn PushbackReader
