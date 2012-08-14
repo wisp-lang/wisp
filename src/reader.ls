@@ -619,11 +619,13 @@
   [rdr _]
   (let [m (desugar-meta (read rdr true nil true))]
     (if (not (object? m))
-      (reader-error rdr "Metadata must be Symbol, Keyword, String or Map"))
+      (reader-error
+       rdr "Metadata must be Symbol, Keyword, String or Map"))
     (let [o (read rdr true nil true)]
       (if (object? o)
         (with-meta o (merge (meta o) m))
-        (reader-error rdr "Metadata can only be applied to IWithMetas")))))
+        (reader-error
+         rdr "Metadata can only be applied to IWithMetas")))))
 
 (defn read-set
   [rdr _]
@@ -706,7 +708,8 @@
   [uuid]
   (if (string? uuid)
     (new UUID uuid)
-    (reader-error nil "UUID literal expects a string as its representation.")))
+    (reader-error
+     nil "UUID literal expects a string as its representation.")))
 
 (defn ^:private read-queue
   [items]
@@ -729,7 +732,6 @@
       (reader-error rdr
                     "Could not find tag parser for " (name tag)
                     " in " (pr-str (keys __tag-table__))))))
-
 
 
 
