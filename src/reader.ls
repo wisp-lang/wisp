@@ -224,8 +224,9 @@
   (set! this.ns ns)
   this)
 (set! Symbol.prototype.to-string
-      (fn [] this.name))
-
+      (fn [] (if (string? this.ns)
+               (.concat this.ns "/" this.name)
+               this.name)))
 
 
 (defn ^boolean symbol? [x]
@@ -237,23 +238,25 @@
 
 (defn symbol
   "Returns a Symbol with the given namespace and name."
-  [name]
+  [ns name]
   (cond
-    (symbol? name) name
-    (keyword? name) (new Symbol (.substr name 1))
-    :else (new Symbol name)))
-
+    (symbol? ns) ns
+    (keyword? ns) (new Symbol (.substr ns 1))
+    :else (new Symbol ns name)))
 
 (defn keyword
   "Returns a Keyword with the given namespace and name. Do not use :
   in the keyword strings, it will be added automatically."
-  [name]
+  [ns name]
   (cond
-    (keyword? name) name
-    (symbol? name) (str "\uA789" (.substr name 1))
-    :else (str "\uA789" name)))
+   (keyword? ns) ns
+   (symbol? ns) (.concat "\uA789" ns)
+   :else (if (nil? name)
+           (.concat "\uA789" ns)
+           (.concat "\uA789" ns "/" name))))
 
 (def unquote (symbol "unquote"))
+
 (def unquote-splicing (symbol "unquote-splicing"))
 (def quote (symbol "quote"))
 (def deref (symbol "deref"))
@@ -560,9 +563,8 @@
   [reader initch]
   (let [token (read-token reader initch)]
     (if (>= (.index-of token "/") 0)
-      (symbol (subs token 0 (.index-of token "/"))
-              (subs token (inc (.index-of token "/"))
-                    (.-length token)))
+      (symbol (.substr token 0 (.index-of token "/"))
+              (.substr token (inc (.index-of token "/")) (.-length token)))
       (special-symbols token (symbol token)))))
 
 (defn read-keyword
