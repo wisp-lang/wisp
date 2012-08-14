@@ -590,8 +590,8 @@
 (defn desugar-meta
   [f]
   (cond
-   (symbol? f) (dictionary :tag f)
-   (string? f) (dictionary :tag f)
+   (symbol? f) (dictionary (keyword "tag") f)
+   (string? f) (dictionary (keyword "tag") f)
    (keyword? f) (dictionary f true)
    :else f))
 
@@ -733,9 +733,9 @@
 
 
 (export read read-from-string
+        meta dictionary
         symbol symbol?
         keyword keyword?
         quote deref
         unquote unquote?
         unquote-splicing unquote-splicing?)
-

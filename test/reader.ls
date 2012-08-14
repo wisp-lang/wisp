@@ -1,6 +1,6 @@
 (include "./macros")
 (import (read-from-string list symbol quote deref
-         keyword unquote unquote-splicing) "../src/reader")
+         keyword unquote unquote-splicing meta dictionary) "../src/reader")
 (import (list) "../src/list")
 
 (def read-string read-from-string)
@@ -91,6 +91,9 @@
     (deep-equal? (symbol "goodbye") (read-string "goodbye") "goodbye -> goodbye")
     (deep-equal? (list (symbol "set") 1 2 3) (read-string "#{1 2 3}")
                  "#{1 2 3} -> (set 1 2 3)")
+    (deep-equal? (dictionary (keyword "tag") (symbol "String"))
+                 (meta (read-string "^String {:a 1}"))
+                 "(meta ^String {:a 1}) -> {:tag String}")
 
       )
 
