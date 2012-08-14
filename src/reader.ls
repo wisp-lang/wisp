@@ -255,6 +255,15 @@
            (.concat "\uA789" ns)
            (.concat "\uA789" ns "/" name))))
 
+(defn name
+  "Returns the name String of a string, symbol or keyword."
+  [value]
+  (cond (string? value) value
+        (symbol? value) (.-name value)
+        (keyword? value) (if (.index-of value "/")
+                           (.substr value (.index-of "/"))
+                           (.substr value 1))))
+
 (def unquote (symbol "unquote"))
 
 (def unquote-splicing (symbol "unquote-splicing"))
