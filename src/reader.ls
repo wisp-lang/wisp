@@ -707,7 +707,7 @@
 (defn ^:private read-uuid
   [uuid]
   (if (string? uuid)
-    (new UUID uuid)
+    (list (symbol "new") (symbol "UUID") uuid)
     (reader-error
      nil "UUID literal expects a string as its representation.")))
 

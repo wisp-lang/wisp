@@ -126,7 +126,9 @@
                  (read-string "#queue [1]")
                  "#queue [1] -> (new PersistentQueue [1])")
 
-      )
-
-
-  )
+    (deep-equal? (list (symbol "new") (symbol "UUID")
+                       "550e8400-e29b-41d4-a716-446655440000")
+                 (read-string "#uuid \"550e8400-e29b-41d4-a716-446655440000\"")
+                 (str "#uuid \"550e8400-e29b-41d4-a716-446655440000\""
+                      " -> "
+                      "(new UUID \"550e8400-e29b-41d4-a716-446655440000\")"))))
