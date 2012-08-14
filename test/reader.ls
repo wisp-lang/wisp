@@ -94,6 +94,13 @@
     (deep-equal? (dictionary (keyword "tag") (symbol "String"))
                  (meta (read-string "^String {:a 1}"))
                  "(meta ^String {:a 1}) -> {:tag String}")
+    (deep-equal? (list (symbol "new") (symbol "PersistentQueue") (array))
+                 (read-string "#queue []")
+                 "#queue [] -> (new PersistentQueue [])")
+
+    (deep-equal? (list (symbol "new") (symbol "PersistentQueue") (array 1))
+                 (read-string "#queue [1]")
+                 "#queue [1] -> (new PersistentQueue [1])")
 
       )
 

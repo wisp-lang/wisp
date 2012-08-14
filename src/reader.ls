@@ -87,6 +87,7 @@
 ;; Define alias that is being used by clojure to
 ;; returns the value at the given index.
 (def-macro-alias get aget)
+(def-macro-alias array? vector?)
 
 ;; Define alias for the clojures alength.
 (defmacro alength [source]
@@ -708,10 +709,11 @@
     (reader-error nil "UUID literal expects a string as its representation.")))
 
 (defn ^:private read-queue
-  [elems]
-  (if (vector? elems)
-    (new PersistentQueue elems)
-    (reader-error nil "Queue literal expects a vector for its elements.")))
+  [items]
+  (if (vector? items)
+    (list (symbol "new") (symbol  "PersistentQueue") items)
+    (reader-error
+     nil "Queue literal expects a vector for its elements.")))
 
 
 (def __tag-table__
