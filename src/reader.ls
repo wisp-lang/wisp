@@ -720,8 +720,9 @@
 
 (defn maybe-read-tagged-type
   [rdr initch]
-  (let [tag (read-symbol rdr initch)]
-    (if-let [pfn (get __tag-table__ (name tag))]
+  (let [tag (read-symbol rdr initch)
+        pfn (get __tag-table__ (name tag))]
+    (if pfn
       (pfn (read rdr true nil false))
       (reader-error rdr
                     "Could not find tag parser for " (name tag)
