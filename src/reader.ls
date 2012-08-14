@@ -258,6 +258,10 @@
 (def quote (symbol "quote"))
 (def deref (symbol "deref"))
 
+;; sets are not part of standard library but implementations can be provided
+;; if necessary.
+(def set (symbol "set"))
+
 ;; read helpers
 
 ;; TODO: Line numbers
@@ -611,7 +615,7 @@
 
 (defn read-set
   [rdr _]
-  (set (read-delimited-list "}" rdr true)))
+  (apply list (.concat (Array set) (read-delimited-list "}" rdr true))))
 
 (defn read-regex
   [rdr ch]

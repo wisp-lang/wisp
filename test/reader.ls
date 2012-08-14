@@ -89,6 +89,8 @@
     (assert (= "foo" (read-string "\"foo\"")) "\"foo\" -> \"foo\"")
     (assert (= (keyword "hello") (read-string ":hello")) ":hello -> :hello")
     (deep-equal? (symbol "goodbye") (read-string "goodbye") "goodbye -> goodbye")
+    (deep-equal? (list (symbol "set") 1 2 3) (read-string "#{1 2 3}")
+                 "#{1 2 3} -> (set 1 2 3)")
 
       )
 
