@@ -52,11 +52,11 @@
 (defn reverse
   "Reverse order of items in the list"
   [source]
-  (loop [items (Array)
+  (loop [items (array)
          source source]
     (if (empty? source)
       (.apply list list items)
-      (recur (.concat (Array (first source)) items)
+      (recur (.concat (array (first source)) items)
              (rest source)))))
 
 
@@ -323,11 +323,11 @@
       0
       (let [negate (if (identical? "-" (aget groups 1)) -1 1)
             a (cond
-               (aget groups 3) (Array (aget groups 3) 10)
-               (aget groups 4) (Array (aget groups 4) 16)
-               (aget groups 5) (Array (aget groups 5) 8)
-               (aget groups 7) (Array (aget groups 7) (parse-int (aget groups 7)))
-               :default (Array nil nil))
+               (aget groups 3) (array (aget groups 3) 10)
+               (aget groups 4) (array (aget groups 4) 16)
+               (aget groups 5) (array (aget groups 5) 8)
+               (aget groups 7) (array (aget groups 7) (parse-int (aget groups 7)))
+               :default (array nil nil))
             n (aget a 0)
             radix (aget a 1)]
         (if (nil? n)
@@ -447,7 +447,7 @@
 (defn read-delimited-list
   "Reads out delimited list"
   [delim rdr recursive?]
-    (loop [a (Array)]
+    (loop [a (array)]
       (let [ch (read-past whitespace? rdr)]
         (if (not ch) (reader-error rdr "EOF"))
         (if (identical? delim ch)
@@ -457,13 +457,13 @@
               (let [mret (macrofn rdr ch)]
                 (recur (if (identical? mret rdr)
                          a
-                         (.concat a (Array mret)))))
+                         (.concat a (array mret)))))
               (do
                 (unread rdr ch)
                 (let [o (read rdr true nil recursive?)]
                   (recur (if (identical? o rdr)
                            a
-                           (.concat a (Array o))))))))))))
+                           (.concat a (array o))))))))))))
 
 ;; data structure readers
 
@@ -617,7 +617,8 @@
 
 (defn read-set
   [rdr _]
-  (apply list (.concat (Array set) (read-delimited-list "}" rdr true))))
+  (apply list (.concat (array set)
+                       (read-delimited-list "}" rdr true))))
 
 (defn read-regex
   [rdr ch]

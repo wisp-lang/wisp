@@ -149,10 +149,12 @@
 (defmacro re-pattern
  ([body] `(js* "/~{}/" (symbol* ~body))))
 
-(defmacro Array
+(defmacro array
   ;; TODO improve it and avoid (symbols-join)
   ([]
-    `(js* "[]"))
+     `(js* "[]"))
+  ([item]
+     `(js* "[ ~{} ]" ~item))
   ([& body]
     `(js* "[ ~{} ]" (symbols-join (symbol* ", ") ~@body))))
 
@@ -286,4 +288,3 @@
     (while* (identical? 'recur 'loop)
       (set! 'recur (grouped-statements* ~@body)))
     'recur) ~@values))
-

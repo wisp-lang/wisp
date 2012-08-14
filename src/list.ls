@@ -14,7 +14,7 @@
                list this]
           (if (empty? list)
             (str "(" (.substr result 1) ")")
-            (recur 
+            (recur
              (str result " " (first list))
              (rest list))))))
 
@@ -50,11 +50,11 @@
 (defn reverse
   "Reverse order of items in the list"
   [source]
-  (loop [items (Array)
+  (loop [items (array)
          source source]
     (if (empty? source)
       (.apply list list items)
-      (recur (.concat (Array (first source)) items)
+      (recur (.concat (array (first source)) items)
              (rest source)))))
 
 ;; Export symbols

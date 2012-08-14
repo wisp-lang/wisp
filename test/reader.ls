@@ -40,7 +40,7 @@
   ("read vector"
     (deep-equal?
       (read-string "(foo [bar :baz 2])")
-      (list (symbol "foo") (Array (symbol "bar") (keyword "baz") 2))
+      (list (symbol "foo") (array (symbol "bar") (keyword "baz") 2))
       "(foo [bar :baz 2]) -> (foo [bar :baz 2])"))
 
   ("read special symbols"
@@ -85,7 +85,7 @@
     (assert (= -1 (read-string "-1")) "-1 -> -1")
 
     ;(assert (= (parse-float "-1.5") (read-string "-1.5")))
-    (deep-equal? (Array 3 4) (read-string "[3 4]") "[3 4] -> [3 4]")
+    (deep-equal? (array 3 4) (read-string "[3 4]") "[3 4] -> [3 4]")
     (assert (= "foo" (read-string "\"foo\"")) "\"foo\" -> \"foo\"")
     (assert (= (keyword "hello") (read-string ":hello")) ":hello -> :hello")
     (deep-equal? (symbol "goodbye") (read-string "goodbye") "goodbye -> goodbye")
