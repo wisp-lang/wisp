@@ -374,13 +374,13 @@
 
 (defn escape-char-map [c]
   (cond
-   (identical? c \t) \t
-   (identical? c \r) \r
-   (identical? c \n) \n
+   (identical? c \t) "\t"
+   (identical? c \r) "\r"
+   (identical? c \n) "\n"
    (identical? c \\) \\
    (identical? c "\"") "\""
-   (identical? c \b) \b
-   (identical? c \f) \f
+   (identical? c \b) "\b"
+   (identical? c \f) "\f"
    :else nil))
 
 ;; unicode
