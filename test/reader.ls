@@ -118,6 +118,9 @@
     (assert (= false (read-string "false")) "false -> false")
     (assert (= "string" (read-string "\"string\"")) "\"string\" -> \"string\"")
 
+    (assert (= "escape chars \t \r \n \\ \" \b \f"
+               (read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\"")))
+
     (deep-equal? (list (symbol "new") (symbol "PersistentQueue") (array))
                  (read-string "#queue []")
                  "#queue [] -> (new PersistentQueue [])")
