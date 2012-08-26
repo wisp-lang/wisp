@@ -57,7 +57,7 @@
 
   ("read strings"
     (deep-equal?
-      (read-string "(\"hello world\" \"hi \\\n there\")")
+      (read-string "(\"hello world\" \"hi \\n there\")")
       (list "hello world" "hi \n there")
       "strings are read precisely"))
 
