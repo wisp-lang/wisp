@@ -265,9 +265,10 @@
                            (.substr value (.index-of "/"))
                            (.substr value 1))))
 
+;; Symbols
 (def unquote (symbol "unquote"))
-
 (def unquote-splicing (symbol "unquote-splicing"))
+(def syntax-quote (symbol "syntax-quote"))
 (def quote (symbol "quote"))
 (def deref (symbol "deref"))
 
@@ -651,7 +652,7 @@
    (identical? c "\'") (wrapping-reader quote)
    (identical? c "\@") (wrapping-reader deref)
    (identical? c "\^") read-meta
-   (identical? c "\`") not-implemented
+   (identical? c "\`") (wrapping-reader syntax-quote)
    (identical? c "\~") read-unquote
    (identical? c "\(") read-list
    (identical? c "\)") read-unmatched-delimiter
