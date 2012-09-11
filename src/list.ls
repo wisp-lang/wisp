@@ -18,6 +18,11 @@
              (str result " " (first list))
              (rest list))))))
 
+(defn list?
+  "Returns true if list"
+  [value]
+  (.prototype-of? List.prototype value))
+
 (defn empty?
   "Returns true if list is empty"
   [list]
@@ -28,8 +33,18 @@
   [list]
   (.-head list))
 
+(defn second
+  "Returns second item of the list"
+  [list]
+  (first (rest list)))
+
+(defn third
+  "Returns third item of the list"
+  [list]
+  (first (rest (rest list))))
+
 (defn rest
-  "Returns list of all items excepti first one"
+  "Returns list of all items except first one"
   [list]
   (.-tail list))
 
@@ -59,7 +74,10 @@
 
 ;; Export symbols
 (set! exports.empty? empty?)
+(set! exports.list? list?)
 (set! exports.first first)
+(set! exports.second first)
+(set! exports.third first)
 (set! exports.head first)
 (set! exports.rest rest)
 (set! exports.tail rest)
