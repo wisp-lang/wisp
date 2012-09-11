@@ -322,7 +322,7 @@
 (defn syntax-quote-split
   [append-name fn-name form]
   (let [slices (split-splices form fn-name)]
-    (if (= (length slices) 1)
+    (if (= (count slices) 1)
       (first slices)
       (apply-node append-name slices))))
 
