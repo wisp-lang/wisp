@@ -765,6 +765,15 @@
   [form]
   (and (list? form) (identical? (first form) unquote-splicing)))
 
+(defn ^boolean quote?
+  "Returns true if it's quote form: 'foo '(foo)"
+  [form]
+  (and (list? form) (identical? (first form) quote)))
+
+(defn ^boolean syntax-quote?
+  "Returns true if it's syntax quote form: `foo `(foo)"
+  [form]
+  (and (list? form) (identical? (first form) syntax-quote)))
 
 (export read read-from-string
         meta dictionary name
