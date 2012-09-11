@@ -259,11 +259,13 @@
 (defn name
   "Returns the name String of a string, symbol or keyword."
   [value]
-  (cond (string? value) value
-        (symbol? value) (.-name value)
-        (keyword? value) (if (.index-of value "/")
-                           (.substr value (.index-of "/"))
-                           (.substr value 1))))
+  (cond
+    (keyword? value)
+      (if (>= (.index-of value "/") 0)
+        (.substr value (+ (.index-of value "/") 1))
+        (.substr value 1))
+    (symbol? value) (.-name value)
+    (string? value) value))
 
 ;; Symbols
 (def unquote (symbol "unquote"))
@@ -748,7 +750,7 @@
 
 
 (export read read-from-string
-        meta dictionary
+        meta dictionary name
         symbol symbol?
         keyword keyword?
         quote deref

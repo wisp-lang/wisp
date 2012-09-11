@@ -1,11 +1,29 @@
 (include "./macros")
-(import (read-from-string list symbol quote deref
+(import (read-from-string list symbol quote deref name
          keyword unquote unquote-splicing meta dictionary) "../src/reader")
 (import (list) "../src/list")
 
 (def read-string read-from-string)
 
 (test
+  ("name fn"
+    (assert (identical? (name (read-string ":foo")) "foo")
+            "name of :foo is foo")
+    (assert (identical? (name (read-string ":foo/bar")) "bar")
+            "name of :foo/bar is bar")
+    (assert (identical? (name (read-string "foo")) "foo")
+            "name of foo is foo")
+    (assert (identical? (name (read-string "foo/bar")) "bar")
+            "name of foo/bar is bar")
+    (assert (identical? (name (read-string "\"foo\"")) "foo")
+            "name of \"foo\" is foo")
+    (assert (nil? (name (read-string "()"))) "name of list is nil")
+    (assert (nil? (name (read-string "[]"))) "name of vector is nil")
+    (assert (nil? (name (read-string "{}"))) "name of dictionary is nil")
+    (assert (nil? (name (read-string "nil"))) "name of nil is nil")
+    (assert (nil? (name (read-string "7"))) "name of number is nil"))
+
+
   ("read simple list"
     (deep-equal?
       (read-string "(foo bar)")
