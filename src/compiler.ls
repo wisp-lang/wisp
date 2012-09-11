@@ -153,10 +153,10 @@
 
 (defn map-list
   "Maps list by applying `f` to each item"
-  [source]
+  [source f]
   (if (empty? source) source
       (cons (f (first source))
-            (map-list f (rest source)))))
+            (map-list (rest source) f))))
 
 (defn expand
   "Expands given form"
