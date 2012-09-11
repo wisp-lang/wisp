@@ -239,11 +239,11 @@
 
 (defn symbol
   "Returns a Symbol with the given namespace and name."
-  [ns name]
+  [ns id]
   (cond
     (symbol? ns) ns
-    (keyword? ns) (new Symbol (.substr ns 1))
-    :else (new Symbol ns name)))
+    (keyword? ns) (new Symbol (name ns))
+    :else (if (string? id) (new Symbol id ns) (new Symbol ns))))
 
 (defn keyword
   "Returns a Keyword with the given namespace and name. Do not use :
