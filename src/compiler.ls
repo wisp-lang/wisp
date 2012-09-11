@@ -209,8 +209,11 @@
   (let [x (gensym)]
     ;; compile the macro into native code and use the host's native
     ;; eval to eval it into a function.
-    (let [macro `(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))]
-      (eval (compile-program macro (macro-generator.make-fresh))))))
+    (let [macro ;`(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))]
+          (read-from-string "`(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))")]
+      (eval (compile
+              (expand macro)
+              (macro-generator.make-fresh))))))
 
 
 ;; system macros
