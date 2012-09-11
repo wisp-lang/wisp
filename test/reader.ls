@@ -97,6 +97,33 @@
     (list (list unquote-splicing (list (symbol "foo") (symbol "bar"))))
     "(~@(foo bar)) -> ((unquote-splicing (foo bar)))"))
 
+  ("read function"
+   (deep-equal?
+    (read-string "(defn List
+      \"List type\"
+      [head tail]
+      (set! this.head head)
+      (set! this.tail tail)
+      (set! this.length (+ (.-length tail) 1))
+      this)")
+
+    (list (symbol "defn") (symbol "List")
+        "List type"
+        (array  (symbol "head") (symbol "tail"))
+        (list (symbol "set!") (symbol "this.head") (symbol "head"))
+        (list (symbol "set!") (symbol "this.tail") (symbol "tail"))
+        (list (symbol "set!") (symbol "this.length")
+              (list (symbol "+") (list (symbol ".-length") (symbol "tail")) 1))
+        (symbol "this"))
+    "function read correctly"))
+
+  ("read comments"
+   (deep-equal?
+    (read-string "; comment
+                  (program)")
+    (list (symbol "program"))
+    "comments are ignored"))
+
   ("clojurescript"
     (assert (= 1 (read-string "1")) "1 -> 1")
     (assert (= 2 (read-string "2")) "#_nope 2 -> 2")
@@ -137,7 +164,8 @@
     (assert (= "string" (read-string "\"string\"")) "\"string\" -> \"string\"")
 
     (assert (= "escape chars \t \r \n \\ \" \b \f"
-               (read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\"")))
+               (read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\""))
+            "escape chars read properly")
 
     (deep-equal? (list (symbol "new") (symbol "PersistentQueue") (array))
                  (read-string "#queue []")

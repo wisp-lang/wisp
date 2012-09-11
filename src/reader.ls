@@ -325,7 +325,9 @@
   [reader _]
   (loop []
     (let [ch (read-char reader)]
-      (if (or (identical? ch \n) (identical? ch \r) (nil? ch))
+      (if (or (identical? ch "\n")
+              (identical? ch "\r")
+              (nil? ch))
         reader
         (recur)))))
 
