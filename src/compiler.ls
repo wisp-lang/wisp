@@ -261,7 +261,7 @@
 
 
 (defn opt [argument fallback]
-  (if (empty? argument) fallback (first argument)))
+  (if (or (nil? argument) (empty? argument)) fallback (first argument)))
 
 (defn apply-form
   "Take a form that has a list of children and make a form that
