@@ -170,10 +170,10 @@
    (or (quote? from)
        (syntax-quote? form)) form
    ;; If function form expand it's body.
-   (= (first form) (symbol "fn"))
-    (list (first form)
-          (second form)
-          (map (next (next from)) expand))
+   (symbol-identical? (first form) (symbol "fn"))
+    (cons (first form)
+          (cons (second form)
+                (map-list (rest (rest form)) expand)))
    ;; If first item in the form is registered macro
    ;; execute macro and sourcify form back.
    (macro? (first form))
@@ -276,14 +276,15 @@
   "Same as apply-form, but respect unquoting"
   [fn-name form]
   (cons fn-name ;; ast.prepend ???
-        (map form
-              (fn [e]
-                  (if (unquote? e)
-                      (next (next e))
-                      (if (and (list? e)
-                               (keyword? (first e)))
-                          (list syntax-quote (next (next e)))
-                          (list syntax-quote e)))))))
+        (map-list
+          form
+          (fn [e]
+              (if (unquote? e)
+                  (rest (rest e))
+                  (if (and (list? e)
+                           (keyword? (first e)))
+                      (list syntax-quote (rest (rest e)))
+                      (list syntax-quote e)))))))
 
 (defn split-splices
   ""
