@@ -1,6 +1,10 @@
 ;; List of built in macros for LispyScript. This file is included by
 ;; default by the LispyScript compiler.
 
+(defmacro str
+  ""
+  ([& strings] `(js* "''.concat(~{})" (group* ~@strings))))
+
 (defmacro set!
   "Assignment special form.
   When the first operand is a field member access form,
