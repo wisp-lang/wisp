@@ -248,13 +248,13 @@
 (defn keyword
   "Returns a Keyword with the given namespace and name. Do not use :
   in the keyword strings, it will be added automatically."
-  [ns name]
+  [ns id]
   (cond
    (keyword? ns) ns
-   (symbol? ns) (.concat "\uA789" ns)
-   :else (if (nil? name)
+   (symbol? ns) (.concat "\uA789" (name ns))
+   :else (if (nil? id)
            (.concat "\uA789" ns)
-           (.concat "\uA789" ns "/" name))))
+           (.concat "\uA789" ns "/" id))))
 
 (defn name
   "Returns the name String of a string, symbol or keyword."
