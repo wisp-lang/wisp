@@ -26,7 +26,6 @@
         font-size: 12px;
         margin: 0;
         padding: 0;
-        position: absolute;
         top: 0;
         left: 0;
         width: 100%;
@@ -166,10 +165,21 @@
 <div id="input" name="input"></div>
 <div id="output" name="output"></div>
     <script>
+
       function updatePreview(editor) {
+        clearTimeout(updatePreview.id)
         var code = editor.getValue()
         localStorage.buffer = code
-        output.setValue(require('../lib/ls')._compile(code))
+        updatePreview.id = setTimeout(function() {
+          try {
+            editor.clearMarker(updatePreview.line || 1)
+            output.setValue(require('../lib/ls')._compile(code))
+          } catch (error) {
+            updatePreview.line = error.line
+            editor.setMarker(error.line, "<span title='"
+                                         + error.message + "'>●</span> %N%")
+          }
+        }, 200)
       }
 
       var input = CodeMirror(document.getElementById("input"), {
