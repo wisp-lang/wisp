@@ -34,10 +34,9 @@
         min-height: 100%;
       }
 
-      .CodeMirror {
-        float: left;
+      #input, #output {
         width: 50%;
-        height: 100%;
+        float: left;
       }
 
       .CodeMirror .CodeMirror-scroll {
@@ -200,6 +199,12 @@
         onCursorActivity: function() {
           input.setLineClass(hlLine, null, null);
           hlLine = input.setLineClass(input.getCursor().line, null, "activeline");
+        },
+        onGutterClick: function() {
+          var output = document.getElementById("output")
+          var input = document.getElementById("input")
+          output.hidden = !output.hidden
+          input.style.width = output.hidden ? '100%' : '50%'
         }
       });
       var hlLine = input.setLineClass(0, "activeline");
