@@ -25,10 +25,16 @@
   [value]
   (.prototype-of? List.prototype value))
 
+
+(defn count
+  "Returns number of elements in list"
+  [list]
+  (.-length list))
+
 (defn empty?
   "Returns true if list is empty"
   [list]
-  (= (.-length list) 0))
+  (= (count list) 0))
 
 (defn first
   "Return first item in a list"

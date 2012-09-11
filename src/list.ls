@@ -23,10 +23,15 @@
   [value]
   (.prototype-of? List.prototype value))
 
+(defn count
+  "Returns number of elements in list"
+  [list]
+  (.-length list))
+
 (defn empty?
   "Returns true if list is empty"
   [list]
-  (= (.-length list) 0))
+  (= (count list) 0))
 
 (defn first
   "Return first item in a list"
@@ -74,6 +79,7 @@
 
 ;; Export symbols
 (set! exports.empty? empty?)
+(set! exports.count count)
 (set! exports.list? list?)
 (set! exports.first first)
 (set! exports.second first)
