@@ -167,7 +167,7 @@
    (vector? form) (map form expand)
    ;; If dictionary expand it's values
    (dictionary? form) (map-dictionary form expand)
-   (or (quote? from)
+   (or (quote? form)
        (syntax-quote? form)) form
    ;; If function form expand it's body.
    (symbol-identical? (first form) (symbol "fn"))
@@ -306,7 +306,7 @@
         (if (empty? acc)
             slices
             (cons (make-splice (reverse acc)) slices)))
-       (let [node (first form)]
+       (let [node (first nodes)]
         (if (unquote-splicing? node)
             (recur (rest nodes)
                    (cons (second node)
@@ -441,7 +441,7 @@
           (compile-define form generator compile_)
          (= head (symbol "%raw"))
           (generator.write-raw-code (second form))
-         (native? head)
+         (special? head)
           (execute-native head form generator expr? compile_)
          :else
           (do
