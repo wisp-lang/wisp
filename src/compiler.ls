@@ -146,30 +146,6 @@
       (cons (f (first source))
             (map-list (rest source) f))))
 
-(defn expand
-  "Expands given form"
-  [form]
-  (cond
-   (atom? form) form
-   ;; If vector expand it's elements
-   (vector? form) (map form expand)
-   ;; If dictionary expand it's values
-   (dictionary? form) (map-dictionary form expand)
-   (or (quote? form)
-       (syntax-quote? form)) form
-   ;; If function form expand it's body.
-   (symbol-identical? (first form) (symbol "fn"))
-    (cons (first form)
-          (cons (second form)
-                (map-list (rest (rest form)) expand)))
-   ;; If first item in the form is registered macro
-   ;; execute macro and sourcify form back.
-   (macro? (first form))
-    (expand (execute-macro (first form) form))
-   ;; Otherwise it's a list form and we expand each item in it.
-   :else (map-list form expand)))
-
-
 (def __macros__ {})
 
 (defn execute-macro
@@ -443,4 +419,45 @@
                                        (rest form)
                                        expr?
                                        compile_)))))))
+
+(defn macroexpand-1
+  "If form represents a macro form, returns its expansion,
+  else returns form."
+  [form]
+  (if (list? form)
+    (let [op (first form)
+          id (name op)]
+      (cond
+        (special? op) form
+        (macro? op) (execute-macro op (rest form))
+        (and (symbol? op)
+             (not (identical? id ".")))
+          ;; (.substring s 2 5) => (. s substring 2 5)
+          (if (identical? (.char-at id 0) ".")
+            (if (< (count form) 2)
+              (throw (Error
+                "Malformed member expression, expecting (.member target ...)"))
+              (cons (symbol ".")
+                    (cons (second form)
+                          (cons (symbol (.substr id 1))
+                                (rest (rest form))))))
+
+            ;; (StringBuilder. "foo") => (new StringBuilder "foo")
+            (if (identical? (.char-at id (- (.-length id) 1)) ".")
+              (cons (symbol "new")
+                    (cons (symbol (.substr id 0 (- (.-length id) 1)))
+                          (rest form)))
+              form))
+        :else form))
+      form))
+
+(defn macroexpand
+  "Repeatedly calls macroexpand-1 on form until it no longer
+  represents a macro form, then returns it."
+  [form]
+  (loop [original form
+         expanded (macroexpand-1 form)]
+    (if (identical? original expanded)
+      original
+      (recur expanded (macroexpand-1 expanded)))))
 
