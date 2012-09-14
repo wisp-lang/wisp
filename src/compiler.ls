@@ -1,21 +1,9 @@
-(defn gensym
-  "Returns a new symbol with a unique name. If a prefix string is
-  supplied, the name is prefix# where # is some unique number. If
-  prefix is not supplied, the prefix is 'G__'."
-  [prefix]
-  (symbol (str (if (nil? prefix) "G__" prefix)
-               (set! gensym.base (+ gensym.base 1)))))
-(set! gensym.base 0)
+(import (meta with-meta symbol? symbol keyword? keyword
+         unquote? unquote unquote-splicing? unquote-splicing
+         quote? quote syntax-quote? syntax-quote name deref set) "./ast"
+(import (empty? count list? list first second third rest cons reverse) "./list")
+(import (odd? dictionary merge gensym) "./runtime")
 
-(defn symbol-identical?
-  ;; We can not use `identical?` or `=` since in JS we can not
-  ;; make `==` or `===` on object which we use to implement symbols.
-  "Returns true if symbol is identical"
-  [actual expected]
-  (and
-    (symbol? actual)
-    (symbol? expected)
-    (identical? (name actual) (name expected))))
 
 (comment
   (test

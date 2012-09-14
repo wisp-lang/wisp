@@ -77,16 +77,5 @@
       (recur (.concat (array (first source)) items)
              (rest source)))))
 
-;; Export symbols
-(set! exports.empty? empty?)
-(set! exports.count count)
-(set! exports.list? list?)
-(set! exports.first first)
-(set! exports.second first)
-(set! exports.third first)
-(set! exports.head first)
-(set! exports.rest rest)
-(set! exports.tail rest)
-(set! exports.cons cons)
-(set! exports.list list)
-(set! exports.reverse reverse)
+(export empty? count list? first second third
+        rest cons list reverse)

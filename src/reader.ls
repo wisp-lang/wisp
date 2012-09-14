@@ -1,121 +1,9 @@
-;; LIST
-
-(defn List
-  "List type"
-  [head tail]
-  (set! this.head head)
-  (set! this.tail tail)
-  (set! this.length (+ (.-length tail) 1))
-  this)
-
-(set! List.prototype.length 0)
-(set! List.prototype.tail (Object.create List.prototype))
-(set! List.prototype.toString
-      (fn []
-        (loop [result ""
-               list this]
-          (if (empty? list)
-            (str "(" (.substr result 1) ")")
-            (recur
-             (str result " " (first list))
-             (rest list))))))
-
-(defn list?
-  "Returns true if list"
-  [value]
-  (.prototype-of? List.prototype value))
-
-
-(defn count
-  "Returns number of elements in list"
-  [list]
-  (.-length list))
-
-(defn empty?
-  "Returns true if list is empty"
-  [list]
-  (= (count list) 0))
-
-(defn first
-  "Return first item in a list"
-  [list]
-  (.-head list))
-
-(defn second
-  "Returns second item of the list"
-  [list]
-  (first (rest list)))
-
-(defn third
-  "Returns third item of the list"
-  [list]
-  (first (rest (rest list))))
-
-(defn rest
-  "Returns list of all items except first one"
-  [list]
-  (.-tail list))
-
-(defn cons
-  "Creates list with `head` as first item and `tail` as rest"
-  [head tail]
-  (new List head tail))
-
-(defn list
-  "Creates list of the given items"
-  []
-  (if (= (.-length arguments) 0)
-    (Object.create List.prototype)
-    (.reduce-right (.call Array.prototype.slice arguments)
-                   (fn [tail head] (cons head tail))
-                   (list))))
-
-(defn reverse
-  "Reverse order of items in the list"
-  [source]
-  (loop [items (array)
-         source source]
-    (if (empty? source)
-      (.apply list list items)
-      (recur (.concat (array (first source)) items)
-             (rest source)))))
-
-
-
-(defmacro cond
-  "Takes a set of test/expr pairs. It evaluates each test one at a
-  time.  If a test returns logical true, cond evaluates and returns
-  the value of the corresponding expr and doesn't evaluate any of the
-  other tests or exprs."
-  ([] (void))
-  ([condition then]
-   `(cond ~condition ~then (void)))
-  ([condition then else]
-   `(js* "~{} ? (~{}) :\n~{}" ~condition ~then ~else))
-  ([condition then & rest]
-   (cond ~condition ~then (cond ~@rest))))
-
-(defmacro declare
-  "defs the supplied var names with no bindings,
-  useful for making forward declarations."
-  ([name] `(def ~name))
-  ([name & names] `(statements* (declare ~name) (declare ~@names))))
-
-(defmacro apply
-  ([ f ] `(.apply ~f ~f))
-  ([ f args ] `(.apply ~f ~f ~args)))
-
-;; Define alias that is being used by clojure to
-;; returns the value at the given index.
-(def-macro-alias get aget)
-(def-macro-alias array? vector?)
-
-;; Define alias for the clojures alength.
-(defmacro alength [source]
-  `(.-length ~source))
-
-(defn ^boolean odd? [n]
-  (identical? (% n 2) 1))
+(include "./runtime")
+(import (list list? count empty? first second third rest
+         cons rest) "./list")
+(import (odd? dictionary merge) "./runtime")
+(import (symbol? symbol keyword? keyword quote syntax-quote
+         unquote unquote-splicing meta with-meta name deref) "./ast")
 
 (declare nil)
 
@@ -192,112 +80,6 @@
                        next-ch)))))
 
 
-
-(declare read macros dispatch-macros)
-
-;; STD functions
-
-(defn merge
-  "Returns a dictionary that consists of the rest of the maps conj-ed onto
-  the first. If a key occurs in more than one map, the mapping from
-  the latter (left-to-right) will be the mapping in the result."
-  []
-  (Object.create
-   Object.prototype
-   (reduce
-    arguments
-    (fn [descriptor dictionary]
-      (if (object? dictionary)
-      	(each
-       	(Object.keys dictionary)
-         (fn [name]
-           (set!
-            (get descriptor name)
-            (Object.get-own-property-descriptor dictionary name)))))
-      descriptor)
-    (Object.create Object.prototype))))
-
-(defn dictionary []
-  (loop [key-values (.call Array.prototype.slice arguments)
-         result {}]
-    (if (.-length key-values)
-      (do
-        (set! (get result (get key-values 0))
-              (get key-values 1))
-        (recur (.slice key-values 2) result))
-      result)))
-
-(defn with-meta
-  "Returns identical value with given metadata associated to it."
-  [value metadata]
-  (set! value.metadata metadata)
-  value)
-
-(defn meta
-  "Returns the metadata of the given value or nil if there is no metadata."
-  [value]
-  (if (object? value) (.-metadata value)))
-
-;;
-(defn Symbol
-  "Symbol type"
-  [name ns]
-  (set! this.name name)
-  (set! this.ns ns)
-  this)
-(set! Symbol.prototype.to-string
-      (fn [] (if (string? this.ns)
-               (.concat this.ns "/" this.name)
-               this.name)))
-
-
-(defn ^boolean symbol? [x]
-  (.prototype-of? Symbol.prototype x))
-
-(defn ^boolean keyword? [x]
-  (and (string? x)
-       (identical? (.char-at x 0) "\uA789")))
-
-(defn symbol
-  "Returns a Symbol with the given namespace and name."
-  [ns id]
-  (cond
-    (symbol? ns) ns
-    (keyword? ns) (new Symbol (name ns))
-    :else (if (string? id) (new Symbol id ns) (new Symbol ns))))
-
-(defn keyword
-  "Returns a Keyword with the given namespace and name. Do not use :
-  in the keyword strings, it will be added automatically."
-  [ns id]
-  (cond
-   (keyword? ns) ns
-   (symbol? ns) (.concat "\uA789" (name ns))
-   :else (if (nil? id)
-           (.concat "\uA789" ns)
-           (.concat "\uA789" ns "/" id))))
-
-(defn name
-  "Returns the name String of a string, symbol or keyword."
-  [value]
-  (cond
-    (keyword? value)
-      (if (>= (.index-of value "/") 0)
-        (.substr value (+ (.index-of value "/") 1))
-        (.substr value 1))
-    (symbol? value) (.-name value)
-    (string? value) value))
-
-;; Symbols
-(def unquote (symbol "unquote"))
-(def unquote-splicing (symbol "unquote-splicing"))
-(def syntax-quote (symbol "syntax-quote"))
-(def quote (symbol "quote"))
-(def deref (symbol "deref"))
-
-;; sets are not part of standard library but implementations can be provided
-;; if necessary.
-(def set (symbol "set"))
 
 ;; read helpers
 
@@ -655,7 +437,7 @@
 
 (defn read-set
   [rdr _]
-  (apply list (.concat (array set)
+  (apply list (.concat (array (symbol "set"))
                        (read-delimited-list "}" rdr true))))
 
 (defn read-regex
@@ -761,30 +543,4 @@
 
 
 
-(defn ^boolean unquote?
-  "Returns true if it's unquote form: ~foo"
-  [form]
-  (and (list? form) (identical? (first form) unquote)))
-
-(defn ^boolean unquote-splicing?
-  "Returns true if it's unquote-splicing form: ~@foo"
-  [form]
-  (and (list? form) (identical? (first form) unquote-splicing)))
-
-(defn ^boolean quote?
-  "Returns true if it's quote form: 'foo '(foo)"
-  [form]
-  (and (list? form) (identical? (first form) quote)))
-
-(defn ^boolean syntax-quote?
-  "Returns true if it's syntax quote form: `foo `(foo)"
-  [form]
-  (and (list? form) (identical? (first form) syntax-quote)))
-
-(export read read-from-string
-        meta dictionary name
-        symbol symbol?
-        keyword keyword?
-        quote deref
-        unquote unquote?
-        unquote-splicing unquote-splicing?)
+(export read read-from-string)

@@ -1,6 +1,8 @@
 (include "./macros")
-(import (read-from-string list symbol quote deref name
-         keyword unquote unquote-splicing meta dictionary) "../src/reader")
+(import (symbol quote deref name keyword
+         unquote unquote-splicing meta dictionary) "../src/ast")
+(import (dictionary) "../src/runtime")
+(import (read-from-string) "../src/reader")
 (import (list) "../src/list")
 
 (def read-string read-from-string)
