@@ -111,7 +111,7 @@
   [fn-name form quoted?]
   (cons fn-name
         (if quoted?
-            (map form (fn [e] (list quote e))) form)
+            (map-list form (fn [e] (list quote e))) form)
             form))
 
 (defn apply-unquoted-form
@@ -183,7 +183,7 @@
     (string? form) (compile (list (symbol "::compile:string") form))
     (boolean? form) (compile (list (symbol "::compile:boolean") form))
     (nil? form) (compile (list (symbol "::compile:nil") form))
-    (vector? form) (compile (apply-form (symbol "vector") form))
+    (vector? form) (compile (apply-form (symbol "vector") (apply list form)))
     (list? form) (compile (apply-form (symbol "list") form))
     (dictionary? (compile (apply-form (symbol "dictionary") form)))))
 
@@ -406,12 +406,18 @@
     (list "(function() { throw ~{}; })()"
           (compile (first form)))))
 
+
+(defn compile-vector
+  "Creates a new vector containing the args"
+  [form]
+  (compile-template (list "[~{}]" (compile-group form))))
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
 (install-special (symbol "do") compile-do)
 (install-special (symbol "fn") compile-fn)
 (install-special (symbol "let") compile-let)
 (install-special (symbol "throw") compile-throw)
+(install-special (symbol "vector") compile-vector)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 

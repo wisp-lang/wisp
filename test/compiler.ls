@@ -87,6 +87,17 @@
     (assert (identical? (transpile "(throw \"boom\")")
                         "(function() { throw \"boom\"; })()")
             "throw string compile")
+    (assert (identical? (transpile "[a b]")
+            "[a, b]")
+            "vector compiles")
+
+    (assert (identical? (transpile "[a (b c)]")
+            "[a, (b)(c)]")
+            "vector of expressions compiles")
+
+    (assert (identical? (transpile "[]")
+            "[]")
+            "empty vector compiles")
     )
 )
 
