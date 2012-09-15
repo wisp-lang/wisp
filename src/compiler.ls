@@ -283,6 +283,7 @@
   "Compiles given template"
   [form]
   (def indent-pattern #"\n *$")
+  (def line-break-patter (RegExp "\n" "g"))
   (defn get-indentation [code]
     (let [match (.match code indent-pattern)]
       (or (and match (get match 0)) "\n")))
@@ -296,7 +297,7 @@
         code
         (get parts 0)
         (.replace (str "" (first values))
-                  "\n"
+                  line-break-patter
                   (get-indentation (get parts 0))))
        (.slice parts 1)
        (rest values))
