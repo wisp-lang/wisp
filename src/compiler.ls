@@ -361,8 +361,15 @@
   [form]
   (.join (list-to-vector (map-list form compile)) ", "))
 
+(defn compile-do
+  "Evaluates the expressions in order and returns the value of the last.
+  If no expressions are supplied, returns nil."
+  [form]
+  (compile (list (cons (symbol "fn") (cons (Array) form)))))
+
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
+(install-special (symbol "do") compile-do)
 (install-special (symbol "fn") compile-fn)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 

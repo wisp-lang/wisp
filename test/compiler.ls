@@ -57,6 +57,16 @@
     (assert (identical? (transpile "(if foo (bar) baz)")
                         "foo ?\n  (bar)() :\n  baz")
              "if-else compiles")
+
+
+    (assert (identical? (transpile "(do (foo bar) bar)")
+                        "(function() {\n  (foo)(bar);\n  return bar;\n})()")
+             "do compiles")
+    (assert (identical? (transpile "(do)")
+                        "(function() {\n  return void 0;\n})()")
+             "empty do compiles")
+
+
     )
 )
 
