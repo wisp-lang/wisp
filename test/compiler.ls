@@ -43,11 +43,11 @@
 
 
     (assert (identical? (transpile "(fn [x] x)")
-                        "function(x) {\n  return x;\n}\n")
+                        "function(x) {\n  return x;\n}")
             "function compiles")
 
     (assert (identical? (transpile "(fn [x] (def y 1) (foo x y))")
-                        "function(x) {\n  var y = 1;\n  return (foo)(x, y);\n}\n")
+                        "function(x) {\n  var y = 1;\n  return (foo)(x, y);\n}")
             "function with multiple statements compiles")
 
     (assert (identical? (transpile "(if foo (bar))")
