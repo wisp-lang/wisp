@@ -165,7 +165,6 @@
        (get __macros__ name)
        true))
 
-(def macro-generator false)
 
 (defn make-macro
   "Makes macro"
@@ -173,21 +172,22 @@
   (let [x (gensym)]
     ;; compile the macro into native code and use the host's native
     ;; eval to eval it into a function.
-    (let [macro ;`(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))]
-          (read-from-string "`(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))")]
-      (eval (compile
-              (expand macro)
-              (macro-generator.make-fresh))))))
+    (eval (compile
+            (macroexpand
+              ; `(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))
+              (read-from-string
+                "`(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))"))
+            ))))
 
 
 ;; system macros
 (install-macro
  (symbol "define-macro")
  (fn [form]
-   (let [signature (second form)]
+   (let [signature (rest form)]
      (let [name (first signature)
-           pattern (rest signature)
-           body (rest (rest form))]
+           pattern (second signature)
+           body (rest (rest signature))]
 
        ;; install it during expand-time
        (install-macro name (make-macro pattern body))
@@ -208,9 +208,9 @@
   "Installs special function"
   [name f validator]
   (set! (get __specials__ name)
-        (fn [form generator expr? compile_]
-          (validator form)
-          ((get generator f) (rest form) expr? compile_))))
+        (fn [form]
+          (if validator (validator form))
+          (f (rest form)))))
 
 (defn special?
   "Returns true if special form"
@@ -221,8 +221,8 @@
 
 (defn execute-special
   "Expands special form"
-  [name form generator expr? compile_]
-  ((get __specials__ name) form generator expr? compile_))
+  [name form]
+  ((get __specials__ name) form))
 
 
 
@@ -299,31 +299,31 @@
 
 (defn compile-object
   ""
-  [form generator quoted? expr?]
+  [form]
   ;; TODO: Add regexp to the list.
   (cond
-    (keyword? form) (generator.write-keyword form expr?)
-    (symbol? form) (generator.write-symbol form expr?)
-    (number? form) (generator.write-number form expr?)
-    (string? form) (generator.write-string form expr?)
-    (boolean? form) (generator.write-boolean form expr?)
-    (nil? form) (generator.write-nil form expr?)
-    (vector? form) (compile (apply-form (symbol "vector") form quoted?)
-                            generator expr?)
-    (list? form) (compile (apply-form (symbol "list") form quoted?)
-                          generator expr?)
-    (dictionary? (compile (apply-form (symbol "dictionary") form quoted?)
-                            generator expr?))))
+    (keyword? form) (compile (list (symbol "::compile:keyword") form))
+    (symbol? form) (compile (list (symbol "::compile:symbol") form))
+    (number? form) (compile (list (symbol "::compile:number") form))
+    (string? form) (compile (list (symbol "::compile:string") form))
+    (boolean? form) (compile (list (symbol "::compile:boolean") form))
+    (nil? form) (compile (list (symbol "::compile:nil") form))
+    (vector? form) (compile (apply-form (symbol "vector") form))
+    (list? form) (compile (apply-form (symbol "list") form))
+    (dictionary? (compile (apply-form (symbol "dictionary") form)))))
+
+(defn compile-reference
+  ""
+  [form]
+  (compile (list (symbol "::compile:reference") form)))
 
 (defn compile-syntax-quoted
   ""
-  [form generator expr?]
+  [form]
   (cond
    (list? form)
     (compile
-      (syntax-quote-split (symbol "list-append") (symbol "list") form)
-      generator
-      expr?)
+      (syntax-quote-split (symbol "list-append") (symbol "list") form))
    (vector? form)
     (compile
       (syntax-quote-split (symbol "vector-concat") (symbol "vector") form)
@@ -331,94 +331,33 @@
       expr?)
    (dictionary? form)
     (compile
-      (syntax-quote-split (symbol "dictionary-merge") (symbol "dictionary") form)
-      generator
-      expr?)
+      (syntax-quote-split (symbol "dictionary-merge") (symbol "dictionary") form))
    :else
-    (compile-object form generator true expr?)))
-
-(defn compile-reference
-  ""
-  [form generator expr?]
-  (generator.write-term form (opt expr? false)))
-
-(defn compile-if
-  ""
-  [form generator expr? compile_]
-  (generator.write-if
-    (first form)
-    (second form)
-    (if (nil? (third form)) false (third form))
-    expr?
-    compile_))
-
-(defn compile-fn
-  ""
-  [form generator expr? compile_]
-  (generator.write-fn form expr? compile_))
-
-(defn compile-set
-  ""
-  [form generator compile_]
-  (generator.write-set
-    (second form)
-    (compile_ (third form))
-    compile_))
-
-(defn compile-define
-  ""
-  [form generator compile_]
-  (generator.write-define
-    (second form)
-    (compile_ (third form))
-    compile_))
-
+    (compile-object form)))
 
 (defn compile
   "compiles given form"
-  [form generator expr?]
-
-  (defn compile_ [form expr?]
-    (compile form generator (opt expr? false)))
-
-  (let [expr? (opt expr? false)]
-    (cond
-     (self-evaluating? form)
-      (compile-object form generator false expr?)
-     (symbol? form)
-      (compile-reference form generator expr?)
-     (vector? form)
-      (compile-object form generator false expr?)
-     (dictionary? form)
-      (compile-object form generator false expr?)
-     (list? form)
-      (let [head (first form)]
-        (cond
-         (quote? form)
-          (compile-object (second form) generator true expr?)
-         (syntax-quote? form)
-          (compile-syntax-quoted (second form) generator expr?)
-         (symbol-identical? head (symbol "if"))
-          (compile-if form generator expr? compile_)
-         (symbol-identical? head (symbol "fn"))
-          (compile-fn form generator expr? compile_)
-         (symbol-identical? head (symbol "set!"))
-          (compile-set form generator compile_)
-         (symbol-identical? head (symbol "def"))
-          (compile-define form generator compile_)
-         (symbol-identical? head (symbol "%raw"))
-          (generator.write-raw-code (second form))
-         (special? head)
-          (execute-native head form generator expr? compile_)
-         :else
-          (do
-            (if (not (or (symbol? (first form))
-                         (list? (first form))))
-              (throw (str "operator is not a procedure: " (first form))))
-            (generator.write-func-call (first form)
-                                       (rest form)
-                                       expr?
-                                       compile_)))))))
+  [form]
+  (cond
+   (self-evaluating? form) (compile-object form)
+   (symbol? form) (compile-reference form)
+   (vector? form) (compile-object form)
+   (dictionary? form) (compile-object form)
+   (list? form)
+    (let [head (first form)]
+      (cond
+       (quote? form) (compile-object (second form))
+       (syntax-quote? form) (compile-syntax-quoted (second form))
+       ;(symbol-identical? head (symbol "if")) (compile-if form)
+       ;(symbol-identical? head (symbol "fn")) (compile-fn form)
+       ;(symbol-identical? head (symbol "set!")) (compile-set form)
+       ;(symbol-identical? head (symbol "def")) (compile-define form)
+       ;(symbol-identical? head (symbol "%raw")) (second form)
+       (special? head) (execute-special head form)
+       :else (do
+              (if (not (or (symbol? head) (list? head)))
+                (throw (str "operator is not a procedure: " head))
+              (compile (list (symbol "::compile:invoke") head (rest form)))))))))
 
 (defn macroexpand-1
   "If form represents a macro form, returns its expansion,
