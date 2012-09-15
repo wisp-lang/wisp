@@ -1,4 +1,5 @@
 (include "./runtime")
+(import [list list? first] "./list")
 
 (defn with-meta
   "Returns identical value with given metadata associated to it."
@@ -11,6 +12,18 @@
   [value]
   (if (object? value) (.-metadata value)))
 
+(defn atom?
+ "Returns true if the form passed is of atomic type"
+ [form]
+ (or
+  (number? form)
+  (string? form)
+  (boolean? form)
+  (nil? form)
+  (keyword? form)
+  (symbol? form)
+  (and (list? form)
+       (empty? form))))
 
 
 (defn Symbol
@@ -76,6 +89,17 @@
     (string? value) value))
 
 
+(defn gensym
+  "Returns a new symbol with a unique name. If a prefix string is
+  supplied, the name is prefix# where # is some unique number. If
+  prefix is not supplied, the prefix is 'G__'."
+  [prefix]
+  (symbol (str (if (nil? prefix) "G__" prefix)
+               (set! gensym.base (+ gensym.base 1)))))
+(set! gensym.base 0)
+
+
+
 ;; Common symbols
 
 (def unquote (symbol "unquote"))
@@ -102,7 +126,7 @@
 (defn ^boolean quote?
   "Returns true if it's quote form: 'foo '(foo)"
   [form]
-  (and (list? form) (identical? (first form) quote)))
+  (and (list? form) (symbol-identical? (first form) quote)))
 
 (defn ^boolean syntax-quote?
   "Returns true if it's syntax quote form: `foo `(foo)"
@@ -111,10 +135,10 @@
 
 
 
-(export meta with-meta
+(export meta with-meta atom?
         symbol? symbol
         keyword? keyword
-        name deref set
+        gensym name deref set
 
         unquote? unquote
         unquote-splicing? unquote-splicing

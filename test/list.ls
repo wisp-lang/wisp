@@ -1,7 +1,14 @@
 (include "./macros")
-(import (empty? first rest cons list reverse) "../src/list")
+(import (empty? first rest cons list? list reverse) "../src/list")
 
 (test
+ ("list?"
+    (assert (list? (list)) "() is list")
+    (assert (not (list? 2)) "2 is not list")
+    (assert (not (list? {})) "{} is not list")
+    ;(assert (not (list? [])) "[] is not list")
+    )
+
  ("list"
   (equal? (empty? (list 1 2 3 4)) false
           "non empty list returns false on empty?")

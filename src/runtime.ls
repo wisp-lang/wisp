@@ -1,5 +1,3 @@
-(import (symbol) "./ast")
-
 ;; Macros
 
 (defmacro apply
@@ -36,19 +34,17 @@
 
 ;; Functions
 
-(defn gensym
-  "Returns a new symbol with a unique name. If a prefix string is
-  supplied, the name is prefix# where # is some unique number. If
-  prefix is not supplied, the prefix is 'G__'."
-  [prefix]
-  (symbol (str (if (nil? prefix) "G__" prefix)
-               (set! gensym.base (+ gensym.base 1)))))
-(set! gensym.base 0)
-
-
 ;; Define alias for the clojures alength.
 (defn ^boolean odd? [n]
   (identical? (% n 2) 1))
+
+(defn ^boolean dictionary?
+  "Returns true if dictionary"
+  [form]
+  (and (object? form)
+       ;; Inherits right form Object.prototype
+       (object? (.get-prototype-of Object form))
+       (nil? (.get-prototype-of Object (.get-prototype-of Object form)))))
 
 (defn dictionary
   "Creates dictionary of given arguments. Odd indexed arguments
@@ -83,8 +79,29 @@
       descriptor)
     (Object.create Object.prototype))))
 
+(defn ^boolean vector?
+  "Returns true if vector"
+  [form]
+  (array? form))
 
-(export
-  dictionary merge
-  odd? gensym)
+(defn map-dictionary
+  "Maps dictionary values by applying `f` to each one"
+  [source f]
+  (dictionary
+    (reduce (.keys Object source)
+            (fn [target key]
+                (set! (get target key) (f (get source key))))
+            {})))
+
+(defn map-list
+  "Maps list by applying `f` to each item"
+  [source f]
+  (if (empty? source) source
+      (cons (f (first source))
+            (map-list (rest source) f))))
+
+
+
+(export dictionary? dictionary merge odd? vector?
+        map-dictionary map-list)
 

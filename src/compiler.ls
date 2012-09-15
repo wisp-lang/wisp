@@ -1,23 +1,10 @@
-(import (meta with-meta symbol? symbol keyword? keyword
+(import [meta with-meta symbol? symbol keyword? keyword
          unquote? unquote unquote-splicing? unquote-splicing
-         quote? quote syntax-quote? syntax-quote name deref set) "./ast"
-(import (empty? count list? list first second third rest cons reverse) "./list")
-(import (odd? dictionary merge gensym) "./runtime")
-
-
-(comment
-  (test
-   ("gensym"
-    (assert (symbol? (gensym))
-            "gensym generates symbol")
-    (assert (.substr (name (gensym)) 0 3) "G__"
-            "global symbols are prefixed with 'G__'")
-    (assert (not (identical? (name (gensym)) (name (gensym))))
-            "gensym generates unique symbol each time")
-    (assert (.substr (name (gensym "foo")) 0 3) "foo"
-            "if prefix is given symbol is prefixed with it")
-    (assert (not (identical? (name (gensym "p")) (name (gensym "p"))))
-            "gensym generates unique symbol even if prefixed"))))
+         quote? quote syntax-quote? syntax-quote
+         name gensym deref set atom?] "./ast")
+(import [empty? count list? list first second third
+         rest cons reverse] "./list")
+(import [odd? dictionary merge map-dictionary map-list] "./runtime")
 
 
 (defn ^boolean self-evaluating?
@@ -29,122 +16,9 @@
       (nil? form)
       (keyword? form)))
 
-(comment
-  (test
-   ("self evaluating forms"
-    (assert (self-evaluating? 1) "number is self evaluating")
-    (assert (self-evaluating? "string") "string is self evaluating")
-    (assert (self-evaluating? true) "true is boolean => self evaluating")
-    (assert self-evaluating? false) "false is boolean => self evaluating")
-    (assert (self-evaluating?) "no args is nil => self evaluating")
-    (assert (self-evaluating? nil) "nil is self evaluating")
-    (assert (self-evaluating? :keyword) "keyword is self evaluating")
-    (assert (self-evaluating? ()) "list is not self evaluating")
-    (assert (self-evaluating? self-evaluating?) "fn is not self evaluating")
-    (assert (self-evaluating? (symbol "symbol")) "symbol is not self evaluating")))
-
-(defn ^boolean list?
-  "Returns true if list"
-  [value]
-  (.prototype-of? List.prototype value))
-
-(comment
-  (test
-   ("list?"
-    (assert (list? ()) "() is list")
-    (assert (not (list? 2)) "2 is not list")
-    (assert (not (list? {})) "{} is not list")
-    (assert (not (list? [])) "[] is not list"))))
-
-(defn ^boolean dictionary?
-  "Returns true if dictionary"
-  [form]
-  (and (object? form)
-       ;; Inherits right form Object.prototype
-       (object? (.get-prototype-of Object form))
-       (nil? (.get-prototype-of Object (.get-prototype-of Object form)))))
-
-(comment
-  (test
-   ("dictionary?"
-    (assert (not (dictionary? 2)) "2 is not dictionary")
-    (assert (not (dictionary? [])) "[] is not dictionary")
-    (assert (not (dictionary? ())) "() is not dictionary")
-    (assert (dictionary? {}) "{} is dictionary"))))
-
-(defn ^boolean vector?
-  "Returns true if vector"
-  [form]
-  (array? form))
-
-(comment
-  (test
-   ("vector?"
-    (assert (not (dictionary? 2)) "2 is not vector")
-    (assert (not (dictionary? [])) "{} is not vector")
-    (assert (not (dictionary? ())) "() is not vector")
-    (assert (vector? []) "[] is vector"))))
-
-(defn ^boolean quote?
-  "Returns true if it's quote form: 'foo '(foo)"
-  [form]
-  (and (list? form) (identical? (first form) quote)))
-
-(comment
-  (test
-   ("quote?"
-    (assert (quote? '()) "'() is quoted list")
-    (assert (not (quote? `())) "'() is not quoted list")
-    (assert (not (quote? ())) "'() is quoted list")
-    (assert (quote? 'foo) "'foo is quoted symbol")
-    (assert (not (quote? foo)) "foo symbol is not quoted"))))
-
-(defn ^boolean syntax-quote?
-  "Returns true if it's syntax quote form: `foo `(foo)"
-  [form]
-  (and (list? form) (identical? (first form) syntax-quote)))
-
-(comment
-  (test
-   ("syntax-quote?"
-    (assert (syntax-quote? `()) "`() is syntax quoted list")
-    (assert (not (syntax-quote? '())) "'() is not syntax quoted list")
-    (assert (not (syntax-quote? ())) "() is not syntax quoted list")
-    (assert (syntax-quote? `foo) "`foo is syntax quoted symbol")
-    (assert (not (syntax-quote? 'foo)) "'foo symbol is not syntax quoted")
-    (assert (not (syntax-quote? foo)) "foo symbol is not syntax quoted"))))
-
-(defn atom?
- "Returns true if the form passed is of atomic type"
- [form]
- (or
-  (number? form)
-  (string? form)
-  (boolean? form)
-  (nil? form)
-  (keyword? form)
-  (symbol? form)
-  (and (list? form)
-       (empty? form))))
 
 
 ;; Macros
-
-(defn map-dictionary
-  "Maps dictionary values by applying `f` to each one"
-  [source f]
-  (dictionary
-    (reduce (.keys Object source)
-            (fn [target key]
-                (set! (get target key) (f (get source key))))
-            {})))
-
-(defn map-list
-  "Maps list by applying `f` to each item"
-  [source f]
-  (if (empty? source) source
-      (cons (f (first source))
-            (map-list (rest source) f))))
 
 (def __macros__ {})
 
@@ -493,3 +367,9 @@
     (set! string (.replace string (RegExp "\t" "g") "\\t"))
     (set! string (.replace string (RegExp "\"" "g") "\\\""))
     (str "\"" string "\"")))
+
+(export 
+  self-evaluating?
+  compile
+  macroexpand
+  macroexpand-1)
