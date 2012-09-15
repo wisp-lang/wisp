@@ -40,9 +40,9 @@
 
   ("read numbers"
     (deep-equal?
-      (read-string "(+ 1 2)")
-      (list (symbol "+") 1 2)
-      "(+ 1 2) -> (+ 1 2)"))
+      (read-string "(+ 1 2 0)")
+      (list (symbol "+") 1 2 0)
+      "(+ 1 2 0) -> (+ 1 2 0)"))
 
   ("read keywords"
     (deep-equal?
