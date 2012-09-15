@@ -406,11 +406,24 @@
     (list "(function() { throw ~{}; })()"
           (compile (first form)))))
 
+(defn compile-set
+  "Assignment special form.
+
+  When the first operand is a field member access form, the assignment
+  is to the corresponding field."
+  ; {:added "1.0", :special-form true, :forms '[(loop [bindings*] exprs*)]}
+  [form]
+  (compile-template
+    (list "~{} = ~{}"
+      (compile (first form))
+      (compile (second form)))))
 
 (defn compile-vector
   "Creates a new vector containing the args"
   [form]
   (compile-template (list "[~{}]" (compile-group form))))
+
+(install-special (symbol "set!") compile-set)
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
 (install-special (symbol "do") compile-do)

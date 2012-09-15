@@ -87,6 +87,15 @@
     (assert (identical? (transpile "(throw \"boom\")")
                         "(function() { throw \"boom\"; })()")
             "throw string compile")
+
+    (assert (identical? (transpile "(set! x 1)")
+            "x = 1")
+            "set! compiles")
+
+    (assert (identical? (transpile "(set! x (foo bar 2))")
+            "x = (foo)(bar, 2)")
+            "set! with value expression compiles")
+
     (assert (identical? (transpile "[a b]")
             "[a, b]")
             "vector compiles")
