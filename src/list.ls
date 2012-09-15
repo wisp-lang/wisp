@@ -77,5 +77,14 @@
       (recur (.concat (array (first source)) items)
              (rest source)))))
 
+(defn map-list
+  "Maps list by applying `f` to each item"
+  [source f]
+  (if (empty? source) source
+      (cons (f (first source))
+            (map-list (rest source) f))))
+
+
+
 (export empty? count list? first second third
-        rest cons list reverse)
+        rest cons list reverse map-list)

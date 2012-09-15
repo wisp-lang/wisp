@@ -93,15 +93,6 @@
                 (set! (get target key) (f (get source key))))
             {})))
 
-(defn map-list
-  "Maps list by applying `f` to each item"
-  [source f]
-  (if (empty? source) source
-      (cons (f (first source))
-            (map-list (rest source) f))))
-
-
-
 (export dictionary? dictionary merge odd? vector?
-        map-dictionary map-list)
+        map-dictionary)
 
