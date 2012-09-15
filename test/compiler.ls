@@ -75,6 +75,18 @@
               "(function() {\n  var x = 1;\n  var y = 2;\n  return x;\n})()")
             "let with bindings compiles properly")
 
+
+    (assert (identical? (transpile "(throw error)")
+                        "(function() { throw error; })()")
+            "throw reference compiles")
+
+    (assert (identical? (transpile "(throw (Error message))")
+                        "(function() { throw (Error)(message); })()")
+            "throw expression compiles")
+
+    (assert (identical? (transpile "(throw \"boom\")")
+                        "(function() { throw \"boom\"; })()")
+            "throw string compile")
     )
 )
 
