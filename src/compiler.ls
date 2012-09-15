@@ -3,8 +3,9 @@
          quote? quote syntax-quote? syntax-quote
          name gensym deref set atom?] "./ast")
 (import [empty? count list? list first second third
-         rest cons reverse] "./list")
-(import [odd? dictionary merge map-dictionary map-list] "./runtime")
+         rest cons reverse map-list] "./list")
+(import [odd? dictionary? dictionary merge
+         map-dictionary] "./runtime")
 
 
 (defn ^boolean self-evaluating?
@@ -278,41 +279,92 @@
 
 ;; backend specific compiler hooks
 
-(install-special "fn"
-  (fn [form]
-    (compile (list (symbol "::compile")
-              "function(~{}) {\n  ~{}\n}\n"
-              (.join (first form) ", ")
-              (compile (list "::compile:statements" (rest form)))))))
+(defn compile-template
+  "Compiles given template"
+  [form]
+  (def indent-pattern #"\n *$")
+  (defn get-indentation [code]
+    (let [match (.match code indent-pattern)]
+      (or (and match (get match 0)) "\n")))
 
-(install-special (symbol "def")
-  (fn [form]
-    (compile (list
-      (symbol "::compile") "var ~{} = ~{}"
-        (first form)
-        (compile (second form))))))
-
-
-(install-special (symbol "::compile")
-  (fn [form]
-   (loop [code ""
-          parts (.split (first form) "~{}")
-          values (rest form)]
-     (if (> (.-length parts) 1)
+  (loop [code ""
+         parts (.split (first form) "~{}")
+         values (rest form)]
+    (if (> (.-length parts) 1)
       (recur
-        (.concat code (get parts 0) (first values))
-        (.slice parts 1)
-        (rest values))
-      (.concat code (get parts 0))))))
+       (str
+        code
+        (get parts 0)
+        (.replace (str "" (first values))
+                  "\n"
+                  (get-indentation (get parts 0))))
+       (.slice parts 1)
+       (rest values))
+       (.concat code (get parts 0)))))
+
+(defn compile-def
+  "Creates and interns or locates a global var with the name of symbol
+  and a namespace of the value of the current namespace (*ns*). If init
+  is supplied, it is evaluated, and the root binding of the var is set
+  to the resulting value. If init is not supplied, the root binding of
+  the var is unaffected. def always applies to the root binding, even if
+  the var is thread-bound at the point where def is called. def yields
+  the var itself (not its value)."
+  [form]
+  (compile-template
+   (list "var ~{} = ~{}"
+         (first form)
+         (compile (second form)))))
+
+(defn compile-if-else
+  "Evaluates test. If not the singular values nil or false,
+  evaluates and yields then, otherwise, evaluates and yields else.
+  If else is not supplied it defaults to nil. All of the other
+  conditionals in Clojure are based upon the same logic, that is,
+  nil and false constitute logical falsity, and everything else
+  constitutes logical truth, and those meanings apply throughout."
+  [form]
+  (compile-template
+    (list "~{} ?\n  ~{} :\n  ~{}"
+          (compile (first form))    ; condition
+          (compile (second form))   ; then
+          (compile (third form))))) ; else or nil
+
+(defn compile-fn
+  [form]
+  (compile-template
+    (list "function(~{}) {\n  ~{}\n}\n"
+          (.join (first form) ", ")
+          (compile-fn-body (rest form)))))
+
+(defn compile-fn-body
+  [form]
+  (loop [result ""
+         expression (first form)
+         expressions (rest form)]
+    (if (empty? expressions)
+      (str result "return " (compile expression) ";")
+      (recur
+        (str result (compile expression) ";" "\n")
+        (first expressions)
+        (rest expressions)))))
 
 
-(install-special (symbol "::compile:invoke")
-  (fn [form]
-    (compile
-      ;; TODO: Get rid of assumption that list serializes to `(...)`
-      (list (symbol "::compile") "(~{})(~{})"
-            (first form)
-            (compile (list (symbol "::compile:group") (second form)))))))
+(defn compile-fn-invoke
+  [form]
+  (compile-template
+   (list "(~{})(~{})"
+         (compile (first form))
+         (compile-group (second form)))))
+
+(defn compile-group
+  [form]
+  (.join (list-to-vector (map-list form compile)) ", "))
+
+(install-special (symbol "def") compile-def)
+(install-special (symbol "if") compile-if-else)
+(install-special (symbol "fn") compile-fn)
+(install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 (defn list-to-vector [source]
   (loop [vector (Array)
@@ -323,17 +375,8 @@
         (.concat vector (first list))
         (rest list)))))
 
-(install-special (symbol "::compile:statements")
-  (fn [form]
-    (.join (list-to-vector
-            (map-list (first form) compile))
-            ";\n")))
 
-(install-special (symbol "::compile:group")
-  (fn [form]
-    (.join (list-to-vector
-            (map-list (first form) compile))
-            ", ")))
+
 
 
 
@@ -368,7 +411,7 @@
     (set! string (.replace string (RegExp "\"" "g") "\\\""))
     (str "\"" string "\"")))
 
-(export 
+(export
   self-evaluating?
   compile
   macroexpand
