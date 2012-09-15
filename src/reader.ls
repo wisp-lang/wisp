@@ -336,8 +336,10 @@
     (if (or (nil? ch) (whitespace? ch) (macros ch))
       (do
         (unread reader ch)
-        (or (match-number buffer)
-            (reader-error reader "Invalid number format [" buffer "]")))
+        (def match (match-number buffer))
+        (if (nil? match)
+            (reader-error reader "Invalid number format [" buffer "]")
+            match))
       (recur (.concat buffer ch) (read-char reader)))))
 
 (defn read-string
