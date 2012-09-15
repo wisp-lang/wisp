@@ -85,6 +85,14 @@
             (map-list (rest source) f))))
 
 
+(defn list-to-vector [source]
+  (loop [vector (Array)
+         list source]
+    (if (empty? list)
+      vector
+      (recur
+        (.concat vector (first list))
+        (rest list)))))
 
 (export empty? count list? first second third
-        rest cons list reverse map-list)
+        rest cons list reverse map-list list-to-vector)

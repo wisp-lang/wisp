@@ -3,7 +3,7 @@
          quote? quote syntax-quote? syntax-quote
          name gensym deref set atom?] "./ast")
 (import [empty? count list? list first second third
-         rest cons reverse map-list] "./list")
+         rest cons reverse map-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge
          map-dictionary] "./runtime")
 
@@ -366,14 +366,6 @@
 (install-special (symbol "fn") compile-fn)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
-(defn list-to-vector [source]
-  (loop [vector (Array)
-         list source]
-    (if (empty? list)
-      vector
-      (recur
-        (.concat vector (first list))
-        (rest list)))))
 
 
 
