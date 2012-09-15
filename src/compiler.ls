@@ -333,7 +333,7 @@
 (defn compile-fn
   [form]
   (compile-template
-    (list "function(~{}) {\n  ~{}\n}\n"
+    (list "function(~{}) {\n  ~{}\n}"
           (.join (first form) ", ")
           (compile-fn-body (rest form)))))
 
