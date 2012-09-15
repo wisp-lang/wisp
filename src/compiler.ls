@@ -135,7 +135,7 @@
   [source f]
   (dictionary
     (reduce (.keys Object source)
-            (fn [target key] 
+            (fn [target key]
                 (set! (get target key) (f (get source key))))
             {})))
 
@@ -400,3 +400,96 @@
       original
       (recur expanded (macroexpand-1 expanded)))))
 
+
+
+;; backend specific compiler hooks
+
+(install-special "fn"
+  (fn [form]
+    (compile (list (symbol "::compile")
+              "function(~{}) {\n  ~{}\n}\n"
+              (.join (first form) ", ")
+              (compile (list "::compile:statements" (rest form)))))))
+
+(install-special (symbol "def")
+  (fn [form]
+    (compile (list
+      (symbol "::compile") "var ~{} = ~{}"
+        (first form)
+        (compile (second form))))))
+
+
+(install-special (symbol "::compile")
+  (fn [form]
+   (loop [code ""
+          parts (.split (first form) "~{}")
+          values (rest form)]
+     (if (> (.-length parts) 1)
+      (recur
+        (.concat code (get parts 0) (first values))
+        (.slice parts 1)
+        (rest values))
+      (.concat code (get parts 0))))))
+
+
+(install-special (symbol "::compile:invoke")
+  (fn [form]
+    (compile
+      ;; TODO: Get rid of assumption that list serializes to `(...)`
+      (list (symbol "::compile") "(~{})(~{})"
+            (first form)
+            (compile (list (symbol "::compile:group") (second form)))))))
+
+(defn list-to-vector [source]
+  (loop [vector (Array)
+         list source]
+    (if (empty? list)
+      vector
+      (recur
+        (.concat vector (first list))
+        (rest list)))))
+
+(install-special (symbol "::compile:statements")
+  (fn [form]
+    (.join (list-to-vector
+            (map-list (first form) compile))
+            ";\n")))
+
+(install-special (symbol "::compile:group")
+  (fn [form]
+    (.join (list-to-vector
+            (map-list (first form) compile))
+            ", ")))
+
+
+
+(install-special (symbol "::compile:keyword")
+  ;; Note: Intentionally do not prefix keywords (unlike clojurescript)
+  ;; so that they can be used with regular JS code:
+  ;; (.add-event-listener window :load handler)
+  (fn [form] (str "\"" (name (first form)) "\"")))
+
+(install-special (symbol "::compile:reference")
+  (fn [form] (name (first form))))
+
+(install-special (symbol "::compile:symbol")
+  (fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
+
+(install-special (symbol "::compile:nil")
+  (fn [form] "void 0"))
+
+(install-special (symbol "::compile:number")
+  (fn [form] (first form)))
+
+(install-special (symbol "::compile:boolean")
+  (fn [form] (if (true? (first form)) "true" "false")))
+
+(install-special (symbol "::compile:string")
+  (fn [form]
+    (set! string (first form))
+    (set! string (.replace string (RegExp "\\\\" "g") "\\\\"))
+    (set! string (.replace string (RegExp "\n" "g") "\\n"))
+    (set! string (.replace string (RegExp "\r" "g") "\\r"))
+    (set! string (.replace string (RegExp "\t" "g") "\\t"))
+    (set! string (.replace string (RegExp "\"" "g") "\\\""))
+    (str "\"" string "\"")))
