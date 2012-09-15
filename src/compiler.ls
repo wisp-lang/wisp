@@ -367,10 +367,42 @@
   [form]
   (compile (list (cons (symbol "fn") (cons (Array) form)))))
 
+
+(defn define-bindings
+  "Returns list of binding definitions"
+  [bindings]
+  (loop [defs (list)
+         bindings bindings]
+    (if (= (.-length bindings) 0)
+      (reverse defs)
+      (recur
+        (cons
+          (list (symbol "def")      ; '(def (get bindings 0) (get bindings 1))
+                (get bindings 0)    ; binding name
+                (get bindings 1))   ; binding value
+           defs)
+        (.slice bindings 2)))))
+
+(defn compile-let
+  "Evaluates the exprs in a lexical context in which the symbols in
+  the binding-forms are bound to their respective init-exprs or parts
+  therein."
+  ; {:added "1.0", :special-form true, :forms '[(let [bindings*] exprs*)]}
+  [form]
+  ;; TODO: Implement destructure for bindings:
+  ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3937
+  ;; Consider making let a macro:
+  ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3999
+  (compile
+    (cons (symbol "do")
+          (concat-list
+            (define-bindings (first form))
+            (rest form)))))
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
 (install-special (symbol "do") compile-do)
 (install-special (symbol "fn") compile-fn)
+(install-special (symbol "let") compile-let)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 

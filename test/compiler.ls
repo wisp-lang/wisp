@@ -67,6 +67,14 @@
              "empty do compiles")
 
 
+    (assert (identical? (transpile "(let [] x)")
+                        "(function() {\n  return x;\n})()")
+            "let bindings compiles properly")
+    (assert (identical?
+              (transpile "(let [x 1 y 2] x)")
+              "(function() {\n  var x = 1;\n  var y = 2;\n  return x;\n})()")
+            "let with bindings compiles properly")
+
     )
 )
 
