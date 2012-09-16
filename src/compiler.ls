@@ -313,9 +313,8 @@
   the var itself (not its value)."
   [form]
   (compile-template
-   (list "var ~{} = ~{}"
-         (first form)
-         (compile (second form)))))
+   (list "var ~{}"
+         (compile (cons (symbol "set!") form)))))
 
 (defn compile-if-else
   "Evaluates test. If not the singular values nil or false,
