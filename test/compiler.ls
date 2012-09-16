@@ -49,6 +49,11 @@
     (assert (identical? (transpile "(fn [x] (def y 1) (foo x y))")
                         "function(x) {\n  var y = 1;\n  return (foo)(x, y);\n}")
             "function with multiple statements compiles")
+    (assert (identical? (transpile "(fn identity [x] x)")
+                        "function identity(x) {\n  return x;\n}")
+            "named function compiles")
+
+
 
     (assert (identical? (transpile "(if foo (bar))")
                         "foo ?\n  (bar)() :\n  void 0")

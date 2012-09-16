@@ -332,11 +332,19 @@
           (compile (third form))))) ; else or nil
 
 (defn compile-fn
+  "(fn name? [params* ] exprs*)
+
+  Defines a function (fn)"
   [form]
   (compile-template
-    (list "function(~{}) {\n  ~{}\n}"
-          (.join (first form) ", ")
-          (compile-fn-body (rest form)))))
+    (if (symbol? (first form))
+      (list "function ~{}(~{}) {\n  ~{}\n}"
+            (name (first form))
+            (.join (second form) ", ")
+            (compile-fn-body (rest (rest form))))
+      (list "function(~{}) {\n  ~{}\n}"
+            (.join (first form) ", ")
+            (compile-fn-body (rest form))))))
 
 (defn compile-fn-body
   [form]
