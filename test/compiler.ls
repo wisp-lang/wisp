@@ -28,26 +28,25 @@
             "def compiles properly")
     (assert (identical? (transpile "(def y 1)") "var y = 1")
             "def with two args compiled properly")
-    (assert (identical? (transpile "'(def x 1)") "(list)(def, x, 1)")
+    (assert (identical? (transpile "'(def x 1)") "list(def, x, 1)")
             "quotes preserve lists")
 
-    (assert (identical? (transpile "(foo)") "(foo)()")
+    (assert (identical? (transpile "(foo)") "foo()")
              "function calls compile")
-    (assert (identical? (transpile "(foo bar)") "(foo)(bar)")
+    (assert (identical? (transpile "(foo bar)") "foo(bar)")
              "function calls with single arg compile")
-    (assert (identical? (transpile "(foo bar baz)") "(foo)(bar, baz)")
+    (assert (identical? (transpile "(foo bar baz)") "foo(bar, baz)")
             "function calls with multi arg compile")
     (assert (identical? (transpile "(foo ((bar baz) beep))")
-                        "(foo)(((bar)(baz))(beep))")
+                        "foo((bar(baz))(beep))")
              "nested function calls compile")
 
 
     (assert (identical? (transpile "(fn [x] x)")
                         "function(x) {\n  return x;\n}")
             "function compiles")
-
     (assert (identical? (transpile "(fn [x] (def y 1) (foo x y))")
-                        "function(x) {\n  var y = 1;\n  return (foo)(x, y);\n}")
+                        "function(x) {\n  var y = 1;\n  return foo(x, y);\n}")
             "function with multiple statements compiles")
     (assert (identical? (transpile "(fn identity [x] x)")
                         "function identity(x) {\n  return x;\n}")
@@ -56,16 +55,16 @@
 
 
     (assert (identical? (transpile "(if foo (bar))")
-                        "foo ?\n  (bar)() :\n  void 0")
+                        "foo ?\n  bar() :\n  void 0")
              "if compiles")
 
     (assert (identical? (transpile "(if foo (bar) baz)")
-                        "foo ?\n  (bar)() :\n  baz")
+                        "foo ?\n  bar() :\n  baz")
              "if-else compiles")
 
 
     (assert (identical? (transpile "(do (foo bar) bar)")
-                        "(function() {\n  (foo)(bar);\n  return bar;\n})()")
+                        "(function() {\n  foo(bar);\n  return bar;\n})()")
              "do compiles")
     (assert (identical? (transpile "(do)")
                         "(function() {\n  return void 0;\n})()")
@@ -86,7 +85,7 @@
             "throw reference compiles")
 
     (assert (identical? (transpile "(throw (Error message))")
-                        "(function() { throw (Error)(message); })()")
+                        "(function() { throw Error(message); })()")
             "throw expression compiles")
 
     (assert (identical? (transpile "(throw \"boom\")")
@@ -98,7 +97,7 @@
             "set! compiles")
 
     (assert (identical? (transpile "(set! x (foo bar 2))")
-            "x = (foo)(bar, 2)")
+            "x = foo(bar, 2)")
             "set! with value expression compiles")
 
     (assert (identical? (transpile "[a b]")
@@ -106,7 +105,7 @@
             "vector compiles")
 
     (assert (identical? (transpile "[a (b c)]")
-            "[a, (b)(c)]")
+            "[a, b(c)]")
             "vector of expressions compiles")
 
     (assert (identical? (transpile "[]")

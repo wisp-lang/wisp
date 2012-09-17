@@ -362,7 +362,8 @@
 (defn compile-fn-invoke
   [form]
   (compile-template
-   (list "(~{})(~{})"
+   ;; Wrap functions returned by expressions into parenthesis.
+   (list (if (list? (first form)) "(~{})(~{})" "~{}(~{})")
          (compile (first form))
          (compile-group (second form)))))
 
