@@ -1,3 +1,4 @@
+(include "./runtime")
 (import [meta with-meta symbol? symbol keyword? keyword
          unquote? unquote unquote-splicing? unquote-splicing
          quote? quote syntax-quote? syntax-quote
