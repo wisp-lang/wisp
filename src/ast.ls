@@ -136,7 +136,7 @@
 
 
 (export meta with-meta atom?
-        symbol? symbol
+        symbol? symbol symbol-identical?
         keyword? keyword
         gensym name deref set
 

@@ -1,7 +1,7 @@
 (import [meta with-meta symbol? symbol keyword? keyword
          unquote? unquote unquote-splicing? unquote-splicing
          quote? quote syntax-quote? syntax-quote
-         name gensym deref set atom?] "./ast")
+         name gensym deref set atom? symbol-identical?] "./ast")
 (import [empty? count list? list first second third
          rest cons reverse map-list concat-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge
