@@ -84,7 +84,7 @@
       (cons (f (first source))
             (map-list (rest source) f))))
 
-(defn concat-list
+(defn list-concat
   "Returns list representing the concatenation of the elements in the
   supplied lists."
   [left right]
@@ -106,4 +106,4 @@
 
 (export empty? count list? first second third
         rest cons list reverse
-        map-list list-to-vector concat-list)
+        map-list list-to-vector list-concat)
