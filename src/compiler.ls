@@ -224,11 +224,6 @@
       (cond
        (quote? form) (compile-object (second form))
        (syntax-quote? form) (compile-syntax-quoted (second form))
-       ;(symbol-identical? head (symbol "if")) (compile-if form)
-       ;(symbol-identical? head (symbol "fn")) (compile-fn form)
-       ;(symbol-identical? head (symbol "set!")) (compile-set form)
-       ;(symbol-identical? head (symbol "def")) (compile-define form)
-       ;(symbol-identical? head (symbol "%raw")) (second form)
        (special? head) (execute-special head form)
        :else (do
               (if (not (or (symbol? head) (list? head)))
