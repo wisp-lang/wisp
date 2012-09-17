@@ -405,7 +405,7 @@
   ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3999
   (compile
     (cons (symbol "do")
-          (concat-list
+          (list-concat
             (define-bindings (first form))
             (rest form)))))
 (defn compile-throw
