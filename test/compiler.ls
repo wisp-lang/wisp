@@ -114,3 +114,8 @@
     )
 )
 
+
+    (assert (identical? (transpile "(.log console message)")
+                        "console.log(message)")
+            "method call compiles correctly")
+
