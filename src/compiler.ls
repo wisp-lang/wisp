@@ -431,6 +431,58 @@
   [form]
   (compile-template (list "[~{}]" (compile-group form))))
 
+
+(defn compile-try
+  "The exprs are evaluated and, if no exceptions occur, the value
+  of the last is returned. If an exception occurs and catch clauses
+  are provided, its exprs are evaluated in a context in which name is
+  bound to the thrown exception, and the value of the last is the return
+  value of the function. If there is no matching catch clause, the exception
+  propagates out of the function. Before returning, normally or abnormally,
+  any finally exprs will be evaluated for their side effects."
+  [form]
+  (loop [try-exprs (list)
+         catch-exprs (list)
+         finally-exprs (list)
+         exprs (reverse form)]
+    (if (empty? exprs)
+      (if (empty? catch-exprs)
+        (compile-template
+          (list
+            "(function() {\ntry {\n  ~{}\n} finally {\n  ~{}\n}})()"
+            (compile-fn-body try-exprs)
+            (compile-fn-body finally-exprs)))
+        (if (empty? finally-exprs)
+          (compile-template
+            (list
+              "(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n}})()"
+              (compile-fn-body try-exprs)
+              (first catch-exprs)
+              (compile-fn-body (rest catch-exprs))))
+          (compile-template
+            (list
+              "(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}}()"
+              (compile-fn-body try-exprs)
+              (first catch-exprs)
+              (compile-fn-body (rest catch-exprs))
+              (compile-fn-body finally-exprs)))))
+        (if (symbol-identical? (first (first exprs))
+                               (symbol "catch"))
+          (recur try-exprs
+                 (rest (first exprs))
+                 finally-exprs
+                 (rest exprs))
+          (if (symbol-identical? (first (first exprs))
+                                 (symbol "finally"))
+            (recur try-exprs
+                   catch-exprs
+                   (rest (first exprs))
+                   (rest exprs))
+            (recur (cons (first exprs) try-exprs)
+                   catch-exprs
+                   finally-exprs
+                   (rest exprs)))))))
+
 (install-special (symbol "set!") compile-set)
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
@@ -439,6 +491,7 @@
 (install-special (symbol "let") compile-let)
 (install-special (symbol "throw") compile-throw)
 (install-special (symbol "vector") compile-vector)
+(install-special (symbol "try") compile-try)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 
