@@ -29,8 +29,9 @@
     (assert (identical? (transpile "(def y 1)") "var y = 1")
             "def with two args compiled properly")
     (assert (identical? (transpile "'(def x 1)") "list(def, x, 1)")
-            "quotes preserve lists")
+            "quotes preserve lists"))
 
+  ("compile invoke forms"
     (assert (identical? (transpile "(foo)") "foo()")
              "function calls compile")
     (assert (identical? (transpile "(foo bar)") "foo(bar)")
@@ -39,9 +40,10 @@
             "function calls with multi arg compile")
     (assert (identical? (transpile "(foo ((bar baz) beep))")
                         "foo((bar(baz))(beep))")
-             "nested function calls compile")
+             "nested function calls compile"))
 
 
+  ("compile functions"
     (assert (identical? (transpile "(fn [x] x)")
                         "function(x) {\n  return x;\n}")
             "function compiles")
@@ -50,36 +52,39 @@
             "function with multiple statements compiles")
     (assert (identical? (transpile "(fn identity [x] x)")
                         "function identity(x) {\n  return x;\n}")
-            "named function compiles")
+            "named function compiles"))
 
 
 
+  ("compile if special form"
     (assert (identical? (transpile "(if foo (bar))")
                         "foo ?\n  bar() :\n  void 0")
              "if compiles")
 
     (assert (identical? (transpile "(if foo (bar) baz)")
                         "foo ?\n  bar() :\n  baz")
-             "if-else compiles")
+             "if-else compiles"))
 
-
+  ("compile do special form"
     (assert (identical? (transpile "(do (foo bar) bar)")
                         "(function() {\n  foo(bar);\n  return bar;\n})()")
              "do compiles")
     (assert (identical? (transpile "(do)")
                         "(function() {\n  return void 0;\n})()")
-             "empty do compiles")
+             "empty do compiles"))
 
 
+  ("compile let special form"
     (assert (identical? (transpile "(let [] x)")
                         "(function() {\n  return x;\n})()")
             "let bindings compiles properly")
     (assert (identical?
               (transpile "(let [x 1 y 2] x)")
               "(function() {\n  var x = 1;\n  var y = 2;\n  return x;\n})()")
-            "let with bindings compiles properly")
+            "let with bindings compiles properly"))
 
 
+  ("compile throw special form"
     (assert (identical? (transpile "(throw error)")
                         "(function() { throw error; })()")
             "throw reference compiles")
@@ -90,16 +95,18 @@
 
     (assert (identical? (transpile "(throw \"boom\")")
                         "(function() { throw \"boom\"; })()")
-            "throw string compile")
+            "throw string compile"))
 
+  ("compile set! special form"
     (assert (identical? (transpile "(set! x 1)")
             "x = 1")
             "set! compiles")
 
     (assert (identical? (transpile "(set! x (foo bar 2))")
             "x = foo(bar, 2)")
-            "set! with value expression compiles")
+            "set! with value expression compiles"))
 
+  ("compile vectors"
     (assert (identical? (transpile "[a b]")
             "[a, b]")
             "vector compiles")
@@ -110,9 +117,10 @@
 
     (assert (identical? (transpile "[]")
             "[]")
-            "empty vector compiles")
+            "empty vector compiles"))
 
 
+  ("compiles try special form"
     (assert (identical?
       (transpile "(try (mod 1 0) (catch e e))")
       "(function() {\ntry {\n  return mod(1, 0);\n} catch (e) {\n  return e;\n}})()")
@@ -126,13 +134,12 @@
     (assert (identical?
       (transpile "(try (mod 1 0) (catch e e) (finally 0))")
       "(function() {\ntry {\n  return mod(1, 0);\n} catch (e) {\n  return e;\n} finally {\n  return 0;\n}})()")
-      "try / catch / finally compiles")
+      "try / catch / finally compiles"))
 
-    )
-)
-
-
+  ("compile method invoke via `.` special form"
     (assert (identical? (transpile "(.log console message)")
                         "console.log(message)")
-            "method call compiles correctly")
+            "method call compiles correctly"))
+
+)
 
