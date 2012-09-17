@@ -199,15 +199,22 @@
   (cond
    (list? form)
     (compile
-      (syntax-quote-split (symbol "list-append") (symbol "list") form))
+      (syntax-quote-split
+        (symbol "list-concat")
+        (symbol "list")
+        form))
    (vector? form)
     (compile
-      (syntax-quote-split (symbol "vector-concat") (symbol "vector") form)
-      generator
-      expr?)
+      (syntax-quote-split
+        (symbol "vector-concat")
+        (symbol "vector")
+        (apply list form)))
    (dictionary? form)
     (compile
-      (syntax-quote-split (symbol "dictionary-merge") (symbol "dictionary") form))
+      (syntax-quote-split
+        (symbol "dictionary-merge")
+        (symbol "dictionary")
+        form))
    :else
     (compile-object form)))
 
