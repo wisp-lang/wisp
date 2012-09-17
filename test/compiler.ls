@@ -141,5 +141,34 @@
                         "console.log(message)")
             "method call compiles correctly"))
 
+  ("compile references"
+    (assert (identical? (transpile "(set! **macros** [])")
+            "__macros__ = []")
+            "**macros** => __macros__")
+    (assert (identical? (transpile "(fn vector->list [v] (apply list v))")
+            "function vectorToList(v) {\n  return apply(list, v);\n}")
+            "list->vector => listToVector")
+    (assert (identical? (transpile "(swap! foo bar)")
+            "swap(foo, bar)")
+            "set! => set")
+    (comment
+    (assert (identical? (transpile "(let [raw% foo-bar] raw%)")
+            "swap(foo, bar)")
+            "set! => set"))
+    (assert (identical? (transpile "(def under_dog)")
+            "var under_dog = void 0")
+            "foo_bar => foo_bar")
+    (assert (identical? (transpile "(digit? 0)")
+            "isDigit(0)")
+            "number? => isNumber")
+
+    (assert (identical? (transpile "(create-server options)")
+            "createServer(options)")
+            "create-server -> createServer")
+
+    (assert (identical? (transpile "(.create-server http options)")
+            "http.createServer(options)")
+            "http.create-server -> http.createServer"))
+
 )
 

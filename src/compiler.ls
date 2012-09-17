@@ -189,9 +189,39 @@
     (dictionary? (compile (apply-form (symbol "dictionary") form)))))
 
 (defn compile-reference
-  ""
+  "Translates references from clojure convention to JS:
+
+  **macros**      __macros__
+  list->vector    listToVector
+  set!            set
+  raw%            raw$
+  foo_bar         foo_bar
+  number?         isNumber
+  create-server   createServer"
   [form]
-  (compile (list (symbol "::compile:reference") form)))
+  (def id (name form))
+  ;; **macros** ->  __macros__
+  (set! id (.join (.split id "*") "_"))
+  ;; list->vector ->  listToVector
+  (set! id (.join (.split id "->") "-to-"))
+  ;; set! ->  set
+  (set! id (.join (.split id "!") ""))
+  ;; raw% -> raw$
+  (set! id (.join (.split id "%") "$"))
+  ;; number? -> isNumber
+  (set! id (if (identical? (.substr id -1) "?")
+             (str "is-" (.substr id 0 (- (.-length id) 1)))
+             id))
+  ;; create-server -> createServer
+  (set! id (.reduce
+            (.split id "-")
+            (fn [result key]
+              (str result
+                   (if result
+                     (str (.to-upper-case (get key 0)) (.substr key 1))
+                     key)))
+            ""))
+  (symbol id))
 
 (defn compile-syntax-quoted
   ""
@@ -341,7 +371,7 @@
   (compile-template
     (if (symbol? (first form))
       (list "function ~{}(~{}) {\n  ~{}\n}"
-            (name (first form))
+            (compile (first form))
             (.join (second form) ", ")
             (compile-fn-body (rest (rest form))))
       (list "function(~{}) {\n  ~{}\n}"
@@ -494,9 +524,9 @@
   [form]
   ;; (. object method arg1 arg2) -> (object.method arg1 arg2)
   (compile
-    (cons (symbol (str (name (first form))  ;; object name
+    (cons (symbol (str (compile (first form))  ;; object name
                   "."
-                  (name (second form))))    ;; method name
+                  (compile (second form))))    ;; method name
           (rest (rest form)))))             ;; args
 
 (install-special (symbol "set!") compile-set)
@@ -521,7 +551,7 @@
   (fn [form] (str "\"" (name (first form)) "\"")))
 
 (install-special (symbol "::compile:reference")
-  (fn [form] (name (first form))))
+  (fn [form] (name (compile-reference (first form)))))
 
 (install-special (symbol "::compile:symbol")
   (fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
