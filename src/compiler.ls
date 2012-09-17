@@ -123,10 +123,10 @@
           form
           (fn [e]
               (if (unquote? e)
-                  (rest (rest e))
+                  (second e)
                   (if (and (list? e)
                            (keyword? (first e)))
-                      (list syntax-quote (rest (rest e)))
+                      (list syntax-quote (second e))
                       (list syntax-quote e)))))))
 
 (defn split-splices
