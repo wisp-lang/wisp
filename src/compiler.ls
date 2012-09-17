@@ -167,7 +167,7 @@
   (let [slices (split-splices form fn-name)]
     (if (= (count slices) 1)
       (first slices)
-      (apply-node append-name slices))))
+      (apply-form append-name slices))))
 
 
 ;; compiler
