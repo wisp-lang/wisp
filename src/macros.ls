@@ -202,6 +202,9 @@
   `(identical? ~value 'false))
 (defmacro object? [value]
   `(and ~value (type-of? ~value "object")))
+(defmacro fn? [value]
+  `(and ~value (type-of? ~value "function")))
+
 
 (defmacro type-of? [value type]
   `(identical? (typeof ~value) ~type))
@@ -220,6 +223,7 @@
 
 (def-type-predicate string? String)
 (def-type-predicate array? Array)
+(def-type-predicate vector? Array)
 (def-type-predicate regexp? Regexp)
 (def-type-predicate date? Date)
 (def-type-predicate number? Number)
