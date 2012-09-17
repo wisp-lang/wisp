@@ -15,7 +15,17 @@
           (if (empty? list)
             (str "(" (.substr result 1) ")")
             (recur
-             (str result " " (first list))
+             (str result
+                  " "
+                  (if (vector? (first list))
+                    (str "[" (.join (first list) " ") "]")
+                    (if (nil? (first list))
+                      "nil"
+                      (if (string? (first list))
+                        (.stringify JSON (first list))
+                        (if (number? (first list))
+                          (.stringify JSON (first list))
+                          (first list))))))
              (rest list))))))
 
 (defn list?
