@@ -111,6 +111,23 @@
     (assert (identical? (transpile "[]")
             "[]")
             "empty vector compiles")
+
+
+    (assert (identical?
+      (transpile "(try (mod 1 0) (catch e e))")
+      "(function() {\ntry {\n  return mod(1, 0);\n} catch (e) {\n  return e;\n}})()")
+      "try / catch compiles")
+
+    (assert (identical?
+      (transpile "(try (mod 1 0) (finally 0))")
+      "(function() {\ntry {\n  return mod(1, 0);\n} finally {\n  return 0;\n}})()")
+      "try / finally compiles")
+
+    (assert (identical?
+      (transpile "(try (mod 1 0) (catch e e) (finally 0))")
+      "(function() {\ntry {\n  return mod(1, 0);\n} catch (e) {\n  return e;\n} finally {\n  return 0;\n}})()")
+      "try / catch / finally compiles")
+
     )
 )
 

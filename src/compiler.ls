@@ -462,7 +462,7 @@
               (compile-fn-body (rest catch-exprs))))
           (compile-template
             (list
-              "(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}}()"
+              "(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}})()"
               (compile-fn-body try-exprs)
               (first catch-exprs)
               (compile-fn-body (rest catch-exprs))
