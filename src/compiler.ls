@@ -45,20 +45,23 @@
 (defn make-macro
   "Makes macro"
   [pattern body]
-  (let [x (gensym)]
-    ;; compile the macro into native code and use the host's native
-    ;; eval to eval it into a function.
-    (eval (compile
-            (macroexpand
-              ; `(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))
-              (read-from-string
-                "`(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))"))
-            ))))
+  (let [x (gensym)
+        program (compile
+                  (macroexpand
+                    ; `(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))
+                    (cons (symbol "fn")
+                      (cons pattern body))))
+        ;; compile the macro into native code and use the host's native
+        ;; eval to eval it into a function.
+        macro (eval (str "(" program ")"))
+        ]
+    (fn [form]
+      (apply macro (list-to-vector (rest form))))))
 
 
 ;; system macros
 (install-macro
- (symbol "define-macro")
+ (symbol "defmacro")
  (fn [form]
    (let [signature (rest form)]
      (let [name (first signature)
@@ -66,8 +69,7 @@
            body (rest (rest signature))]
 
        ;; install it during expand-time
-       (install-macro name (make-macro pattern body))
-       false))))
+       (install-macro name (make-macro pattern body))))))
 
 
 ;; special forms
@@ -276,7 +278,7 @@
           id (name op)]
       (cond
         (special? op) form
-        (macro? op) (execute-macro op (rest form))
+        (macro? op) (execute-macro op form)
         (and (symbol? op)
              (not (identical? id ".")))
           ;; (.substring s 2 5) => (. s substring 2 5)
@@ -554,7 +556,10 @@
   (fn [form] (name (compile-reference (first form)))))
 
 (install-special (symbol "::compile:symbol")
-  (fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
+  (fn [form]
+    (compile
+      (list (symbol "symbol") (name (first form))))))
+  ;(fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
 
 (install-special (symbol "::compile:nil")
   (fn [form] "void 0"))
