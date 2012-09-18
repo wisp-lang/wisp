@@ -531,6 +531,15 @@
                   (compile (second form))))    ;; method name
           (rest (rest form)))))             ;; args
 
+(defn compile-apply
+  [form]
+  (compile
+    (list (symbol ".")
+          (first form)
+          (symbol "apply")
+          (first form)
+          (second form))))
+
 (install-special (symbol "set!") compile-set)
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
@@ -541,6 +550,7 @@
 (install-special (symbol "vector") compile-vector)
 (install-special (symbol "try") compile-try)
 (install-special (symbol ".") compile-method-invoke)
+(install-special (symbol "apply") compile-apply)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 
