@@ -9,16 +9,31 @@
 
 (defn PushbackReader
   "StringPushbackReader"
-  [source index buffer]
+  [source uri index buffer]
   (set! this.source source)
+  (set! this.uri uri)
   (set! this.index-atom index)
   (set! this.buffer-atom buffer)
+  (set! this.column-atom 1)
+  (set! this.line-atom 1)
   this)
+
 
 (defn push-back-reader
   "Creates a StringPushbackReader from a given string"
-  [source]
-  (new PushbackReader source 0 ""))
+  [source uri]
+  (new PushbackReader source uri 0 ""))
+
+(defn line
+  "Return current line of the reader"
+  [reader]
+  (.-line-atom reader))
+
+(defn column
+  "Return current column of the reader"
+  [reader]
+  (.-column-atom reader))
+
 (defn next-char
   "Returns next char from the Reader without reading it.
   nil if the end of stream has being reached."
@@ -31,6 +46,12 @@
   "Returns the next char from the Reader, nil if the end
   of stream has been reached"
   [reader]
+  ;; Update line column depending on what has being read.
+  (if (identical? (next-char reader) "\n")
+    (do (set! reader.line-atom (+ (line reader) 1))
+        (set! reader.column-atom 1))
+    (set! reader.column-atom (+ (column reader) 1)))
+
   (if (empty? reader.buffer-atom)
     (let [index reader.index-atom]
       (set! reader.index-atom (+ index 1))
@@ -42,7 +63,12 @@
 (defn unread-char
   "Push back a single character on to the stream"
   [reader ch]
-  (if ch (set! reader.buffer-atom (.concat ch reader.buffer-atom))))
+  (if ch
+    (do
+      (if (identical? ch "\n")
+        (set! reader.line-atom (- reader.line-atom 1))
+        (set! reader.column-atom (- reader.column-atom 1)))
+      (set! reader.buffer-atom (str ch reader.buffer-atom)))))
 
 
 ;; Predicates
@@ -83,7 +109,10 @@
 ;; TODO: Line numbers
 (defn reader-error
   [reader message]
-  (throw (Error message)))
+  (throw
+   (Error (str message
+               "\n" "line:" (line reader)
+               "\n" "column:" (column reader)))))
 
 (defn ^boolean macro-terminating? [ch]
   (and (not (identical? ch "#"))
