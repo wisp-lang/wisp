@@ -39,8 +39,7 @@
       (set! reader.buffer-atom (.substr buffer 1))
       (aget buffer 0))))
 
-
-(defn unread
+(defn unread-char
   "Push back a single character on to the stream"
   [reader ch]
   (if ch (set! reader.buffer-atom (.concat ch reader.buffer-atom))))
@@ -102,7 +101,7 @@
     (if (or (nil? ch)
             (whitespace? ch)
             (macro-terminating? ch))
-      (do (unread reader ch) buffer)
+      (do (unread-char reader ch) buffer)
       (recur (.concat buffer ch)
              (read-char reader)))))
 
@@ -365,7 +364,7 @@
       (if (identical? ch "@")
         (list unquote-splicing (read reader true nil true))
         (do
-          (unread reader ch)
+          (unread-char reader ch)
           (list unquote (read reader true nil true)))))))
 
 
