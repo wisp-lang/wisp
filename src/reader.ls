@@ -75,9 +75,7 @@
   (or (numeric? initch)
       (and (or (identical? \+ initch)
                (identical? \- initch))
-           (numeric? (let [next-ch (read-char reader)]
-                       (unread reader next-ch)
-                       next-ch)))))
+           (numeric? (next-char reader)))))
 
 
 
