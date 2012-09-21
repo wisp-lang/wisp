@@ -19,6 +19,13 @@
   "Creates a StringPushbackReader from a given string"
   [source]
   (new PushbackReader source 0 ""))
+(defn next-char
+  "Returns next char from the Reader without reading it.
+  nil if the end of stream has being reached."
+  [reader]
+  (if (empty? reader.buffer-atom)
+    (aget reader.source reader.index-atom)
+    (aget reader.buffer-atom 0)))
 
 (defn read-char
   "Returns the next char from the Reader, nil if the end
@@ -32,13 +39,6 @@
       (set! reader.buffer-atom (.substr buffer 1))
       (get buffer 0))))
 
-(defn first-char
-  "Returns first char from the Reader without reading it.
-  nil if the on of stream has being riched"
-  [reader]
-  (if (empty? reader.buffer)
-    (aget reader.source reader.index-atom)
-    (aget reader.buffer-atom 0)))
 
 (defn unread
   "Push back a single character on to the stream"
