@@ -37,7 +37,7 @@
       (aget reader.source index))
     (let [buffer reader.buffer-atom]
       (set! reader.buffer-atom (.substr buffer 1))
-      (get buffer 0))))
+      (aget buffer 0))))
 
 
 (defn unread
