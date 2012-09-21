@@ -261,24 +261,24 @@
 ;; TODO: Complete implementation
 (defn read-delimited-list
   "Reads out delimited list"
-  [delim rdr recursive?]
-    (loop [a (array)]
-      (let [ch (read-past whitespace? rdr)]
-        (if (not ch) (reader-error rdr "EOF"))
-        (if (identical? delim ch)
-          a
-          (let [macrofn (macros ch)]
-            (if macrofn
-              (let [mret (macrofn rdr ch)]
-                (recur (if (identical? mret rdr)
+  [delim reader recursive?]
+  (loop [a (array)]
+    (let [ch (read-past whitespace? reader)]
+      (if (not ch) (reader-error reader "EOF"))
+      (if (identical? delim ch)
+        a
+        (let [macrofn (macros ch)]
+          (if macrofn
+            (let [mret (macrofn reader ch)]
+              (recur (if (identical? mret reader)
+                       a
+                       (.concat a (array mret)))))
+            (do
+              (unread-char reader ch)
+              (let [o (read reader true nil recursive?)]
+                (recur (if (identical? o reader)
                          a
-                         (.concat a (array mret)))))
-              (do
-                (unread rdr ch)
-                (let [o (read rdr true nil recursive?)]
-                  (recur (if (identical? o rdr)
-                           a
-                           (.concat a (array o))))))))))))
+                         (.concat a (array o))))))))))))
 
 ;; data structure readers
 
@@ -292,47 +292,49 @@
 
 
 (defn read-dispatch
-  [rdr _]
-  (let [ch (read-char rdr)
+  [reader _]
+  (let [ch (read-char reader)
         dm (dispatch-macros ch)]
     (if dm
-      (dm rdr _)
-      (let [obj (maybe-read-tagged-type rdr ch)]
-        (if obj
-          obj
-          (reader-error rdr "No dispatch macro for " ch))))))
+      (dm reader _)
+      (let [object (maybe-read-tagged-type reader ch)]
+        (if object
+          object
+          (reader-error reader "No dispatch macro for " ch))))))
 
 (defn read-unmatched-delimiter
   [rdr ch]
   (reader-error rdr "Unmached delimiter " ch))
 
 (defn read-list
-  [rdr _]
-  (apply list (read-delimited-list ")" rdr true)))
+  [reader]
+  (apply list (read-delimited-list ")" reader true)))
 
 (def read-comment skip-line)
 
 (defn read-vector
-  [rdr _]
-  (read-delimited-list "]" rdr true))
+  [reader]
+  (read-delimited-list "]" reader true))
 
 (defn read-map
-  [rdr _]
-  (let [l (read-delimited-list "}" rdr true)]
-    (if (odd? (.-length l))
+  [reader]
+  (let [items (read-delimited-list "}" reader true)]
+    (if (odd? (.-length items))
       (reader-error
-       rdr
+       reader
        "Map literal must contain an even number of forms"))
-    (apply dictionary l)))
+    (apply dictionary items)))
 
 (defn read-number
   [reader initch]
   (loop [buffer initch
          ch (read-char reader)]
 
-    (if (or (nil? ch) (whitespace? ch) (macros ch))
+    (if (or (nil? ch)
+            (whitespace? ch)
+            (macros ch))
       (do
-        (unread reader ch)
+        (unread-char reader ch)
         (def match (match-number buffer))
         (if (nil? match)
             (reader-error reader "Invalid number format [" buffer "]")
@@ -341,7 +343,7 @@
              (read-char reader)))))
 
 (defn read-string
-  [reader _]
+  [reader]
   (loop [buffer ""
          ch (read-char reader)]
 
@@ -358,7 +360,7 @@
 
 (defn read-unquote
   "Reads unquote form ~form or ~(foo bar)"
-  [reader _]
+  [reader]
   (let [ch (read-char reader)]
     (if (not ch)
       (reader-error reader "EOF while reading character")
@@ -369,11 +371,11 @@
           (list unquote (read reader true nil true)))))))
 
 
-(defn special-symbols [t not-found]
+(defn special-symbols [text not-found]
   (cond
-   (identical? t "nil") nil
-   (identical? t "true") true
-   (identical? t "false") false
+   (identical? text "nil") nil
+   (identical? text "true") true
+   (identical? text "false") false
    :else not-found))
 
 
@@ -382,7 +384,8 @@
   (let [token (read-token reader initch)]
     (if (>= (.index-of token "/") 0)
       (symbol (.substr token 0 (.index-of token "/"))
-              (.substr token (inc (.index-of token "/")) (.-length token)))
+              (.substr token (inc (.index-of token "/"))
+                       (.-length token)))
       (special-symbols token (symbol token)))))
 
 (defn read-keyword
@@ -399,10 +402,10 @@
                                       (.-length ns)) ":/"))
 
          (identical? (aget name (dec (.-length name))) ":")
-         (not (== (.indexOf token "::" 1) -1)))
+         (not (== (.index-of token "::" 1) -1)))
       (reader-error reader "Invalid token: " token)
       (if (and (not (nil? ns)) (> (.-length ns) 0))
-        (keyword (.substring ns 0 (.indexOf ns "/")) name)
+        (keyword (.substring ns 0 (.index-of ns "/")) name)
         (keyword token)))))
 
 (defn desugar-meta
@@ -414,42 +417,42 @@
    :else f))
 
 (defn wrapping-reader
-  [sym]
-  (fn [rdr _]
-    (list sym (read rdr true nil true))))
+  [prefix]
+  (fn [reader]
+    (list prefix (read reader true nil true))))
 
 (defn throwing-reader
   [msg]
-  (fn [rdr _]
-    (reader-error rdr msg)))
+  (fn [reader]
+    (reader-error reader msg)))
 
 (defn read-meta
-  [rdr _]
-  (let [m (desugar-meta (read rdr true nil true))]
+  [reader _]
+  (let [m (desugar-meta (read reader true nil true))]
     (if (not (object? m))
       (reader-error
-       rdr "Metadata must be Symbol, Keyword, String or Map"))
-    (let [o (read rdr true nil true)]
+       reader "Metadata must be Symbol, Keyword, String or Map"))
+    (let [o (read reader true nil true)]
       (if (object? o)
         (with-meta o (merge (meta o) m))
         (reader-error
-         rdr "Metadata can only be applied to IWithMetas")))))
+         reader "Metadata can only be applied to IWithMetas")))))
 
 (defn read-set
-  [rdr _]
+  [reader _]
   (apply list (.concat (array (symbol "set"))
-                       (read-delimited-list "}" rdr true))))
+                       (read-delimited-list "}" reader true))))
 
 (defn read-regex
-  [rdr ch]
+  [reader ch]
   ;; TODO: Switch to re-pattern instead
-  (_re-pattern (read-string rdr ch)))
+  (_re-pattern (read-string reader ch)))
 
 (defn read-discard
   "Discards next form"
-  [rdr _]
-  (read rdr true nil true)
-  rdr)
+  [reader _]
+  (read reader true nil true)
+  reader)
 
 (defn macros [c]
   (cond
@@ -490,12 +493,13 @@
     (let [ch (read-char reader)]
       (cond
        (nil? ch) (if eof-is-error
-                   (reader-error reader "EOF") sentinel)
+                   (reader-error reader "EOF")
+                   sentinel)
        (whitespace? ch) (recur)
        (comment-prefix? ch) (read (read-comment reader ch)
-                             eof-is-error
-                             sentinel
-                             is-recursive)
+                                  eof-is-error
+                                  sentinel
+                                  is-recursive)
        :else (let [f (macros ch)
                    res (cond
                         f (f reader ch)
@@ -508,9 +512,9 @@
 
 (defn read-from-string
   "Reads one object from the string s"
-  [s]
-  (let [r (push-back-reader s)]
-    (read r true nil false)))
+  [source uri]
+  (let [reader (push-back-reader source uri)]
+    (read reader true nil false)))
 
 (defn ^:private read-uuid
   [uuid]
@@ -532,11 +536,11 @@
               :queue read-queue))
 
 (defn maybe-read-tagged-type
-  [rdr initch]
-  (let [tag (read-symbol rdr initch)
+  [reader initch]
+  (let [tag (read-symbol reader initch)
         pfn (get __tag-table__ (name tag))]
     (if pfn
-      (pfn (read rdr true nil false))
+      (pfn (read reader true nil false))
       (reader-error rdr
                     "Could not find tag parser for " (name tag)
                     " in " (pr-str (keys __tag-table__))))))
