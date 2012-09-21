@@ -191,14 +191,14 @@
 ;; unicode
 
 (defn read-2-chars [reader]
-  (.concat (read-char reader) (read-char reader)))
+  (str (read-char reader)
+       (read-char reader)))
 
 (defn read-4-chars [reader]
-  (.concat
-   (read-char reader)
-   (read-char reader)
-   (read-char reader)
-   (read-char reader)))
+  (str (read-char reader)
+       (read-char reader)
+       (read-char reader)
+       (read-char reader)))
 
 (def unicode-2-pattern (re-pattern "[0-9A-Fa-f]{2}"))
 (def unicode-4-pattern (re-pattern "[0-9A-Fa-f]{4}"))
@@ -285,7 +285,7 @@
 (defn not-implemented
   [reader ch]
   (reader-error reader
-                (.concat "Reader for " ch " not implemented yet")))
+                (str "Reader for " ch " not implemented yet")))
 
 
 (declare maybe-read-tagged-type)
@@ -337,7 +337,8 @@
         (if (nil? match)
             (reader-error reader "Invalid number format [" buffer "]")
             match))
-      (recur (.concat buffer ch) (read-char reader)))))
+      (recur (str buffer ch)
+             (read-char reader)))))
 
 (defn read-string
   [reader _]
@@ -348,12 +349,12 @@
      (nil? ch)
       (reader-error reader "EOF while reading string")
      (identical? \\ ch)
-      (recur (.concat buffer (escape-char buffer reader))
+      (recur (str buffer (escape-char buffer reader))
              (read-char reader))
      (identical? "\"" ch)
       buffer
      :default
-      (recur (.concat buffer ch) (read-char reader)))))
+      (recur (str buffer ch) (read-char reader)))))
 
 (defn read-unquote
   "Reads unquote form ~form or ~(foo bar)"
