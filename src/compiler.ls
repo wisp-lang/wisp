@@ -280,7 +280,7 @@
       (recur
         (str result
              (if (empty? result) "" ";\n\n")
-             (or (compile (macroexpand (first expressions))) ""))
+             (compile (macroexpand (first expressions))))
         (rest expressions)))))
 
 (defn macroexpand-1
