@@ -19,8 +19,10 @@
         (catch Error error
           (do
             (set! update-preview.line error.line)
-            (.set-marker editor
-                       (str "<span title='" error.message "'>●</span> %N%"))))))
+            (.set-marker
+              editor
+              error.line
+              (str "<span title='" error.message "'>●</span> %N%"))))))
         200))))
 
 (def input
