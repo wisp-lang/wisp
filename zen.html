@@ -1,0 +1,154 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>LispyScript</title>
+    <script src=./support/codemirror-compressed.js></script>
+    <link rel=stylesheet href=./support/codemirror.css>
+    <link rel=stylesheet href=./support/ambiance.css>
+    <link rel=stylesheet href=./support/docs.css>
+    <script src=./support/codemirror-compressed.js></script>
+    <style>
+      html, body {
+        font-size: 12px;
+        margin: 0;
+        padding: 0;
+        top: 0;
+        left: 0;
+        width: 100%;
+        min-width: 100%;
+        height: 100%;
+        min-height: 100%;
+      }
+
+      #input, #output {
+        width: 50%;
+        float: left;
+      }
+
+      .CodeMirror .CodeMirror-scroll {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+  <a href="https://github.com/gozala/lispyscript"><img style="z-index: 3; position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+<script type=text/expamles id=examples>;; Hello World! in LispyScript.
+;; Hello World! in LispyScript.
+(.log console "Hello LispyScript!")
+
+;; A more intricate Hello World!
+(if (undefined? window)
+  (.log console "Hello LispyScript!")
+  (alert "Hello LispyScript!"))
+
+; Functions
+;; An anonymous function in LispyScript
+(fn [x] (* x x))
+
+;; The first element in an expression can be an anonymous function.
+((fn [x] (* x x)) 2)
+
+;; You can set a variable name to a function.
+(var square
+  (fn [x]
+    (* x x)))
+(.log console (square 10))
+
+; LispyScript is Javascript!
+
+(Array.prototype.forEach.call (Array 1 2 3)
+  (fn [elem index list]
+    (.log console elem)))
+
+;; You can access object methods and properties using the ".-" notation.
+
+(.log console (.-greet { greet: "hello" }))
+
+;; You can also use the 'get' expression to access a property of an object.
+
+(.log console (get { greet: "hello" } "greet"))
+(.log console (get (Array 1 2 3) 1))
+
+;; You can 'set' variables too.
+
+(set! window.onload (function [] (alert "Page Loaded")))
+
+; Node
+;; The node server example in LispyScript.
+
+(def http (require "http"))
+(def server
+  ;; Note: How conventional dash-dilimited lispy style traslates to
+  ;; convetional camelCase style in JS (P.S. you can use cameCase too)
+  (.create-server http
+    (fn [request response]
+      (.write-head response 200 { "Content-Type": "text/plain" })
+      (.end response "Hello World\n"))))
+(.listen server 1337 "127.0.0.1")
+(.log console "Server running at http://127.0.0.1:1337/")
+
+; Macros
+
+;; You can define a macro.
+(defmacro array? [expression]
+  `(=== (.call Object.prototype.toString ~expression) "[object Array]"))
+
+;; Now let us create a Lisp like 'let' macro in LispyScript.
+
+(defmacro let (names values & body)
+  ((fn ~names ~@body) ~@values))
+
+(let (name email tel) ("John" "john@example.org" "555-555-5555")
+  (.log console name)
+  (.log console email)
+  (.log console tel))
+
+;; Conditions
+
+(if (= document.ready-state "complete")
+  (.log console "loaded")    ;; true expression
+  (.log console "loading"))  ;; optional false expression
+
+;; Do expression
+
+(if (= process.argv.length 2)
+  (do
+    (.resume process.stdin)
+    (.setEncoding process.stdin "utf8")
+    (compile
+     process.stdin
+     process.stdout
+     (.cwd process))))
+
+;; Each macro
+
+(each (Array 1 2 3)
+  (fn (elem index list)
+    (.log console elem)))
+
+;; Exception handling
+
+(var fs (require "fs"))
+(var outfile "text.txt")
+(try
+  (.write-file-sync fs outfile "Hello World")
+  (catch Error e
+    (.log console (+ "Cannot write file " outfile))
+    (.exit process 1)))
+
+
+;; Recursive loops
+
+
+(loop [i 0 ]
+  (when (< i 5)
+    (.log console i)
+    ; loop i will take this value
+    (recur (inc i))))
+</script>
+
+<div id="input" name="input"></div>
+<div id="output" name="output"></div>
+    <script src=./support/app.js></script>
+  </body>
+</html>
