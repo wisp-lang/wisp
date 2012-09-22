@@ -124,7 +124,11 @@
     (read-string "; comment
                   (program)")
     (list (symbol "program"))
-    "comments are ignored"))
+    "comments are ignored")
+
+    (deep-equal?
+     (read-string "(hello ;; world\n you)")
+     (list (symbol "hello") (symbol "you"))))
 
   ("clojurescript"
     (assert (= 1 (read-string "1")) "1 -> 1")
