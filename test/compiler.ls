@@ -153,10 +153,10 @@
 
   ("compile unquote-splicing forms"
     (assert (identical? (transpile "`(1 ~@'(2 3))")
-                        "listConcat(list(1), list(2, 3))")
+                        "concatList(list(1), list(2, 3))")
             "list unquote-splicing compiles")
     (assert (identical? (transpile "`[1 ~@[2 3]]")
-                        "vectorConcat([1], [2, 3])")
+                        "concatVector([1], [2, 3])")
             "vector unquote-splicing compiles"))
 
   ("compile references"

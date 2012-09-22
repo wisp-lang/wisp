@@ -4,7 +4,7 @@
          quote? quote syntax-quote? syntax-quote
          name gensym deref set atom? symbol-identical?] "./ast")
 (import [empty? count list? list first second third
-         rest cons reverse map-list list-concat list-to-vector] "./list")
+         rest cons reverse map-list concat-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge
          map-dictionary] "./runtime")
 
@@ -233,19 +233,19 @@
    (list? form)
     (compile
       (syntax-quote-split
-        (symbol "list-concat")
+        (symbol "concat-list")
         (symbol "list")
         form))
    (vector? form)
     (compile
       (syntax-quote-split
-        (symbol "vector-concat")
+        (symbol "concat-vector")
         (symbol "vector")
         (apply list form)))
    (dictionary? form)
     (compile
       (syntax-quote-split
-        (symbol "dictionary-merge")
+        (symbol "merge")
         (symbol "dictionary")
         form))
    :else
@@ -487,7 +487,7 @@
   ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3999
   (compile
     (cons (symbol "do")
-          (list-concat
+          (concat-list
             (define-bindings (first form))
             (rest form)))))
 (defn compile-throw
