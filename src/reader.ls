@@ -106,13 +106,15 @@
 
 ;; read helpers
 
-;; TODO: Line numbers
 (defn reader-error
   [reader message]
-  (throw
-   (Error (str message
+  (let [error (Error (str message
                "\n" "line:" (line reader)
-               "\n" "column:" (column reader)))))
+               "\n" "column:" (column reader)))]
+    (set! error.line (line reader))
+    (set! error.column (column reader))
+    (set! error.uri (get reader :uri))
+    (throw error)))
 
 (defn ^boolean macro-terminating? [ch]
   (and (not (identical? ch "#"))
