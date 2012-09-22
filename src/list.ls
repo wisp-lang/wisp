@@ -106,12 +106,12 @@
              (rest prefix)))))
 
 (defn list-to-vector [source]
-  (loop [vector (Array)
+  (loop [result (Array)
          list source]
     (if (empty? list)
-      vector
+      result
       (recur
-        (.concat vector (first list))
+        (do (.push result (first list)) result)
         (rest list)))))
 
 (export empty? count list? first second third
