@@ -528,7 +528,25 @@ var mapList = function(source, f) {
     cons(f(first(source)), mapList(rest(source), f));
 };
 
-var listConcat = function(left, right) {
+var reduceList = function(form, f, initial) {
+  return (function loop(result, items) {
+    var recur = loop;
+    while ((recur === loop)) {
+      recur = isEmpty(items) ?
+        result :
+        (result = f(result, first(items)),
+         items = rest(items),
+         loop)
+    };
+    return recur;
+  })((initial == null) ?
+    first(form) :
+    initial, (initial == null) ?
+    rest(form) :
+    form);
+};
+
+var concatList = function(left, right) {
   return (function loop(result, prefix) {
     var recur = loop;
     while ((recur === loop)) {
@@ -569,9 +587,10 @@ exports.rest = rest;
 exports.cons = cons;
 exports.list = list;
 exports.reverse = reverse;
+exports.reduceList = reduceList;
 exports.mapList = mapList;
 exports.listToVector = listToVector;
-exports.listConcat = listConcat;
+exports.concatList = concatList;
 
 });
 
@@ -687,7 +706,13 @@ var isNumberLiteral = function(reader, initch) {
 
 var readerError = function(reader, message) {
   return (function() {
-    throw Error(''.concat(message, "\n", "line:", line(reader), "\n", "column:", column(reader)));
+    var error = Error(''.concat(message, "\n", "line:", line(reader), "\n", "column:", column(reader)));
+    error.line = line(reader);
+    error.column = column(reader);
+    error.uri = reader["uri"];
+    return (function() {
+      throw error;
+    })();
   })();
 };
 
@@ -1342,7 +1367,8 @@ var rest = require("./list").rest;
 var cons = require("./list").cons;
 var reverse = require("./list").reverse;
 var mapList = require("./list").mapList;
-var listConcat = require("./list").listConcat;
+var concatList = require("./list").concatList;
+var reduceList = require("./list").reduceList;
 var listToVector = require("./list").listToVector;
 
 var isOdd = require("./runtime").isOdd;
@@ -1350,6 +1376,8 @@ var isDictionary = require("./runtime").isDictionary;
 var dictionary = require("./runtime").dictionary;
 var merge = require("./runtime").merge;
 var mapDictionary = require("./runtime").mapDictionary;
+
+var nil = void 0;
 
 var isSelfEvaluating = function(form) {
   return ((Object.prototype.toString.call(form) === '[object Number]') || ((Object.prototype.toString.call(form) === '[object String]') || ((typeof(form) === "boolean") || ((form == null) || isKeyword(form)))));
@@ -1506,9 +1534,9 @@ var compileReference = function(form) {
 };
 
 var compileSyntaxQuoted = function(form) {
-  return isList(form) ? (compile(syntaxQuoteSplit(symbol("list-concat"), symbol("list"), form))) :
-  (Object.prototype.toString.call(form) === '[object Array]') ? (compile(syntaxQuoteSplit(symbol("vector-concat"), symbol("vector"), list.apply(list, form)))) :
-  isDictionary(form) ? (compile(syntaxQuoteSplit(symbol("dictionary-merge"), symbol("dictionary"), form))) :
+  return isList(form) ? (compile(syntaxQuoteSplit(symbol("concat-list"), symbol("list"), form))) :
+  (Object.prototype.toString.call(form) === '[object Array]') ? (compile(syntaxQuoteSplit(symbol("concat-vector"), symbol("vector"), list.apply(list, form)))) :
+  isDictionary(form) ? (compile(syntaxQuoteSplit(symbol("merge"), symbol("dictionary"), form))) :
   "else" ? (compileObject(form)) :
   void 0;
 };
@@ -1535,7 +1563,7 @@ var compile = function(form) {
   void 0;
 };
 
-var compileAll = function(forms) {
+var compileProgram = function(forms) {
   return (function loop(result, expressions) {
     var recur = loop;
     while ((recur === loop)) {
@@ -1543,7 +1571,7 @@ var compileAll = function(forms) {
         result :
         (result = ''.concat(result, isEmpty(result) ?
           "" :
-          ";\n\n", (compile(macroexpand(first(expressions))) || "")),
+          ";\n\n", compile(macroexpand(first(expressions)))),
          expressions = rest(expressions),
          loop)
     };
@@ -1618,10 +1646,32 @@ var compileIfElse = function(form) {
   return compileTemplate(list("~{} ?\n  ~{} :\n  ~{}", compile(first(form)), compile(second(form)), compile(third(form))));
 };
 
-var compileFn = function(form) {
-  return compileTemplate(isSymbol(first(form)) ?
-    list("function ~{}(~{}) {\n  ~{}\n}", compile(first(form)), second(form).join(", "), compileFnBody(rest(rest(form)))) :
-    list("function(~{}) {\n  ~{}\n}", first(form).join(", "), compileFnBody(rest(form))));
+var desugarFnName = function(form) {
+  return isSymbol(first(form)) ?
+    form :
+    cons(nil, form);
+};
+
+var desugarFnDoc = function(form) {
+  return (Object.prototype.toString.call(second(form)) === '[object String]') ?
+    form :
+    cons(first(form), cons(nil, rest(form)));
+};
+
+var desugarBody = function(form) {
+  return isList(third(form)) ?
+    form :
+    withMeta(cons(first(form), cons(second(form), list(rest(rest(form))))), meta(third(form)));
+};
+
+var compileFnParams = function(params) {
+  return params.join(", ");
+};
+
+var compileDesugaredFn = function(name, doc, params, body) {
+  return compileTemplate((name == null) ?
+    list("function(~{}) {\n  ~{}\n}", compileFnParams(params), compileFnBody(body)) :
+    list("function ~{}(~{}) {\n  ~{}\n}", compile(name), compileFnParams(params), compileFnBody(body)));
 };
 
 var compileFnBody = function(form) {
@@ -1629,14 +1679,25 @@ var compileFnBody = function(form) {
     var recur = loop;
     while ((recur === loop)) {
       recur = isEmpty(expressions) ?
-        ''.concat(result, "return ", compile(expression), ";") :
-        (result = ''.concat(result, compile(expression), ";", "\n"),
+        ''.concat(result, "return ", compile(macroexpand(expression)), ";") :
+        (result = ''.concat(result, compile(macroexpand(expression)), ";", "\n"),
          expression = first(expressions),
          expressions = rest(expressions),
          loop)
     };
     return recur;
   })("", first(form), rest(form));
+};
+
+var compileFn = function(form) {
+  return (function() {
+    var signature = desugarFnDoc(desugarFnName(form));
+    var name = first(signature);
+    var doc = second(signature);
+    var params = third(signature);
+    var body = rest(rest(rest(signature)));
+    return compileDesugaredFn(name, doc, params, body);
+  })();
 };
 
 var compileFnInvoke = function(form) {
@@ -1668,7 +1729,7 @@ var defineBindings = function(bindings) {
 };
 
 var compileLet = function(form) {
-  return compile(cons(symbol("do"), listConcat(defineBindings(first(form)), rest(form))));
+  return compile(cons(symbol("do"), concatList(defineBindings(first(form)), rest(form))));
 };
 
 var compileThrow = function(form) {
@@ -1783,9 +1844,49 @@ installSpecial(symbol("::compile:string"), function(form) {
   return ''.concat("\"", string, "\"");
 });
 
+var installNative = function(name, operator, fallback, validator) {
+  return installSpecial(name, function(form) {
+    return reduceList(mapList(form, compile), function(left, right) {
+      return compileTemplate(list("~{} ~{} ~{}", left, operator, right));
+    }, isEmpty(form) ?
+      fallback :
+      nil);
+  }, validator);
+};
+
+var compilerError = function(form, message) {
+  return (function() {
+    var error = Error(''.concat(message));
+    error.line = 1;
+    return (function() {
+      throw error;
+    })();
+  })();
+};
+
+var verifyTwo = function(form) {
+  return (isEmpty(rest(form)) || isEmpty(rest(rest(form)))) ?
+    (function() {
+      throw compilerError(form, ''.concat(first(form), " form requires at least two operands"));
+    })() :
+    void 0;
+};
+
+installNative(symbol("and"), symbol("&&"));
+
+installNative(symbol("or"), symbol("||"));
+
+installNative(symbol("+"), symbol("+"), 0);
+
+installNative(symbol("-"), symbol("-"), 0, verifyTwo);
+
+installNative(symbol("*"), symbol("*"), 1);
+
+installNative(symbol("/"), symbol("/"), 1, verifyTwo);
+
 exports.isSelfEvaluating = isSelfEvaluating;
 exports.compile = compile;
-exports.compileAll = compileAll;
+exports.compileProgram = compileProgram;
 exports.macroexpand = macroexpand;
 exports.macroexpand1 = macroexpand1;
 
@@ -1798,7 +1899,7 @@ var rest = require("../lib/list").rest;
 
 var readFromString = require("../lib/reader").readFromString;
 
-var compileAll = require("../lib/compiler").compileAll;
+var compileProgram = require("../lib/compiler").compileProgram;
 
 var updatePreview = function(editor) {
   clearTimeout(updatePreview.id);
@@ -1811,12 +1912,12 @@ var updatePreview = function(editor) {
         try {
           return (function() {
             editor.clearMarker((updatePreview.line || 1));
-            return output.setValue(compileAll(rest(readFromString(source))));
+            return output.setValue(compileProgram(rest(readFromString(source))));
           })()
         } catch (error) {
           return (function() {
             updatePreview.line = error.line;
-            return editor.setMarker(''.concat("<span title='", error.message, "'>●</span> %N%"));
+            return editor.setMarker(error.line, ''.concat("<span title='", error.message, "'>●</span> %N%"));
           })()
         };
       })();

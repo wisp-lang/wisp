@@ -5,7 +5,7 @@ var rest = require("../lib/list").rest;
 
 var readFromString = require("../lib/reader").readFromString;
 
-var compileAll = require("../lib/compiler").compileAll;
+var compileProgram = require("../lib/compiler").compileProgram;
 
 var updatePreview = function(editor) {
   clearTimeout(updatePreview.id);
@@ -18,12 +18,12 @@ var updatePreview = function(editor) {
         try {
           return (function() {
             editor.clearMarker((updatePreview.line || 1));
-            return output.setValue(compileAll(rest(readFromString(source))));
+            return output.setValue(compileProgram(rest(readFromString(source))));
           })()
         } catch (error) {
           return (function() {
             updatePreview.line = error.line;
-            return editor.setMarker(''.concat("<span title='", error.message, "'>●</span> %N%"));
+            return editor.setMarker(error.line, ''.concat("<span title='", error.message, "'>●</span> %N%"));
           })()
         };
       })();
