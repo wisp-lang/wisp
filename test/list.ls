@@ -1,5 +1,5 @@
 (include "./macros")
-(import (empty? first rest cons list? list reverse) "../src/list")
+(import (empty? first rest cons list? list reverse reduce-list) "../src/list")
 
 (test
  ("list?"
@@ -72,4 +72,34 @@
           "cons creates non-empty list")
 
   (deep-equal? (cons 1 (list 2 3)) (list 1 2 3)
-               "cons returns new list prefixed with first argument")))
+               "cons returns new list prefixed with first argument"))
+
+ ("reduce"
+  (assert (=
+            (reduce-list
+              (list 1 2 3 4)
+              (fn [result v] (+ result v)))
+            10)
+            "initial value is optional")
+
+  (assert (=
+            (reduce-list
+              (list)
+              (fn [result v] (+ result v))
+              5)
+            5)
+            "initial value is returned for empty list")
+
+  (assert (=
+            (reduce-list
+              (list 1)
+              (fn [result v] (+ result v))
+              5)
+            6)
+            "works with single item")
+  (assert (=
+            (reduce-list
+              (list 5)
+              (fn [result v] (+ result v)))
+            5)
+            "works with single item & no initial")))

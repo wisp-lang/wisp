@@ -94,6 +94,14 @@
       (cons (f (first source))
             (map-list (rest source) f))))
 
+(defn reduce-list
+  [form f initial]
+  (loop [result (if (nil? initial) (first form) initial)
+         items (if (nil? initial) (rest form) form)]
+    (if (empty? items)
+      result
+      (recur (f result (first items)) (rest items)))))
+
 
 (defn concat-list
   "Returns list representing the concatenation of the elements in the
