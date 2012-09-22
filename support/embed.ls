@@ -1,7 +1,7 @@
 (import (dictionary) "../lib/runtime")
 (import (rest) "../lib/list")
 (import (read-from-string) "../lib/reader")
-(import (compile-all) "../lib/compiler")
+(import (compile-program) "../lib/compiler")
 
 (defn update-preview
   "updates preview"
@@ -15,7 +15,7 @@
         (try
           (do
             (.clear-marker editor (or update-preview.line 1))
-            (.set-value output (compile-all (rest (read-from-string source)))))
+            (.set-value output (compile-program (rest (read-from-string source)))))
         (catch Error error
           (do
             (set! update-preview.line error.line)
