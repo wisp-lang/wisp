@@ -269,6 +269,19 @@
                 (throw (str "operator is not a procedure: " head))
               (compile (list (symbol "::compile:invoke") head (rest form)))))))))
 
+(defn compile-all
+  "compiles all expansions"
+  [forms]
+  (loop [result ""
+         expressions forms]
+    (if (empty? expressions)
+      result
+      (recur
+        (str result
+             (if (empty? result) "" ";\n\n")
+             (or (compile (macroexpand (first expressions))) ""))
+        (rest expressions)))))
+
 (defn macroexpand-1
   "If form represents a macro form, returns its expansion,
   else returns form."
@@ -593,5 +606,6 @@
 (export
   self-evaluating?
   compile
+  compile-all
   macroexpand
   macroexpand-1)
