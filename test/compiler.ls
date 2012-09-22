@@ -52,7 +52,17 @@
             "function with multiple statements compiles")
     (assert (identical? (transpile "(fn identity [x] x)")
                         "function identity(x) {\n  return x;\n}")
-            "named function compiles"))
+            "named function compiles")
+    (assert (identical? (transpile "(fn a \"docs docs\" [x] x)")
+                        "function a(x) {\n  return x;\n}")
+            "fn docs are supported")
+    (assert (identical? (transpile "(fn \"docs docs\" [x] x)")
+                        "function(x) {\n  return x;\n}")
+            "fn docs for anonymous functions are supported")
+
+    (assert (identical? (transpile "(fn foo? ^boolean [x] true)")
+                        "function isFoo(x) {\n  return true;\n}")
+            "metadata is supported"))
 
 
 

@@ -8,6 +8,7 @@
 (import [odd? dictionary? dictionary merge
          map-dictionary] "./runtime")
 
+(declare nil)
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
@@ -378,20 +379,43 @@
           (compile (second form))   ; then
           (compile (third form))))) ; else or nil
 
-(defn compile-fn
-  "(fn name? [params* ] exprs*)
+(defn desugar-fn-name [form]
+  (if (symbol? (first form)) form (cons nil form)))
 
-  Defines a function (fn)"
-  [form]
+(defn desugar-fn-doc [form]
+  (if (string? (second form))
+    form
+    (cons (first form) ;; (name nil ... )
+          (cons nil (rest form)))))
+
+(defn desugar-body [form]
+  (if (list? (third form))
+    form
+    (with-meta
+     (cons (first form)
+           (cons (second form)
+                 (list (rest (rest form)))))
+     (meta (third form)))))
+
+(defn compile-fn-params
+  ;"compiles function params"
+  [params]
+  (.join params ", "))
+
+(defn compile-desugared-fn
+  ;"(fn name? [params* ] exprs*)
+
+  ;Defines a function (fn)"
+  [name doc params body]
   (compile-template
-    (if (symbol? (first form))
-      (list "function ~{}(~{}) {\n  ~{}\n}"
-            (compile (first form))
-            (.join (second form) ", ")
-            (compile-fn-body (rest (rest form))))
+    (if (nil? name)
       (list "function(~{}) {\n  ~{}\n}"
-            (.join (first form) ", ")
-            (compile-fn-body (rest form))))))
+            (compile-fn-params params)
+            (compile-fn-body body))
+      (list "function ~{}(~{}) {\n  ~{}\n}"
+            (compile name)
+            (compile-fn-params params)
+            (compile-fn-body body)))))
 
 (defn compile-fn-body
   [form]
@@ -405,6 +429,17 @@
         (first expressions)
         (rest expressions)))))
 
+(defn compile-fn
+  "(fn name? [params* ] exprs*)
+
+  Defines a function (fn)"
+  [form]
+  (let [signature (desugar-fn-doc (desugar-fn-name form))
+        name (first signature)
+        doc (second signature)
+        params (third signature)
+        body (rest (rest (rest signature)))]
+    (compile-desugared-fn name doc params body)))
 
 (defn compile-fn-invoke
   [form]
