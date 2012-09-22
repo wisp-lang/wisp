@@ -399,9 +399,9 @@
          expression (first form)
          expressions (rest form)]
     (if (empty? expressions)
-      (str result "return " (compile expression) ";")
+      (str result "return " (compile (macroexpand expression)) ";")
       (recur
-        (str result (compile expression) ";" "\n")
+        (str result (compile (macroexpand expression)) ";" "\n")
         (first expressions)
         (rest expressions)))))
 
