@@ -3,8 +3,8 @@
          unquote? unquote unquote-splicing? unquote-splicing
          quote? quote syntax-quote? syntax-quote
          name gensym deref set atom? symbol-identical?] "./ast")
-(import [empty? count list? list first second third
-         rest cons reverse map-list concat-list list-to-vector] "./list")
+(import [empty? count list? list first second third rest cons
+         reverse map-list concat-list reduce-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge
          map-dictionary] "./runtime")
 
@@ -637,6 +637,46 @@
     (set! string (.replace string (RegExp "\t" "g") "\\t"))
     (set! string (.replace string (RegExp "\"" "g") "\\\""))
     (str "\"" string "\"")))
+
+(defn install-native
+  "Creates an adapter for native operator"
+  [name operator fallback validator]
+  (install-special
+   name
+   (fn [form]
+    (reduce-list
+      (map-list form compile)
+      (fn [left right]
+        (compile-template
+          (list "~{} ~{} ~{}"
+                left
+                operator
+                right)))
+      (if (empty? form) fallback nil)))
+    validator))
+
+(defn compiler-error
+  [form message]
+  (let [error (Error (str message))]
+    (set! error.line 1)
+    (throw error)))
+
+
+(defn verify-two
+  [form]
+  (if (or (empty? (rest form))
+          (empty? (rest (rest form))))
+    (throw
+      (compiler-error
+        form
+        (str (first form) " form requires at least two operands")))))
+
+(install-native (symbol "and") (symbol "&&"))
+(install-native (symbol "or") (symbol "||"))
+(install-native (symbol "+") (symbol "+") 0)
+(install-native (symbol "-") (symbol "-") 0 verify-two)
+(install-native (symbol "*") (symbol "*") 1)
+(install-native (symbol "/") (symbol "/") 1 verify-two)
 
 (export
   self-evaluating?
