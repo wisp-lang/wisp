@@ -568,18 +568,24 @@
                    finally-exprs
                    (rest exprs)))))))
 
-(defn compile-method-invoke
+(defn compile-property
   "(. object method arg1 arg2)
 
   The '.' special form that can be considered to be a method call,
   operator"
   [form]
   ;; (. object method arg1 arg2) -> (object.method arg1 arg2)
-  (compile
-    (cons (symbol (str (compile (first form))  ;; object name
-                  "."
-                  (compile (second form))))    ;; method name
-          (rest (rest form)))))             ;; args
+  ;; (. object -property) -> object.property
+  (if (identical? (aget (name (second form)) 0) "-")
+    (compile-template
+      (list (if (list? (first form)) "(~{}).~{}" "~{}.~{}")
+            (compile (macroexpand (first form)))
+            (compile (second form))))
+    (compile
+      (cons (symbol (str (compile (first form))  ;; object name
+                    "."
+                    (compile (second form))))    ;; method name
+            (rest (rest form))))))               ;; args
 
 (defn compile-apply
   [form]
@@ -627,7 +633,7 @@
 (install-special (symbol "throw") compile-throw)
 (install-special (symbol "vector") compile-vector)
 (install-special (symbol "try") compile-try)
-(install-special (symbol ".") compile-method-invoke)
+(install-special (symbol ".") compile-property)
 (install-special (symbol "apply") compile-apply)
 (install-special (symbol "new") compile-new)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)

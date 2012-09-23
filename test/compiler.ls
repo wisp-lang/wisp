@@ -146,10 +146,16 @@
       "(function() {\ntry {\n  return mod(1, 0);\n} catch (e) {\n  return e;\n} finally {\n  return 0;\n}})()")
       "try / catch / finally compiles"))
 
-  ("compile method invoke via `.` special form"
+  ("compile property / method access / call special forms"
     (assert (identical? (transpile "(.log console message)")
                         "console.log(message)")
-            "method call compiles correctly"))
+            "method call compiles correctly")
+    (assert (identical? (transpile "(.-location window)")
+                        "window.location")
+            "property access compiles correctly")
+    (assert (identical? (transpile "(.-location (.open window url))")
+                        "(window.open(url)).location")
+            "compound property access and method call"))
 
   ("compile unquote-splicing forms"
     (assert (identical? (transpile "`(1 ~@'(2 3))")
