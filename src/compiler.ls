@@ -376,9 +376,9 @@
   [form]
   (compile-template
     (list "~{} ?\n  ~{} :\n  ~{}"
-          (compile (first form))    ; condition
-          (compile (second form))   ; then
-          (compile (third form))))) ; else or nil
+          (compile (macroexpand (first form)))    ; condition
+          (compile (macroexpand (second form)))   ; then
+          (compile (macroexpand (third form)))))) ; else or nil
 
 (defn desugar-fn-name [form]
   (if (symbol? (first form)) form (cons nil form)))

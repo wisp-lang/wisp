@@ -73,7 +73,11 @@
 
     (assert (identical? (transpile "(if foo (bar) baz)")
                         "foo ?\n  bar() :\n  baz")
-             "if-else compiles"))
+             "if-else compiles")
+
+    (assert (identical? (transpile "(if monday? (.log console \"monday\"))")
+                        "isMonday ?\n  console.log(\"monday\") :\n  void 0")
+            "macros inside blocks expand properly"))
 
   ("compile do special form"
     (assert (identical? (transpile "(do (foo bar) bar)")
