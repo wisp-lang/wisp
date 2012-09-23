@@ -1,5 +1,6 @@
 (include "./macros")
-(import (empty? first rest cons list? list reverse reduce-list) "../src/list")
+(import (empty? first rest cons list? list reverse
+         reduce-list sort-list) "../src/list")
 
 (test
  ("list?"
@@ -102,4 +103,18 @@
               (list 5)
               (fn [result v] (+ result v)))
             5)
-            "works with single item & no initial")))
+            "works with single item & no initial"))
+ ("sort"
+  (deep-equal? (sort-list (list 3 1 2 4))
+               (list 1 2 3 4)
+               "sorts list by number comparison")
+
+  (deep-equal? (sort-list (list 3 1 2 4)
+                          (fn [a b] (> a b)))
+               (list 4 3 2 1)
+               "sorts list by number comparison fn")
+
+  (deep-equal? (sort-list (list "hello" "my" "dear" "frient"))
+               (list "dear" "frient" "hello" "my")
+               "sorts list strings"))
+ )

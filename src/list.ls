@@ -123,6 +123,18 @@
         (do (.push result (first list)) result)
         (rest list)))))
 
+(defn sort-list
+  "Returns a sorted sequence of the items in coll.
+  If no comparator is supplied, uses compare."
+  [items f]
+  (apply
+   list
+   (.sort (list-to-vector items)
+          (if (nil? f)
+            f
+            (fn [a b] (if (f a b) 0 1))))))
+
 (export empty? count list? first second third
         rest cons list reverse reduce-list
-        map-list list-to-vector concat-list)
+        map-list list-to-vector concat-list
+        sort-list)
