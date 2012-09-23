@@ -238,6 +238,9 @@
 (defmacro unless [condition & body]
   `(when (! ~condition) (do ~@body)))
 
+(defmacro apply [f params]
+  `(.apply ~f ~f ~params))
+
 (defmacro each [& body]
   `(Array.prototype.forEach.call ~@body))
 
