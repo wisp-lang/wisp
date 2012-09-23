@@ -14,7 +14,8 @@
   "Returns true if form is self evaluating"
   [form]
   (or (number? form)
-      (string? form)
+      (and (string? form)
+           (not (symbol? form)))
       (boolean? form)
       (nil? form)
       (keyword? form)))
@@ -224,7 +225,7 @@
                      (str (.to-upper-case (get key 0)) (.substr key 1))
                      key)))
             ""))
-  (symbol id))
+  id)
 
 (defn compile-syntax-quoted
   ""
@@ -400,7 +401,7 @@
 (defn compile-fn-params
   ;"compiles function params"
   [params]
-  (.join params ", "))
+  (.join (.map params compile) ", "))
 
 (defn compile-desugared-fn
   ;"(fn name? [params* ] exprs*)
@@ -540,13 +541,13 @@
             (list
               "(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n}})()"
               (compile-fn-body try-exprs)
-              (first catch-exprs)
+              (compile (first catch-exprs))
               (compile-fn-body (rest catch-exprs))))
           (compile-template
             (list
               "(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}})()"
               (compile-fn-body try-exprs)
-              (first catch-exprs)
+              (compile (first catch-exprs))
               (compile-fn-body (rest catch-exprs))
               (compile-fn-body finally-exprs)))))
         (if (symbol-identical? (first (first exprs))

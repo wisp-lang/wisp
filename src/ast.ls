@@ -25,39 +25,27 @@
   (and (list? form)
        (empty? form))))
 
-
-(defn Symbol
-  "Symbol type"
-  [name ns]
-  (set! this.name name)
-  (set! this.ns ns)
-  this)
-(set! Symbol.prototype.to-string
-      (fn [] (if (string? this.ns)
-               (.concat this.ns "/" this.name)
-               this.name)))
-
-
-(defn ^boolean symbol? [x]
-  (.prototype-of? Symbol.prototype x))
-
 (defn symbol
   "Returns a Symbol with the given namespace and name."
   [ns id]
   (cond
-    (symbol? ns) ns
-    (keyword? ns) (new Symbol (name ns))
-    :else (if (string? id) (new Symbol id ns) (new Symbol ns))))
+   (symbol? ns) ns
+   (keyword? ns) (.concat "\uFEFF" (name ns))
+   :else (if (nil? id)
+           (.concat "\uFEFF" ns)
+           (.concat "\uFEFF" ns "/" id))))
+
+(defn ^boolean symbol? [x]
+  (and (string? x)
+       (identical? (.char-at x 0) "\uFEFF")))
+
 
 (defn symbol-identical?
   ;; We can not use `identical?` or `=` since in JS we can not
   ;; make `==` or `===` on object which we use to implement symbols.
   "Returns true if symbol is identical"
   [actual expected]
-  (and
-    (symbol? actual)
-    (symbol? expected)
-    (identical? (name actual) (name expected))))
+  (identical? actual expected))
 
 
 
@@ -81,11 +69,10 @@
   "Returns the name String of a string, symbol or keyword."
   [value]
   (cond
-    (keyword? value)
+    (or (keyword? value) (symbol? value))
       (if (>= (.index-of value "/") 0)
         (.substr value (+ (.index-of value "/") 1))
         (.substr value 1))
-    (symbol? value) (.-name value)
     (string? value) value))
 
 
