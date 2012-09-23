@@ -686,6 +686,35 @@
       (if (empty? form) fallback nil)))
     validator))
 
+(defn install-operator
+  "Creates an adapter for native operator that does comparison in
+  monotonical order"
+  [alias operator]
+  (install-special
+   alias
+   (fn [form]
+    (loop [result ""
+           left (first form)
+           right (second form)
+           operands (rest (rest form))]
+      (if (empty? operands)
+        (str result
+             (compile-template (list "~{} ~{} ~{}"
+                                     (compile left)
+                                     (name operator)
+                                     (compile right))))
+        (recur
+          (str result
+              (compile-template (list "~{} ~{} ~{} && "
+                                      (compile left)
+                                      (name operator)
+                                      (compile right))))
+          right
+          (first operands)
+          (rest operands)))))
+   verify-two))
+
+
 (defn compiler-error
   [form message]
   (let [error (Error (str message))]
@@ -708,6 +737,14 @@
 (install-native (symbol "-") (symbol "-") 0 verify-two)
 (install-native (symbol "*") (symbol "*") 1)
 (install-native (symbol "/") (symbol "/") 1 verify-two)
+
+(install-operator (symbol "=") (symbol "=="))
+(install-operator (symbol "==") (symbol "=="))
+(install-operator (symbol "identical?") (symbol "==="))
+(install-operator (symbol ">") (symbol ">"))
+(install-operator (symbol "<") (symbol "<"))
+(install-operator (symbol ">=") (symbol ">="))
+(install-operator (symbol "<=") (symbol "<="))
 
 (export
   self-evaluating?

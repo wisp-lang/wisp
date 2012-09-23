@@ -199,5 +199,16 @@
     (assert (identical? (transpile "(Foo. a b)") "new Foo(a, b)")
             "(Foo. a b) => new Foo(a, b)"))
 
+  ("compiles = == >= <= special forms"
+    (assert (identical? (transpile "(= a b)") "a == b")
+                        "(= a b) => a == b")
+    (assert (identical? (transpile "(= a b c)") "a == b && b == c")
+                        "(= a b c) => a == b && b == c")
+    (assert (identical? (transpile "(< a b c)") "a < b && b < c")
+                        "(< a b c) => a < b && b < c")
+    (assert (identical? (transpile "(identical? a b c)") "a === b && b === c")
+                        "(identical? a b c) => a === b && b === c")
+  )
+
 )
 
