@@ -491,6 +491,7 @@
           (concat-list
             (define-bindings (first form))
             (rest form)))))
+
 (defn compile-throw
   "The expression is evaluated and thrown, therefore it should yield an error."
   [form]
@@ -597,6 +598,25 @@
   ; {:added "1.0", :special-form true, :forms '[(new Classname args*)]}
   [form]
   (compile-template (list "new ~{}" (compile form))))
+
+(comment
+(defmacro defn
+   "Same as (def name (fn [params* ] exprs*)) or
+   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
+   to the var metadata"
+  {:added "1.0", :special-form true ]}
+  [name]
+  (def body (apply list (Array.prototype.slice.call arguments 1)))
+  `(def ~name (fn ~name ~@body)))
+)
+
+(install-macro
+ (symbol "defn")
+ (fn [form]
+  (list (symbol "def")
+        (second form)
+        (cons (symbol "fn") (rest form)))))
+
 
 (install-special (symbol "set!") compile-set)
 (install-special (symbol "def") compile-def)
