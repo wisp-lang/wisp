@@ -189,5 +189,15 @@
                         "http.createServer(options)")
             "http.create-server => http.createServer"))
 
+  ("compiles new special form"
+    (assert (identical? (transpile "(new Foo)") "new Foo()")
+            "(new Foo) => new Foo()")
+    (assert (identical? (transpile "(Foo.)") "new Foo()")
+            "(Foo.) => new Foo()")
+    (assert (identical? (transpile "(new Foo a b)") "new Foo(a, b)")
+            "(new Foo a b) => new Foo(a, b)")
+    (assert (identical? (transpile "(Foo. a b)") "new Foo(a, b)")
+            "(Foo. a b) => new Foo(a, b)"))
+
 )
 

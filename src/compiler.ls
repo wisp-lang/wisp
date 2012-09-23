@@ -589,6 +589,15 @@
           (first form)
           (second form))))
 
+(defn compile-new
+  "(new Classname args*)
+  Compiles new special form. The args, if any, are evaluated
+  from left to right, and passed to the constructor of the
+  class named by Classname. The constructed object is returned."
+  ; {:added "1.0", :special-form true, :forms '[(new Classname args*)]}
+  [form]
+  (compile-template (list "new ~{}" (compile form))))
+
 (install-special (symbol "set!") compile-set)
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
@@ -600,6 +609,7 @@
 (install-special (symbol "try") compile-try)
 (install-special (symbol ".") compile-method-invoke)
 (install-special (symbol "apply") compile-apply)
+(install-special (symbol "new") compile-new)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 
