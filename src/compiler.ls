@@ -671,17 +671,21 @@
 
 (defn install-native
   "Creates an adapter for native operator"
-  [name operator fallback validator]
+  [alias operator fallback validator]
   (install-special
-   name
+   alias
    (fn [form]
     (reduce-list
-      (map-list form compile)
+      (map-list form
+                (fn [operand]
+                  (compile-template
+                    (list (if (list? operand) "(~{})" "~{}")
+                      (compile operand)))))
       (fn [left right]
         (compile-template
           (list "~{} ~{} ~{}"
                 left
-                operator
+                (name operator)
                 right)))
       (if (empty? form) fallback nil)))
     validator))
