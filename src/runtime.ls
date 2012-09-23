@@ -84,6 +84,12 @@
   [form]
   (array? form))
 
+(defn ^boolean contains-vector?
+  "Returns true if vector contains given element"
+  [vector element]
+  (>= (.index-of vector element) 0))
+
+
 (defn map-dictionary
   "Maps dictionary values by applying `f` to each one"
   [source f]
@@ -94,5 +100,5 @@
             {})))
 
 (export dictionary? dictionary merge odd? vector?
-        map-dictionary)
+        map-dictionary contains-vector?)
 
