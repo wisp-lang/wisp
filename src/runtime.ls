@@ -59,6 +59,17 @@
         (recur (.slice key-values 2) result))
       result)))
 
+(defn keys
+  "Returns a sequence of the map's keys"
+  [dictionary]
+  (.keys Object dictionary))
+
+(defn vals
+  "Returns a sequence of the map's values."
+  [dictionary]
+  (.map (keys dictionary)
+        (fn [key] (get dictionary key))))
+
 (defn merge
   "Returns a dictionary that consists of the rest of the maps conj-ed onto
   the first. If a key occurs in more than one map, the mapping from
@@ -100,5 +111,5 @@
             {})))
 
 (export dictionary? dictionary merge odd? vector?
-        map-dictionary contains-vector?)
+        map-dictionary contains-vector? keys vals)
 
