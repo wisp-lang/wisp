@@ -81,8 +81,8 @@
     arguments
     (fn [descriptor dictionary]
       (if (object? dictionary)
-      	(each
-       	(Object.keys dictionary)
+        (each
+         (Object.keys dictionary)
          (fn [name]
            (set!
             (get descriptor name)
