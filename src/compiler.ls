@@ -644,8 +644,18 @@
         (second form)
         (cons (symbol "fn") (rest form)))))
 
+(defn compile-compound-accessor
+  "Compiles compound property accessor"
+  [form]
+  (compile-template
+    (list "~{}[~{}]"
+          (compile (macroexpand (first form)))
+          (compile (macroexpand (second form))))))
+
 
 (install-special (symbol "set!") compile-set)
+(install-special (symbol "get") compile-compound-accessor)
+(install-special (symbol "aget") compile-compound-accessor)
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
 (install-special (symbol "do") compile-do)
