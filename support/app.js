@@ -404,6 +404,16 @@ var dictionary = function() {
   })(Array.prototype.slice.call(arguments), {});
 };
 
+var keys = function(dictionary) {
+  return Object.keys(dictionary);
+};
+
+var vals = function(dictionary) {
+  return keys(dictionary).map(function(key) {
+    return dictionary[key];
+  });
+};
+
 var merge = function() {
   return Object.create(Object.prototype, Array.prototype.reduce.call(arguments, function(descriptor, dictionary) {
     (dictionary && (typeof(dictionary) === "object")) ?
@@ -419,6 +429,10 @@ var isVector = function(form) {
   return (Object.prototype.toString.call(form) === '[object Array]');
 };
 
+var isContainsVector = function(vector, element) {
+  return (vector.indexOf(element) >= 0);
+};
+
 var mapDictionary = function(source, f) {
   return dictionary(Array.prototype.reduce.call(Object.keys(source), function(target, key) {
     return target[key] = f(source[key]);
@@ -431,6 +445,9 @@ exports.merge = merge;
 exports.isOdd = isOdd;
 exports.isVector = isVector;
 exports.mapDictionary = mapDictionary;
+exports.isContainsVector = isContainsVector;
+exports.keys = keys;
+exports.vals = vals;
 
 });
 
@@ -472,32 +489,42 @@ var isList = function(value) {
   return List.prototype.isPrototypeOf(value);
 };
 
-var count = function(list) {
-  return (list).length;
+var count = function(sequence) {
+  return (sequence).length;
 };
 
-var isEmpty = function(list) {
-  return (count(list) == 0);
+var isEmpty = function(sequence) {
+  return (count(sequence) == 0);
 };
 
-var first = function(list) {
-  return (list).head;
+var first = function(sequence) {
+  return isList(sequence) ?
+    (sequence).head :
+    sequence[0];
 };
 
-var second = function(list) {
-  return first(rest(list));
+var second = function(sequence) {
+  return isList(sequence) ?
+    first(rest(sequence)) :
+    sequence[1];
 };
 
-var third = function(list) {
-  return first(rest(rest(list)));
+var third = function(sequence) {
+  return isList(sequence) ?
+    first(rest(rest(sequence))) :
+    sequence[2];
 };
 
-var rest = function(list) {
-  return (list).tail;
+var rest = function(sequence) {
+  return isList(sequence) ?
+    (sequence).tail :
+    sequence.slice(1);
 };
 
 var cons = function(head, tail) {
-  return new List(head, tail);
+  return isList(tail) ?
+    new List(head, tail) :
+    Array(head).concat(tail);
 };
 
 var list = function() {
@@ -508,18 +535,20 @@ var list = function() {
     }, list());
 };
 
-var reverse = function(source) {
-  return (function loop(items, source) {
-    var recur = loop;
-    while ((recur === loop)) {
-      recur = isEmpty(source) ?
-        list.apply(list, items) :
-        (items = [ first(source) ].concat(items),
-         source = rest(source),
-         loop)
-    };
-    return recur;
-  })([], source);
+var reverse = function(sequence) {
+  return isList(sequence) ?
+    (function loop(items, source) {
+      var recur = loop;
+      while ((recur === loop)) {
+        recur = isEmpty(source) ?
+          list.apply(list, items) :
+          (items = [ first(source) ].concat(items),
+           source = rest(source),
+           loop)
+      };
+      return recur;
+    })([], sequence) :
+    sequence.reverse();
 };
 
 var mapList = function(source, f) {
@@ -577,6 +606,16 @@ var listToVector = function(source) {
   })(Array(), source);
 };
 
+var sortList = function(items, f) {
+  return list.apply(list, listToVector(items).sort((f == null) ?
+    f :
+    function(a, b) {
+      return f(a, b) ?
+        0 :
+        1;
+    }));
+};
+
 exports.isEmpty = isEmpty;
 exports.count = count;
 exports.isList = isList;
@@ -591,6 +630,7 @@ exports.reduceList = reduceList;
 exports.mapList = mapList;
 exports.listToVector = listToVector;
 exports.concatList = concatList;
+exports.sortList = sortList;
 
 });
 
@@ -1224,33 +1264,21 @@ var isAtom = function(form) {
   return ((Object.prototype.toString.call(form) === '[object Number]') || ((Object.prototype.toString.call(form) === '[object String]') || ((typeof(form) === "boolean") || ((form == null) || (isKeyword(form) || (isSymbol(form) || (isList(form) && isEmpty(form))))))));
 };
 
-var Symbol = function(name, ns) {
-  this.name = name;
-  this.ns = ns;
-  return this;
-};
-
-Symbol.prototype.toString = function() {
-  return (Object.prototype.toString.call(this.ns) === '[object String]') ?
-    this.ns.concat("/", this.name) :
-    this.name;
-};
-
-var isSymbol = function(x) {
-  return Symbol.prototype.isPrototypeOf(x);
-};
-
 var symbol = function(ns, id) {
   return isSymbol(ns) ? (ns) :
-  isKeyword(ns) ? (new Symbol(name(ns))) :
-  "else" ? ((Object.prototype.toString.call(id) === '[object String]') ?
-    new Symbol(id, ns) :
-    new Symbol(ns)) :
+  isKeyword(ns) ? ("\uFEFF".concat(name(ns))) :
+  "else" ? ((id == null) ?
+    "\uFEFF".concat(ns) :
+    "\uFEFF".concat(ns, "/", id)) :
   void 0;
 };
 
+var isSymbol = function(x) {
+  return ((Object.prototype.toString.call(x) === '[object String]') && (x.charAt(0) === "\uFEFF"));
+};
+
 var isSymbolIdentical = function(actual, expected) {
-  return (isSymbol(actual) && (isSymbol(expected) && (name(actual) === name(expected))));
+  return (actual === expected);
 };
 
 var isKeyword = function(x) {
@@ -1267,10 +1295,9 @@ var keyword = function(ns, id) {
 };
 
 var name = function(value) {
-  return isKeyword(value) ? ((value.indexOf("/") >= 0) ?
+  return (isKeyword(value) || isSymbol(value)) ? ((((value).length > 2) && (value.indexOf("/") >= 0)) ?
     value.substr((value.indexOf("/") + 1)) :
     value.substr(1)) :
-  isSymbol(value) ? ((value).name) :
   (Object.prototype.toString.call(value) === '[object String]') ? (value) :
   void 0;
 };
@@ -1375,12 +1402,13 @@ var isOdd = require("./runtime").isOdd;
 var isDictionary = require("./runtime").isDictionary;
 var dictionary = require("./runtime").dictionary;
 var merge = require("./runtime").merge;
+var keys = require("./runtime").keys;
 var mapDictionary = require("./runtime").mapDictionary;
 
 var nil = void 0;
 
 var isSelfEvaluating = function(form) {
-  return ((Object.prototype.toString.call(form) === '[object Number]') || ((Object.prototype.toString.call(form) === '[object String]') || ((typeof(form) === "boolean") || ((form == null) || isKeyword(form)))));
+  return ((Object.prototype.toString.call(form) === '[object Number]') || (((Object.prototype.toString.call(form) === '[object String]') && !isSymbol(form)) || ((typeof(form) === "boolean") || ((form == null) || isKeyword(form)))));
 };
 
 var __macros__ = {};
@@ -1513,7 +1541,8 @@ var compileObject = function(form) {
   (form == null) ? (compile(list(symbol("::compile:nil"), form))) :
   (Object.prototype.toString.call(form) === '[object Array]') ? (compile(applyForm(symbol("vector"), list.apply(list, form)))) :
   isList(form) ? (compile(applyForm(symbol("list"), form))) :
-  isDictionary(compile(applyForm(symbol("dictionary"), form)));
+  isDictionary(form) ? (compileDictionary(form)) :
+  void 0;
 };
 
 var compileReference = function(form) {
@@ -1530,7 +1559,7 @@ var compileReference = function(form) {
       ''.concat(key[0].toUpperCase(), key.substr(1)) :
       key);
   }, "");
-  return symbol(id);
+  return id;
 };
 
 var compileSyntaxQuoted = function(form) {
@@ -1643,7 +1672,28 @@ var compileDef = function(form) {
 };
 
 var compileIfElse = function(form) {
-  return compileTemplate(list("~{} ?\n  ~{} :\n  ~{}", compile(first(form)), compile(second(form)), compile(third(form))));
+  return compileTemplate(list("~{} ?\n  ~{} :\n  ~{}", compile(macroexpand(first(form))), compile(macroexpand(second(form))), compile(macroexpand(third(form)))));
+};
+
+var compileDictionary = function(form) {
+  return (function() {
+    var body = (function loop(body, names) {
+      var recur = loop;
+      while ((recur === loop)) {
+        recur = isEmpty(names) ?
+          body :
+          (body = ''.concat((body == null) ?
+            "" :
+            ''.concat(body, ",\n"), compileTemplate(list("~{}: ~{}", name(first(names)), compile(macroexpand(form[first(names)]))))),
+           names = rest(names),
+           loop)
+      };
+      return recur;
+    })(nil, keys(form));
+    return (body == null) ?
+      "{}" :
+      compileTemplate(list("{\n  ~{}\n}", body));
+  })();
 };
 
 var desugarFnName = function(form) {
@@ -1665,7 +1715,7 @@ var desugarBody = function(form) {
 };
 
 var compileFnParams = function(params) {
-  return params.join(", ");
+  return params.map(compile).join(", ");
 };
 
 var compileDesugaredFn = function(name, doc, params, body) {
@@ -1707,7 +1757,7 @@ var compileFnInvoke = function(form) {
 };
 
 var compileGroup = function(form) {
-  return listToVector(mapList(form, compile)).join(", ");
+  return listToVector(mapList(mapList(form, macroexpand), compile)).join(", ");
 };
 
 var compileDo = function(form) {
@@ -1752,8 +1802,8 @@ var compileTry = function(form) {
         isEmpty(catchExprs) ?
           compileTemplate(list("(function() {\ntry {\n  ~{}\n} finally {\n  ~{}\n}})()", compileFnBody(tryExprs), compileFnBody(finallyExprs))) :
           isEmpty(finallyExprs) ?
-            compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n}})()", compileFnBody(tryExprs), first(catchExprs), compileFnBody(rest(catchExprs)))) :
-            compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}})()", compileFnBody(tryExprs), first(catchExprs), compileFnBody(rest(catchExprs)), compileFnBody(finallyExprs))) :
+            compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n}})()", compileFnBody(tryExprs), compile(first(catchExprs)), compileFnBody(rest(catchExprs)))) :
+            compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}})()", compileFnBody(tryExprs), compile(first(catchExprs)), compileFnBody(rest(catchExprs)), compileFnBody(finallyExprs))) :
         isSymbolIdentical(first(first(exprs)), symbol("catch")) ?
           (tryExprs = tryExprs,
            catchExprs = rest(first(exprs)),
@@ -1776,15 +1826,49 @@ var compileTry = function(form) {
   })(list(), list(), list(), reverse(form));
 };
 
-var compileMethodInvoke = function(form) {
-  return compile(cons(symbol(''.concat(compile(first(form)), ".", compile(second(form)))), rest(rest(form))));
+var compileProperty = function(form) {
+  return (name(second(form))[0] === "-") ?
+    compileTemplate(list(isList(first(form)) ?
+      "(~{}).~{}" :
+      "~{}.~{}", compile(macroexpand(first(form))), compile(macroexpand(second(form))))) :
+    compile(cons(symbol(''.concat(compile(macroexpand(first(form))), ".", compile(macroexpand(second(form))))), rest(rest(form))));
 };
 
 var compileApply = function(form) {
   return compile(list(symbol("."), first(form), symbol("apply"), first(form), second(form)));
 };
 
+var compileNew = function(form) {
+  return compileTemplate(list("new ~{}", compile(form)));
+};
+
+installMacro(symbol("defn"), function(form) {
+  return list(symbol("def"), second(form), cons(symbol("fn"), rest(form)));
+});
+
+var compileCompoundAccessor = function(form) {
+  return compileTemplate(list("~{}[~{}]", compile(macroexpand(first(form))), compile(macroexpand(second(form)))));
+};
+
+var compileStr = function(form) {
+  return isEmpty(form) ?
+    compileStr(list("")) :
+    compile(cons(symbol("+"), form));
+};
+
+var compileInstance = function(form) {
+  return compileTemplate(list("~{} instanceof ~{}", compile(macroexpand(second(form))), compile(macroexpand(first(form)))));
+};
+
+var compileIsNil = function(form) {
+  return compile(list(symbol("identical?"), list(symbol("typeof"), first(form)), "undefined"));
+};
+
 installSpecial(symbol("set!"), compileSet);
+
+installSpecial(symbol("get"), compileCompoundAccessor);
+
+installSpecial(symbol("aget"), compileCompoundAccessor);
 
 installSpecial(symbol("def"), compileDef);
 
@@ -1802,9 +1886,17 @@ installSpecial(symbol("vector"), compileVector);
 
 installSpecial(symbol("try"), compileTry);
 
-installSpecial(symbol("."), compileMethodInvoke);
+installSpecial(symbol("."), compileProperty);
 
 installSpecial(symbol("apply"), compileApply);
+
+installSpecial(symbol("new"), compileNew);
+
+installSpecial(symbol("instance?"), compileInstance);
+
+installSpecial(symbol("nil?"), compileIsNil);
+
+installSpecial(symbol("str"), compileStr);
 
 installSpecial(symbol("::compile:invoke"), compileFnInvoke);
 
@@ -1821,7 +1913,7 @@ installSpecial(symbol("::compile:symbol"), function(form) {
 });
 
 installSpecial(symbol("::compile:nil"), function(form) {
-  return "void 0";
+  return "void(0)";
 });
 
 installSpecial(symbol("::compile:number"), function(form) {
@@ -1844,14 +1936,36 @@ installSpecial(symbol("::compile:string"), function(form) {
   return ''.concat("\"", string, "\"");
 });
 
-var installNative = function(name, operator, fallback, validator) {
-  return installSpecial(name, function(form) {
-    return reduceList(mapList(form, compile), function(left, right) {
-      return compileTemplate(list("~{} ~{} ~{}", left, operator, right));
+var installNative = function(alias, operator, validator, fallback) {
+  return installSpecial(alias, function(form) {
+    return reduceList(mapList(form, function(operand) {
+      return compileTemplate(list(isList(operand) ?
+        "(~{})" :
+        "~{}", compile(macroexpand(operand))));
+    }), function(left, right) {
+      return compileTemplate(list("~{} ~{} ~{}", left, name(operator), right));
     }, isEmpty(form) ?
       fallback :
       nil);
   }, validator);
+};
+
+var installOperator = function(alias, operator) {
+  return installSpecial(alias, function(form) {
+    return (function loop(result, left, right, operands) {
+      var recur = loop;
+      while ((recur === loop)) {
+        recur = isEmpty(operands) ?
+          ''.concat(result, compileTemplate(list("~{} ~{} ~{}", compile(macroexpand(left)), name(operator), compile(macroexpand(right))))) :
+          (result = ''.concat(result, compileTemplate(list("~{} ~{} ~{} && ", compile(macroexpand(left)), name(operator), compile(macroexpand(right))))),
+           left = right,
+           right = first(operands),
+           operands = rest(operands),
+           loop)
+      };
+      return recur;
+    })("", first(form), second(form), rest(rest(form)));
+  }, verifyTwo);
 };
 
 var compilerError = function(form, message) {
@@ -1872,17 +1986,53 @@ var verifyTwo = function(form) {
     void 0;
 };
 
+installNative(symbol("+"), symbol("+"), nil, 0);
+
+installNative(symbol("-"), symbol("-"), nil, "NaN");
+
+installNative(symbol("*"), symbol("*"), nil, 1);
+
+installNative(symbol("/"), symbol("/"), verifyTwo);
+
+installNative(symbol("mod"), symbol("%"), verifyTwo);
+
+installNative(symbol("inc"), symbol("++"));
+
+installNative(symbol("dec"), symbol("--"));
+
 installNative(symbol("and"), symbol("&&"));
 
 installNative(symbol("or"), symbol("||"));
 
-installNative(symbol("+"), symbol("+"), 0);
+installOperator(symbol("="), symbol("=="));
 
-installNative(symbol("-"), symbol("-"), 0, verifyTwo);
+installOperator(symbol("not="), symbol("!="));
 
-installNative(symbol("*"), symbol("*"), 1);
+installOperator(symbol("=="), symbol("=="));
 
-installNative(symbol("/"), symbol("/"), 1, verifyTwo);
+installOperator(symbol("identical?"), symbol("==="));
+
+installOperator(symbol(">"), symbol(">"));
+
+installOperator(symbol(">="), symbol(">="));
+
+installOperator(symbol("<"), symbol("<"));
+
+installOperator(symbol("<="), symbol("<="));
+
+installNative(symbol("bit-and"), symbol("&"), verifyTwo);
+
+installNative(symbol("bit-or"), symbol("|"), verifyTwo);
+
+installNative(symbol("bit-xor"), symbol("^"));
+
+installNative(symbol("bit-not "), symbol("~"), verifyTwo);
+
+installNative(symbol("bit-shift-left"), symbol("<<"), verifyTwo);
+
+installNative(symbol("bit-shift-right"), symbol(">>"), verifyTwo);
+
+installNative(symbol("bit-shift-right-zero-fil"), symbol(">>>"), verifyTwo);
 
 exports.isSelfEvaluating = isSelfEvaluating;
 exports.compile = compile;
