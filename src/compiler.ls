@@ -5,7 +5,7 @@
          name gensym deref set atom? symbol-identical?] "./ast")
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
-(import [odd? dictionary? dictionary merge
+(import [odd? dictionary? dictionary merge keys
          map-dictionary] "./runtime")
 
 (declare nil)
@@ -190,7 +190,7 @@
     (nil? form) (compile (list (symbol "::compile:nil") form))
     (vector? form) (compile (apply-form (symbol "vector") (apply list form)))
     (list? form) (compile (apply-form (symbol "list") form))
-    (dictionary? (compile (apply-form (symbol "dictionary") form)))))
+    (dictionary? form) (compile-dictionary form)))
 
 (defn compile-reference
   "Translates references from clojure convention to JS:
@@ -379,6 +379,27 @@
           (compile (macroexpand (first form)))    ; condition
           (compile (macroexpand (second form)))   ; then
           (compile (macroexpand (third form)))))) ; else or nil
+
+(defn compile-dictionary
+  "Compiles dictionary to JS object"
+  [form]
+  (compile-template
+   (list
+    "{\n  ~{}\n}"
+    (loop [body nil
+           names (keys form)]
+      (if (empty? names)
+        body
+        (recur
+         (str
+          (if (nil? body) "" (str body ",\n"))
+          (compile-template
+           (list
+            "~{}: ~{}"
+            (name (first names))
+            (compile (macroexpand
+                      (get form (first names)))))))
+         (rest names)))))))
 
 (defn desugar-fn-name [form]
   (if (symbol? (first form)) form (cons nil form)))

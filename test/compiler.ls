@@ -229,8 +229,16 @@
     (assert (identical? (transpile "(< a b c)") "a < b && b < c")
                         "(< a b c) => a < b && b < c")
     (assert (identical? (transpile "(identical? a b c)") "a === b && b === c")
-                        "(identical? a b c) => a === b && b === c")
-  )
+                        "(identical? a b c) => a === b && b === c"))
+
+  ("compiles dictionaries to js objects"
+    (assert (identical? (transpile "{ :foo 1 }") "{\n  foo: 1\n}")
+                        "compile dictionaries to js objects")
+
+    (assert (identical?
+              (transpile "{:foo 1 :bar (a b) :bz (fn [x] x) :bla { :sub 2 }}")
+              "{\n  foo: 1,\n  bar: a(b),\n  bz: function(x) {\n    return x;\n  },\n  bla: {\n    sub: 2\n  }\n}")
+    "compile nested dictionaries"))
 
 )
 
