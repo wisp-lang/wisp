@@ -724,7 +724,7 @@
                 (fn [operand]
                   (compile-template
                     (list (if (list? operand) "(~{})" "~{}")
-                      (compile operand)))))
+                      (compile (macroexpand operand))))))
       (fn [left right]
         (compile-template
           (list "~{} ~{} ~{}"
@@ -748,15 +748,15 @@
       (if (empty? operands)
         (str result
              (compile-template (list "~{} ~{} ~{}"
-                                     (compile left)
+                                     (compile (macroexpand left))
                                      (name operator)
-                                     (compile right))))
+                                     (compile (macroexpand right)))))
         (recur
           (str result
               (compile-template (list "~{} ~{} ~{} && "
-                                      (compile left)
+                                      (compile (macroexpand left))
                                       (name operator)
-                                      (compile right))))
+                                      (compile (macroexpand right)))))
           right
           (first operands)
           (rest operands)))))

@@ -226,13 +226,16 @@
 
   ("compiles = == >= <= special forms"
     (assert (identical? (transpile "(= a b)") "a == b")
-                        "(= a b) => a == b")
+            "(= a b) => a == b")
     (assert (identical? (transpile "(= a b c)") "a == b && b == c")
-                        "(= a b c) => a == b && b == c")
+            "(= a b c) => a == b && b == c")
     (assert (identical? (transpile "(< a b c)") "a < b && b < c")
-                        "(< a b c) => a < b && b < c")
+            "(< a b c) => a < b && b < c")
     (assert (identical? (transpile "(identical? a b c)") "a === b && b === c")
-                        "(identical? a b c) => a === b && b === c"))
+            "(identical? a b c) => a === b && b === c")
+    (assert (identical? (transpile "(>= (.index-of arr el) 0)")
+                        "arr.indexOf(el) >= 0")
+            "(>= (.index-of arr el) 0) => arr.indexOf(el) >= 0"))
 
   ("compiles dictionaries to js objects"
     (assert (identical? (transpile "{}") "{}")
