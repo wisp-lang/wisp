@@ -830,7 +830,12 @@
 (install-native (symbol "bit-shift-right") (symbol ">>") verify-two)
 (install-native (symbol "bit-shift-right-zero-fil") (symbol ">>>") verify-two)
 
-
+;; TODO:
+;; - loop
+;; - alength
+;; - defn with metadata in front of name
+;; - cond
+;; - declare
 
 (export
   self-evaluating?
