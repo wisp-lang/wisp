@@ -677,7 +677,7 @@
 
 (defn install-native
   "Creates an adapter for native operator"
-  [alias operator fallback validator]
+  [alias operator validator fallback]
   (install-special
    alias
    (fn [form]
@@ -741,20 +741,41 @@
         form
         (str (first form) " form requires at least two operands")))))
 
+;; Arithmetic Operators
+(install-native (symbol "+") (symbol "+") nil 0)
+(install-native (symbol "-") (symbol "-") nil "NaN")
+(install-native (symbol "*") (symbol "*") nil 1)
+(install-native (symbol "/") (symbol "/") verify-two)
+(install-native (symbol "mod") (symbol "%") verify-two)
+(install-native (symbol "inc") (symbol "++"))
+(install-native (symbol "dec") (symbol "--"))
+
+;; Logical Operators
 (install-native (symbol "and") (symbol "&&"))
 (install-native (symbol "or") (symbol "||"))
-(install-native (symbol "+") (symbol "+") 0)
-(install-native (symbol "-") (symbol "-") 0 verify-two)
-(install-native (symbol "*") (symbol "*") 1)
-(install-native (symbol "/") (symbol "/") 1 verify-two)
+
+;; Comparison Operators
 
 (install-operator (symbol "=") (symbol "=="))
+(install-operator (symbol "not=") (symbol "!="))
 (install-operator (symbol "==") (symbol "=="))
 (install-operator (symbol "identical?") (symbol "==="))
 (install-operator (symbol ">") (symbol ">"))
-(install-operator (symbol "<") (symbol "<"))
 (install-operator (symbol ">=") (symbol ">="))
+(install-operator (symbol "<") (symbol "<"))
 (install-operator (symbol "<=") (symbol "<="))
+
+;; Bitwise Operators
+
+(install-native (symbol "bit-and") (symbol "&") verify-two)
+(install-native (symbol "bit-or") (symbol "|") verify-two)
+(install-native (symbol "bit-xor") (symbol "^"))
+(install-native (symbol "bit-not ") (symbol "~") verify-two)
+(install-native (symbol "bit-shift-left") (symbol "<<") verify-two)
+(install-native (symbol "bit-shift-right") (symbol ">>") verify-two)
+(install-native (symbol "bit-shift-right-zero-fil") (symbol ">>>") verify-two)
+
+
 
 (export
   self-evaluating?
