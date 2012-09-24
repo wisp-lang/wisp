@@ -652,6 +652,12 @@
           (compile (macroexpand (first form)))
           (compile (macroexpand (second form))))))
 
+(defn compile-is-nil
+  "Returns true if value is nil, false otherwise."
+  [form]
+  (compile (list (symbol "identical?")
+                 (list (symbol "typeof") (first form))
+                 "undefined")))
 
 (install-special (symbol "set!") compile-set)
 (install-special (symbol "get") compile-compound-accessor)
@@ -667,6 +673,7 @@
 (install-special (symbol ".") compile-property)
 (install-special (symbol "apply") compile-apply)
 (install-special (symbol "new") compile-new)
+(install-special (symbol "nil?") compile-is-nil)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 

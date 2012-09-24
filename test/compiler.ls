@@ -254,5 +254,13 @@
                         "a(b)[c[d]]")
             "(get (a b) (get c d)) => a(b)[c[d]]"))
 
+  ("compiles nil?"
+    (assert (identical? (transpile "(nil? a)")
+                        "typeof(a) === \"undefined\"")
+            "(instance? Object a) => a instanceof Object")
+    (assert (identical? (transpile "(nil? (foo bar))")
+                        "typeof(foo(bar)) === \"undefined\"")
+            "(nil? (foo bar)) => typeof(foo(bar)) === \"undefined\""))
+
 )
 
