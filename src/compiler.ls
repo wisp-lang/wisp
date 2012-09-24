@@ -452,7 +452,7 @@
 
 (defn compile-group
   [form]
-  (.join (list-to-vector (map-list form compile)) ", "))
+  (.join (list-to-vector (map-list (map-list form macroexpand) compile)) ", "))
 
 (defn compile-do
   "Evaluates the expressions in order and returns the value of the last.
