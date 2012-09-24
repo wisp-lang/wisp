@@ -688,7 +688,7 @@
   ;(fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
 
 (install-special (symbol "::compile:nil")
-  (fn [form] "void 0"))
+  (fn [form] "void(0)"))
 
 (install-special (symbol "::compile:number")
   (fn [form] (first form)))

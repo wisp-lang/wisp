@@ -24,7 +24,7 @@
     (assert (not (self-evaluating? (symbol "symbol"))) "symbol is not self evaluating"))
 
   ("compile primitive forms"
-    (assert (identical? (transpile "(def x)") "var x = void 0")
+    (assert (identical? (transpile "(def x)") "var x = void(0)")
             "def compiles properly")
     (assert (identical? (transpile "(def y 1)") "var y = 1")
             "def with two args compiled properly")
@@ -68,7 +68,7 @@
 
   ("compile if special form"
     (assert (identical? (transpile "(if foo (bar))")
-                        "foo ?\n  bar() :\n  void 0")
+                        "foo ?\n  bar() :\n  void(0)")
              "if compiles")
 
     (assert (identical? (transpile "(if foo (bar) baz)")
@@ -76,7 +76,7 @@
              "if-else compiles")
 
     (assert (identical? (transpile "(if monday? (.log console \"monday\"))")
-                        "isMonday ?\n  console.log(\"monday\") :\n  void 0")
+                        "isMonday ?\n  console.log(\"monday\") :\n  void(0)")
             "macros inside blocks expand properly"))
 
   ("compile do special form"
@@ -84,7 +84,7 @@
                         "(function() {\n  foo(bar);\n  return bar;\n})()")
              "do compiles")
     (assert (identical? (transpile "(do)")
-                        "(function() {\n  return void 0;\n})()")
+                        "(function() {\n  return void(0);\n})()")
              "empty do compiles"))
 
 
@@ -188,7 +188,7 @@
             "swap(foo, bar)")
             "set! => set"))
     (assert (identical? (transpile "(def under_dog)")
-                        "var under_dog = void 0")
+                        "var under_dog = void(0)")
             "foo_bar => foo_bar")
     (assert (identical? (transpile "(digit? 0)")
                         "isDigit(0)")
