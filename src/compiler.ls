@@ -383,23 +383,23 @@
 (defn compile-dictionary
   "Compiles dictionary to JS object"
   [form]
-  (compile-template
-   (list
-    "{\n  ~{}\n}"
-    (loop [body nil
-           names (keys form)]
-      (if (empty? names)
-        body
-        (recur
-         (str
-          (if (nil? body) "" (str body ",\n"))
-          (compile-template
-           (list
-            "~{}: ~{}"
-            (name (first names))
-            (compile (macroexpand
-                      (get form (first names)))))))
-         (rest names)))))))
+  (let [body
+        (loop [body nil
+               names (keys form)]
+          (if (empty? names)
+            body
+            (recur
+             (str
+              (if (nil? body) "" (str body ",\n"))
+              (compile-template
+               (list
+                "~{}: ~{}"
+                (name (first names))
+                (compile (macroexpand
+                          (get form (first names)))))))
+             (rest names))))
+        ]
+      (if (nil? body) "{}" (compile-template (list "{\n  ~{}\n}" body)))))
 
 (defn desugar-fn-name [form]
   (if (symbol? (first form)) form (cons nil form)))

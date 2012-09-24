@@ -232,6 +232,8 @@
                         "(identical? a b c) => a === b && b === c"))
 
   ("compiles dictionaries to js objects"
+    (assert (identical? (transpile "{}") "{}")
+            "empty hash compiles to empty object")
     (assert (identical? (transpile "{ :foo 1 }") "{\n  foo: 1\n}")
                         "compile dictionaries to js objects")
 
