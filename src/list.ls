@@ -8,7 +8,7 @@
 
 (set! List.prototype.length 0)
 (set! List.prototype.tail (Object.create List.prototype))
-(set! List.prototype.toString
+(set! List.prototype.to-string
       (fn []
         (loop [result ""
                list this]
