@@ -136,18 +136,18 @@
 
   ("compiles try special form"
     (assert (identical?
-      (transpile "(try (mod 1 0) (catch e e))")
-      "(function() {\ntry {\n  return mod(1, 0);\n} catch (e) {\n  return e;\n}})()")
+      (transpile "(try (m 1 0) (catch e e))")
+      "(function() {\ntry {\n  return m(1, 0);\n} catch (e) {\n  return e;\n}})()")
       "try / catch compiles")
 
     (assert (identical?
-      (transpile "(try (mod 1 0) (finally 0))")
-      "(function() {\ntry {\n  return mod(1, 0);\n} finally {\n  return 0;\n}})()")
+      (transpile "(try (m 1 0) (finally 0))")
+      "(function() {\ntry {\n  return m(1, 0);\n} finally {\n  return 0;\n}})()")
       "try / finally compiles")
 
     (assert (identical?
-      (transpile "(try (mod 1 0) (catch e e) (finally 0))")
-      "(function() {\ntry {\n  return mod(1, 0);\n} catch (e) {\n  return e;\n} finally {\n  return 0;\n}})()")
+      (transpile "(try (m 1 0) (catch e e) (finally 0))")
+      "(function() {\ntry {\n  return m(1, 0);\n} catch (e) {\n  return e;\n} finally {\n  return 0;\n}})()")
       "try / catch / finally compiles"))
 
   ("compile property / method access / call special forms"
