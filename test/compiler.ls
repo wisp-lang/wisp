@@ -159,7 +159,10 @@
             "property access compiles correctly")
     (assert (identical? (transpile "(.-location (.open window url))")
                         "(window.open(url)).location")
-            "compound property access and method call"))
+            "compound property access and method call")
+    (assert (identical? (transpile "(.slice (.splice arr 0))")
+                        "arr.splice(0).slice()")
+            "(.slice (.splice arr 0)) => arr.splice(0).slice()"))
 
   ("compile unquote-splicing forms"
     (assert (identical? (transpile "`(1 ~@'(2 3))")
