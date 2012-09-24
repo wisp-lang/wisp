@@ -70,7 +70,8 @@
   [value]
   (cond
     (or (keyword? value) (symbol? value))
-      (if (>= (.index-of value "/") 0)
+      (if (and (> (.-length value) 2)
+               (>= (.index-of value "/") 0))
         (.substr value (+ (.index-of value "/") 1))
         (.substr value 1))
     (string? value) value))
