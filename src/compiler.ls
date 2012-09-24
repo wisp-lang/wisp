@@ -652,6 +652,14 @@
           (compile (macroexpand (first form)))
           (compile (macroexpand (second form))))))
 
+(defn compile-instance
+  "Evaluates x and tests if it is an instance of the class
+  c. Returns true or false"
+  [form]
+  (compile-template (list "~{} instanceof ~{}"
+                          (compile (macroexpand (second form)))
+                          (compile (macroexpand (first form))))))
+
 (defn compile-is-nil
   "Returns true if value is nil, false otherwise."
   [form]
@@ -673,6 +681,7 @@
 (install-special (symbol ".") compile-property)
 (install-special (symbol "apply") compile-apply)
 (install-special (symbol "new") compile-new)
+(install-special (symbol "instance?") compile-instance)
 (install-special (symbol "nil?") compile-is-nil)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
