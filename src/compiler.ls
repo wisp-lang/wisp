@@ -652,6 +652,13 @@
           (compile (macroexpand (first form)))
           (compile (macroexpand (second form))))))
 
+(defn compile-str
+  "Compiles str special form"
+  [form]
+  (if (empty? form)
+    (compile-str (list ""))
+    (compile (cons (symbol "+") form))))
+
 (defn compile-instance
   "Evaluates x and tests if it is an instance of the class
   c. Returns true or false"
@@ -683,6 +690,7 @@
 (install-special (symbol "new") compile-new)
 (install-special (symbol "instance?") compile-instance)
 (install-special (symbol "nil?") compile-is-nil)
+(install-special (symbol "str") compile-str)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 

@@ -257,6 +257,12 @@
                         "a(b)[c[d]]")
             "(get (a b) (get c d)) => a(b)[c[d]]"))
 
+  ("compiles str"
+    (assert (identical? (transpile "(str)") "\"\"")
+            "(str) => \"\"")
+    (assert (identical? (transpile "(str a b (str c d))") "a + b + (c + d)")
+            "(str a b (str c d)) => a + b + (c + d)"))
+
   ("compiles instance?"
     (assert (identical? (transpile "(instance? Object a)")
                         "a instanceof Object")
