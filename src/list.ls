@@ -35,38 +35,48 @@
 
 (defn count
   "Returns number of elements in list"
-  [list]
-  (.-length list))
+  [sequence]
+  (.-length sequence))
 
 (defn empty?
   "Returns true if list is empty"
-  [list]
-  (= (count list) 0))
+  [sequence]
+  (= (count sequence) 0))
 
 (defn first
   "Return first item in a list"
-  [list]
-  (.-head list))
+  [sequence]
+  (if (list? sequence)
+    (.-head sequence)
+    (get sequence 0)))
 
 (defn second
   "Returns second item of the list"
-  [list]
-  (first (rest list)))
+  [sequence]
+  (if (list? sequence)
+    (first (rest sequence))
+    (get sequence 1)))
 
 (defn third
   "Returns third item of the list"
-  [list]
-  (first (rest (rest list))))
+  [sequence]
+  (if (list? sequence)
+    (first (rest (rest sequence)))
+    (get sequence 2)))
 
 (defn rest
   "Returns list of all items except first one"
-  [list]
-  (.-tail list))
+  [sequence]
+  (if (list? sequence)
+    (.-tail sequence)
+    (.slice sequence 1)))
 
 (defn cons
   "Creates list with `head` as first item and `tail` as rest"
   [head tail]
-  (new List head tail))
+  (if (list? tail)
+    (new List head tail)
+    (.concat (Array head) tail)))
 
 (defn list
   "Creates list of the given items"
@@ -79,13 +89,15 @@
 
 (defn reverse
   "Reverse order of items in the list"
-  [source]
-  (loop [items (array)
-         source source]
-    (if (empty? source)
-      (.apply list list items)
-      (recur (.concat (array (first source)) items)
-             (rest source)))))
+  [sequence]
+  (if (list? sequence)
+    (loop [items (array)
+           source sequence]
+      (if (empty? source)
+        (.apply list list items)
+        (recur (.concat (array (first source)) items)
+               (rest source))))
+    (.reverse sequence)))
 
 (defn map-list
   "Maps list by applying `f` to each item"
