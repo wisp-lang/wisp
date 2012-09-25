@@ -6,7 +6,7 @@
          name gensym deref set atom? symbol-identical?] "./ast")
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
-(import [odd? dictionary? dictionary merge keys
+(import [odd? dictionary? dictionary merge keys contains-vector?
          map-dictionary] "./runtime")
 
 (declare nil)
@@ -433,7 +433,9 @@
 (defn compile-fn-params
   ;"compiles function params"
   [params]
-  (.join (.map params compile) ", "))
+  (if (contains-vector? params (symbol "&"))
+    (.join (.map (.slice params 0 (.index-of params (symbol "&"))) compile) ", ")
+    (.join (.map params compile) ", ")))
 
 (defn compile-desugared-fn
   ;"(fn name? [params* ] exprs*)
@@ -444,11 +446,11 @@
     (if (nil? name)
       (list "function(~{}) {\n  ~{}\n}"
             (compile-fn-params params)
-            (compile-fn-body body))
+            (compile-fn-body body params))
       (list "function ~{}(~{}) {\n  ~{}\n}"
             (compile name)
             (compile-fn-params params)
-            (compile-fn-body body)))))
+            (compile-fn-body body params)))))
 
 (defn compile-statements
   [form prefix]
@@ -466,8 +468,18 @@
         (rest expressions)))))
 
 (defn compile-fn-body
-  [form]
-  (compile-statements form "return "))
+  [form params]
+  (if (and (vector? params) (contains-vector? params (symbol "&")))
+    (compile-statements
+      (cons (list (symbol "def")
+                  (get params (inc (.index-of params (symbol "&"))))
+                  (list
+                    (symbol "Array.prototype.slice.call")
+                    (symbol "arguments")
+                    (.index-of params (symbol "&"))))
+      form)
+      "return ")
+    (compile-statements form "return ")))
 
 (defn compile-fn
   "(fn name? [params* ] exprs*)
@@ -943,7 +955,6 @@
 ;; - loop
 ;; - alength
 ;; - defn with metadata in front of name
-;; - cond
 ;; - declare
 
 (export

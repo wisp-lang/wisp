@@ -62,7 +62,19 @@
 
     (assert (identical? (transpile "(fn foo? ^boolean [x] true)")
                         "function isFoo(x) {\n  return true;\n}")
-            "metadata is supported"))
+            "metadata is supported")
+
+    (assert (identical? (transpile "(fn [a & b] a)")
+"function(a) {
+  var b = Array.prototype.slice.call(arguments, 1);
+  return a;
+}") "function with variadic arguments")
+
+    (assert (identical? (transpile "(fn [& a] a)")
+"function() {
+  var a = Array.prototype.slice.call(arguments, 0);
+  return a;
+}") "function with all variadic arguments"))
 
 
 
