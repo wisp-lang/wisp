@@ -21,7 +21,7 @@
             (set! update-preview.line error.line)
             (.set-marker
               editor
-              error.line
+              (or error.line 0)
               (str "<span title='" error.message "'>●</span> %N%"))))))
         200))))
 
