@@ -52,8 +52,8 @@
               input (.-line (.get-cursor input)) null "activeline")))
       :onGutterClick
         (fn []
-          (let [output (.get-element-by-id "output")
-                input (.get-element-by-id "input")]
+          (let [output (.get-element-by-id document "output")
+                input (.get-element-by-id document "input")]
             (set! output.hidden (not output.hidden))
             (set! input.style.width
               (if output.hidden "100%" "50%")))))))
