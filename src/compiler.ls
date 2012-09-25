@@ -59,7 +59,10 @@
         macro (eval (str "(" program ")"))
         ]
     (fn [form]
-      (apply macro (list-to-vector (rest form))))))
+      (try
+        (apply macro (list-to-vector (rest form)))
+        (catch Error error
+          (throw (compiler-error form error.message)))))))
 
 
 ;; system macros
