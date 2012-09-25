@@ -954,6 +954,36 @@
   (def body (apply list (Array.prototype.slice.call arguments 1)))
   `(def ~name (fn ~name ~@body)))
 
+(defmacro import
+  \"Helper macro for importing node modules\"
+  [imports path]
+  (if (symbol? imports)
+    `(def ~imports (require ~path))
+    (loop [form '() names imports]
+      (if (empty? names)
+        `(do* ~@form)
+        (let [alias (first names)
+              id (symbol (str \".-\" (name alias)))]
+          (recur (cons `(def ~alias
+                          (~id (require ~path))) form)
+                 (rest names)))))))
+
+(defmacro export
+  \"Helper macro for exporting multiple / single value\"
+  [& names]
+  (if (empty? names)
+    nil
+    (if (empty? (rest names))
+      `(set! module.exports ~(first names))
+      (loop [form '() exports names]
+        (if (empty? exports)
+          `(do* ~@form)
+          (recur (cons `(set!
+                         (~(symbol (str \".-\" (name (first exports))))
+                           exports)
+                         ~(first exports))
+                       form)
+               (rest exports)))))))
 ")
 
 ;; TODO:
