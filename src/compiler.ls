@@ -414,6 +414,13 @@
     (cons (first form) ;; (name nil ... )
           (cons nil (rest form)))))
 
+(defn desugar-fn-attrs [form]
+  (if (dictionary? (third form))
+    form
+    (cons (first form) ;; (name nil ... )
+          (cons (second form)
+            (cons nil (rest (rest form)))))))
+
 (defn desugar-body [form]
   (if (list? (third form))
     form
@@ -432,7 +439,7 @@
   ;"(fn name? [params* ] exprs*)
 
   ;Defines a function (fn)"
-  [name doc params body]
+  [name doc attrs params body]
   (compile-template
     (if (nil? name)
       (list "function(~{}) {\n  ~{}\n}"
@@ -467,12 +474,13 @@
 
   Defines a function (fn)"
   [form]
-  (let [signature (desugar-fn-doc (desugar-fn-name form))
+  (let [signature (desugar-fn-attrs (desugar-fn-doc (desugar-fn-name form)))
         name (first signature)
         doc (second signature)
-        params (third signature)
-        body (rest (rest (rest signature)))]
-    (compile-desugared-fn name doc params body)))
+        attrs (third signature)
+        params (third (rest signature))
+        body (rest (rest (rest (rest signature))))]
+    (compile-desugared-fn name doc attrs params body)))
 
 (defn compile-fn-invoke
   [form]
