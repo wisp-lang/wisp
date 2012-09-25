@@ -1,7 +1,7 @@
 (include "./runtime")
 (import [list list? count empty? first second third rest
          cons rest] "./list")
-(import [odd? dictionary merge] "./runtime")
+(import [odd? dictionary merge keys] "./runtime")
 (import [symbol? symbol keyword? keyword quote syntax-quote
          unquote unquote-splicing meta with-meta name deref] "./ast")
 
@@ -572,9 +572,11 @@
         pfn (get __tag-table__ (name tag))]
     (if pfn
       (pfn (read reader true nil false))
-      (reader-error rdr
-                    "Could not find tag parser for " (name tag)
-                    " in " (pr-str (keys __tag-table__))))))
+      (reader-error reader
+                    (str "Could not find tag parser for "
+                         (name tag)
+                         " in "
+                         (str (keys __tag-table__)))))))
 
 
 
