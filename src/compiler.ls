@@ -439,17 +439,24 @@
             (compile-fn-params params)
             (compile-fn-body body)))))
 
-(defn compile-fn-body
-  [form]
+(defn compile-statements
+  [form prefix]
   (loop [result ""
          expression (first form)
          expressions (rest form)]
     (if (empty? expressions)
-      (str result "return " (compile (macroexpand expression)) ";")
+      (str result
+           (if (nil? prefix) "" prefix)
+           (compile (macroexpand expression))
+           ";")
       (recur
-        (str result (compile (macroexpand expression)) ";" "\n")
+        (str result (compile (macroexpand expression)) ";\n")
         (first expressions)
         (rest expressions)))))
+
+(defn compile-fn-body
+  [form]
+  (compile-statements form "return "))
 
 (defn compile-fn
   "(fn name? [params* ] exprs*)
@@ -674,6 +681,70 @@
                  (list (symbol "typeof") (first form))
                  "undefined")))
 
+
+(defn compile-loop
+  "Evaluates the body in a lexical context in which the symbols
+  in the binding-forms are bound to their respective
+  initial-expressions or parts therein. Acts as a recur target."
+  [form]
+  (let [bindings (first form)
+        body (rest form)]
+    ;; `((fn loop []
+    ;;    ~@(define-bindings bindings)
+    ;;    ~@(compile-recur body names)))
+    (compile (list (cons (symbol "fn")
+                (cons (symbol "loop")
+                      (cons (Array)
+                            (concat-list
+                              (define-bindings bindings)
+                                         (compile-recur bindings body)))))))))
+
+(defn rebind-bindings
+  "Rebinds given bindings to a given names in a form of
+  (set! foo bar) expressions"
+  [old-bindings new-values]
+  (loop [result (list)
+         bindings old-bindings
+         values new-values]
+    (if (empty? bindings)
+      (reverse result)
+      (recur
+       (cons (list (symbol "set!") (first bindings) (first values)) result)
+       (rest (rest bindings))
+       (rest values)))))
+
+
+(defn expand-recur
+  "Expands recur special form into params rebinding"
+  [bindings body]
+  (map-list body
+       (fn [form]
+         (if (list? form)
+           (if (identical? (first form) (symbol "recur"))
+             (list (symbol "::raw")
+                   (compile-group
+                    (concat-list
+                      (rebind-bindings bindings (rest form))
+                      (list (symbol "loop")))))
+             (expand-recur bindings form))
+           form))))
+
+(defn compile-recur
+  "Eliminates tail calls in form of recur and rebinds the bindings
+  of the recursion point to the parameters of the recur"
+  [bindings body]
+  (list
+    (list (symbol "::raw")
+          (compile-template
+          (list "\nvar recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}"
+                (compile-statements (expand-recur bindings body)))))
+    (symbol "recur")))
+
+(defn compile-raw
+  "returns form back since it's already compiled"
+  [form]
+  (first form))
+
 (install-special (symbol "set!") compile-set)
 (install-special (symbol "get") compile-compound-accessor)
 (install-special (symbol "aget") compile-compound-accessor)
@@ -691,6 +762,8 @@
 (install-special (symbol "instance?") compile-instance)
 (install-special (symbol "nil?") compile-is-nil)
 (install-special (symbol "str") compile-str)
+(install-special (symbol "loop") compile-loop)
+(install-special (symbol "::raw") compile-raw)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
 

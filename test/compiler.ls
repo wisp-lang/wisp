@@ -279,5 +279,47 @@
                         "typeof(foo(bar)) === \"undefined\"")
             "(nil? (foo bar)) => typeof(foo(bar)) === \"undefined\""))
 
+  ("compile loop"
+    (assert (identical? (transpile "(loop [x 7] (if (f x) x (recur (b x))))")
+"(function loop() {
+  var x = 7;
+  
+  var recur = loop;
+  while (recur === loop) {
+    recur = f(x) ?
+    x :
+    x = b(x), loop;
+  };
+  return recur;
+})()") "single binding loops compile")
+
+    (assert (identical? (transpile "(loop [] (if (m?) m (recur)))")
+"(function loop() {
+  
+  var recur = loop;
+  while (recur === loop) {
+    recur = isM() ?
+    m :
+    loop;
+  };
+  return recur;
+})()") "zero bindings loops compile")
+
+    (assert
+      (identical?
+        (transpile "(loop [x 3 y 5] (if (> x y) x (recur (+ x 1) (- y 1))))")
+"(function loop() {
+  var x = 3;
+  var y = 5;
+  
+  var recur = loop;
+  while (recur === loop) {
+    recur = x > y ?
+    x :
+    x = x + 1, y = y - 1, loop;
+  };
+  return recur;
+})()") "multi bindings loops compile"))
+
 )
 
