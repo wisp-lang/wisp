@@ -130,7 +130,11 @@
 
     (assert (identical? (transpile "(set! x (foo bar 2))")
             "x = foo(bar, 2)")
-            "set! with value expression compiles"))
+            "set! with value expression compiles")
+
+    (assert (identical? (transpile "(set! x (.m o))")
+                        "x = o.m()")
+            "set! expands macros"))
 
   ("compile vectors"
     (assert (identical? (transpile "[a b]")

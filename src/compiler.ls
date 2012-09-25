@@ -563,8 +563,8 @@
   [form]
   (compile-template
     (list "~{} = ~{}"
-      (compile (first form))
-      (compile (second form)))))
+      (compile (macroexpand (first form)))
+      (compile (macroexpand (second form))))))
 
 (defn compile-vector
   "Creates a new vector containing the args"
