@@ -635,7 +635,7 @@
     (compile-template
       (list (if (list? (first form)) "(~{}).~{}" "~{}.~{}")
             (compile (macroexpand (first form)))
-            (compile (macroexpand (second form)))))
+            (compile (macroexpand (symbol (.substr (name (second form)) 1))))))
     (compile
       (cons (symbol (str (compile (macroexpand (first form)))  ;; object name
                     "."
