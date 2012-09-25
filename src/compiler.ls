@@ -766,6 +766,7 @@
 (install-special (symbol "def") compile-def)
 (install-special (symbol "if") compile-if-else)
 (install-special (symbol "do") compile-do)
+(install-special (symbol "do*") compile-statements)
 (install-special (symbol "fn") compile-fn)
 (install-special (symbol "let") compile-let)
 (install-special (symbol "throw") compile-throw)
