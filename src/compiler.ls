@@ -503,8 +503,11 @@
          (compile-group (second form)))))
 
 (defn compile-group
-  [form]
-  (.join (list-to-vector (map-list (map-list form macroexpand) compile)) ", "))
+  [form wrap]
+  (if wrap
+    (str "(" (compile-group form) ")")
+    (.join (list-to-vector
+            (map-list (map-list form macroexpand) compile)) ", ")))
 
 (defn compile-do
   "Evaluates the expressions in order and returns the value of the last.
@@ -708,7 +711,7 @@
                       (cons (Array)
                             (concat-list
                               (define-bindings bindings)
-                                         (compile-recur bindings body)))))))))
+                                (compile-recur bindings body)))))))))
 
 (defn rebind-bindings
   "Rebinds given bindings to a given names in a form of
@@ -736,7 +739,8 @@
                    (compile-group
                     (concat-list
                       (rebind-bindings bindings (rest form))
-                      (list (symbol "loop")))))
+                      (list (symbol "loop")))
+                    true))
              (expand-recur bindings form))
            form))))
 

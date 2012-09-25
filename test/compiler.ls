@@ -300,7 +300,7 @@
   while (recur === loop) {
     recur = f(x) ?
     x :
-    x = b(x), loop;
+    (x = b(x), loop);
   };
   return recur;
 })()") "single binding loops compile")
@@ -312,7 +312,7 @@
   while (recur === loop) {
     recur = isM() ?
     m :
-    loop;
+    (loop);
   };
   return recur;
 })()") "zero bindings loops compile")
@@ -328,7 +328,7 @@
   while (recur === loop) {
     recur = x > y ?
     x :
-    x = x + 1, y = y - 1, loop;
+    (x = x + 1, y = y - 1, loop);
   };
   return recur;
 })()") "multi bindings loops compile"))
