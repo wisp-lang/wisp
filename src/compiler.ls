@@ -681,6 +681,11 @@
                  (list (symbol "typeof") (first form))
                  "undefined")))
 
+(defn compile-not
+  "Returns true if x is logical false, false otherwise."
+  [form]
+  (compile-template (list "!~{}" (compile (macroexpand (first form))))))
+
 
 (defn compile-loop
   "Evaluates the body in a lexical context in which the symbols
@@ -760,6 +765,7 @@
 (install-special (symbol "apply") compile-apply)
 (install-special (symbol "new") compile-new)
 (install-special (symbol "instance?") compile-instance)
+(install-special (symbol "not") compile-not)
 (install-special (symbol "nil?") compile-is-nil)
 (install-special (symbol "str") compile-str)
 (install-special (symbol "loop") compile-loop)
