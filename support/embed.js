@@ -23,7 +23,7 @@ var updatePreview = function(editor) {
         } catch (error) {
           return (function() {
             updatePreview.line = error.line;
-            return editor.setMarker(error.line, ''.concat("<span title='", error.message, "'>●</span> %N%"));
+            return editor.setMarker((error.line || 0), ''.concat("<span title='", error.message, "'>●</span> %N%"));
           })()
         };
       })();
@@ -36,8 +36,8 @@ var input = CodeMirror(document.getElementById("input"), dictionary("lineNumbers
   return hlLine = input.setLineClass((input.getCursor()).line, null, "activeline");
 }, "onGutterClick", function() {
   return (function() {
-    var output = "output".getElementById();
-    var input = "input".getElementById();
+    var output = document.getElementById("output");
+    var input = document.getElementById("input");
     output.hidden = !output.hidden;
     return input.style.width = output.hidden ?
       "100%" :

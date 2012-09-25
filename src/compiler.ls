@@ -987,7 +987,6 @@
 ")
 
 ;; TODO:
-;; - loop
 ;; - alength
 ;; - defn with metadata in front of name
 ;; - declare
