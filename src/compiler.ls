@@ -691,7 +691,7 @@
 (defn compile-not
   "Returns true if x is logical false, false otherwise."
   [form]
-  (compile-template (list "!~{}" (compile (macroexpand (first form))))))
+  (compile-template (list "!(~{})" (compile (macroexpand (first form))))))
 
 
 (defn compile-loop

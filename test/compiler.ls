@@ -234,7 +234,7 @@
     (assert (identical? (transpile "(Foo. a b)") "new Foo(a, b)")
             "(Foo. a b) => new Foo(a, b)"))
 
-  ("compiles native special forms: and or + * - /"
+  ("compiles native special forms: and or + * - / not"
     (assert (identical? (transpile "(and a b)") "a && b")
                         "(and a b) => a && b")
     (assert (identical? (transpile "(and a b c)") "a && b && c")
@@ -244,7 +244,11 @@
 
     (assert (identical?
               (transpile "(and a (or b (or c d)))") "a && (b || (c || d))")
-              "(and a (or b (or c d))) => a && (b || (c || d))"))
+              "(and a (or b (or c d))) => a && (b || (c || d))")
+    (assert (identical? (transpile "(not x)") "!(x)")
+                        "(not x) => !(x)")
+    (assert (identical? (transpile "(not (or x y))") "!(x || y)")
+                        "(not x) => !(x)"))
 
   ("compiles = == >= <= special forms"
     (assert (identical? (transpile "(= a b)") "a == b")
