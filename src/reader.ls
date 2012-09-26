@@ -153,7 +153,7 @@
   [re s]
   (let [matches (.exec re s)]
     (if (not (nil? matches))
-      (if (== (alength matches) 1)
+      (if (== (count matches) 1)
         (aget matches 0)
         matches))))
 
@@ -162,7 +162,7 @@
   (let [groups (re-find int-pattern s)
         group3 (aget groups 2)]
     (if (not (or (nil? group3)
-                (< (alength group3) 1)))
+                (< (count group3) 1)))
       0
       (let [negate (if (identical? "-" (aget groups 1)) -1 1)
             a (cond
@@ -194,7 +194,7 @@
   (let [matches (.exec pattern source)]
     (when (and (not (nil? matches))
                (identical? (aget matches 0) source))
-      (if (== (alength matches) 1)
+      (if (== (count matches) 1)
         (aget matches 0)
         matches))))
 
