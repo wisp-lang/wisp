@@ -225,7 +225,8 @@
             (.split id "-")
             (fn [result key]
               (str result
-                   (if result
+                   (if (and (not (empty? result))
+                            (not (empty? key)))
                      (str (.to-upper-case (get key 0)) (.substr key 1))
                      key)))
             ""))
