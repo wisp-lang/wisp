@@ -149,14 +149,6 @@
 (def float-pattern (re-pattern "([-+]?[0-9]+(\\.[0-9]*)?([eE][-+]?[0-9]+)?)(M)?"))
 (def symbol-pattern (re-pattern "[:]?([^0-9/].*/)?([^0-9/][^/]*)"))
 
-(defn re-find
-  [re s]
-  (let [matches (.exec re s)]
-    (if (not (nil? matches))
-      (if (== (count matches) 1)
-        (aget matches 0)
-        matches))))
-
 (defn match-int
   [s]
   (let [groups (re-find int-pattern s)
