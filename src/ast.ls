@@ -1,4 +1,4 @@
-(import [list list? first] "./list")
+(import [list list? first count] "./list")
 
 (defn with-meta
   "Returns identical value with given metadata associated to it."
@@ -36,6 +36,7 @@
 
 (defn ^boolean symbol? [x]
   (and (string? x)
+       (> (count x) 1)
        (identical? (.char-at x 0) "\uFEFF")))
 
 
@@ -50,6 +51,7 @@
 
 (defn ^boolean keyword? [x]
   (and (string? x)
+       (> (count x) 1)
        (identical? (.char-at x 0) "\uA789")))
 
 (defn keyword
