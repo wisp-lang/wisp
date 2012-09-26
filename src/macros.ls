@@ -183,6 +183,7 @@
 
 (def-macro-alias === identical?)
 (def-macro-alias == =)
+(def-macro-alias % mod)
 
 (defmacro ! [expression] `(js* "!~{}" ~expression))
 (def-macro-alias ! not)
