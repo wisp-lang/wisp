@@ -243,8 +243,8 @@
 
 
 (defn make-unicode-char [code-str]
-    (let [code (parseInt code-str 16)]
-      (.from-char-code String code)))
+  (let [code (parseInt code-str 16)]
+    (.from-char-code String code)))
 
 (defn escape-char
   "escape char"
