@@ -396,7 +396,6 @@ List.prototype.tail = Object.create(List.prototype);
 
 List.prototype.toString = function() {
   return (function loop(result, list) {
-    
     var recur = loop;
     while (recur === loop) {
       recur = isEmpty(list) ?
@@ -468,7 +467,6 @@ var list = function list() {
 var reverse = function reverse(sequence) {
   return isList(sequence) ?
     (function loop(items, source) {
-      
       var recur = loop;
       while (recur === loop) {
         recur = isEmpty(source) ?
@@ -488,7 +486,6 @@ var mapList = function mapList(source, f) {
 
 var reduceList = function reduceList(form, f, initial) {
   return (function loop(result, items) {
-    
     var recur = loop;
     while (recur === loop) {
       recur = isEmpty(items) ?
@@ -505,7 +502,6 @@ var reduceList = function reduceList(form, f, initial) {
 
 var concatList = function concatList(left, right) {
   return (function loop(result, prefix) {
-    
     var recur = loop;
     while (recur === loop) {
       recur = isEmpty(prefix) ?
@@ -518,7 +514,6 @@ var concatList = function concatList(left, right) {
 
 var listToVector = function listToVector(source) {
   return (function loop(result, list) {
-    
     var recur = loop;
     while (recur === loop) {
       recur = isEmpty(list) ?
@@ -568,9 +563,7 @@ var isDictionary = function isDictionary(form) {
 };
 
 var dictionary = function dictionary() {
-  var pairs = Array.prototype.slice.call(arguments, 0);
   return (function loop(keyValues, result) {
-    
     var recur = loop;
     while (recur === loop) {
       recur = keyValues.length ?
@@ -581,7 +574,7 @@ var dictionary = function dictionary() {
       result;
     };
     return recur;
-  })(pairs, {});
+  })(Array.prototype.slice.call(arguments), {});
 };
 
 var keys = function keys(dictionary) {
@@ -595,10 +588,9 @@ var vals = function vals(dictionary) {
 };
 
 var merge = function merge() {
-  var dictionaries = Array.prototype.slice.call(arguments, 0);
-  return Object.create(Object.prototype, dictionaries.reduce(function(descriptor, dictionary) {
+  return Object.create(Object.prototype, Array.prototype.slice.call(arguments).reduce(function(descriptor, dictionary) {
     isObject(dictionary) ?
-      Object.keys(dictionary).each(function(name) {
+      each(Object.keys(dictionary), function(name) {
         return descriptor[name] = Object.getOwnPropertyDescriptor(dictionary, name);
       }) :
       void(0);
@@ -1960,7 +1952,7 @@ var compileProperty = function(form) {
     compileTemplate(list(isList(first(form)) ?
       "(~{}).~{}" :
       "~{}.~{}", compile(macroexpand(first(form))), compile(macroexpand(symbol(name(second(form)).substr(1)))))) :
-    compile(cons(symbol(''.concat(compile(macroexpand(first(form))), ".", compile(macroexpand(second(form))))), rest(rest(form))));
+    compileTemplate(list("~{}.~{}(~{})", compile(macroexpand(first(form))), compile(macroexpand(second(form))), compileGroup(rest(rest(form)))));
 };
 
 var compileApply = function(form) {
