@@ -15,7 +15,7 @@
           (do
             (.clear-marker editor (or update-preview.line 1))
             (.set-value output (compile-program (rest (read-from-string source)))))
-        (catch Error error
+        (catch error
           (do
             (set! update-preview.line error.line)
             (.set-marker
