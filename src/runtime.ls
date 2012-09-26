@@ -14,8 +14,8 @@
 (defn dictionary
   "Creates dictionary of given arguments. Odd indexed arguments
   are used for keys and evens for values"
-  [& pairs]
-  (loop [key-values pairs
+  []
+  (loop [key-values (.call Array.prototype.slice arguments)
          result {}]
     (if (.-length key-values)
       (do
@@ -39,14 +39,14 @@
   "Returns a dictionary that consists of the rest of the maps conj-ed onto
   the first. If a key occurs in more than one map, the mapping from
   the latter (left-to-right) will be the mapping in the result."
-  [& dictionaries]
+  []
   (Object.create
    Object.prototype
    (.reduce
-    dictionaries
+    (.call Array.prototype.slice arguments)
     (fn [descriptor dictionary]
       (if (object? dictionary)
-        (.each
+        (each
          (Object.keys dictionary)
          (fn [name]
            (set!

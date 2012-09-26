@@ -5,7 +5,7 @@
          name gensym deref set atom? symbol-identical?] "./ast")
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
-(import [odd? dictionary? dictionary merge keys contains-vector?
+(import [odd? dictionary? dictionary merge keys vals contains-vector?
          map-dictionary string? number? vector? boolean?
          true? false? nil? re-pattern?] "./runtime")
 
@@ -696,36 +696,37 @@
   in the binding-forms are bound to their respective
   initial-expressions or parts therein. Acts as a recur target."
   [form]
-  (let [bindings (first form)
+  (let [bindings (apply dictionary (first form))
+        names (keys bindings)
+        values (vals bindings)
         body (rest form)]
     ;; `((fn loop []
     ;;    ~@(define-bindings bindings)
     ;;    ~@(compile-recur body names)))
-    (compile (list (cons (symbol "fn")
-                (cons (symbol "loop")
-                      (cons (Array)
-                            (concat-list
-                              (define-bindings bindings)
-                                (compile-recur bindings body)))))))))
+    (compile
+      (cons (cons (symbol "fn")
+              (cons (symbol "loop")
+                (cons names
+                  (compile-recur names body))))
+            (apply list values)))))
 
 (defn rebind-bindings
   "Rebinds given bindings to a given names in a form of
   (set! foo bar) expressions"
-  [old-bindings new-values]
+  [names values]
   (loop [result (list)
-         bindings old-bindings
-         values new-values]
-    (if (empty? bindings)
+         names names
+         values values]
+    (if (empty? names)
       (reverse result)
       (recur
-       (cons (list (symbol "set!") (first bindings) (first values)) result)
-       (rest (rest bindings))
+       (cons (list (symbol "set!") (first names) (first values)) result)
+       (rest names)
        (rest values)))))
-
 
 (defn expand-recur
   "Expands recur special form into params rebinding"
-  [bindings body]
+  [names body]
   (map-list body
        (fn [form]
          (if (list? form)
@@ -733,21 +734,21 @@
              (list (symbol "::raw")
                    (compile-group
                     (concat-list
-                      (rebind-bindings bindings (rest form))
+                      (rebind-bindings names (rest form))
                       (list (symbol "loop")))
                     true))
-             (expand-recur bindings form))
+             (expand-recur names form))
            form))))
 
 (defn compile-recur
   "Eliminates tail calls in form of recur and rebinds the bindings
   of the recursion point to the parameters of the recur"
-  [bindings body]
+  [names body]
   (list
     (list (symbol "::raw")
           (compile-template
-          (list "\nvar recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}"
-                (compile-statements (expand-recur bindings body)))))
+          (list "var recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}"
+                (compile-statements (expand-recur names body)))))
     (symbol "recur")))
 
 (defn compile-raw

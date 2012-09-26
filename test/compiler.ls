@@ -293,9 +293,7 @@
 
   ("compile loop"
     (assert (identical? (transpile "(loop [x 7] (if (f x) x (recur (b x))))")
-"(function loop() {
-  var x = 7;
-  
+"(function loop(x) {
   var recur = loop;
   while (recur === loop) {
     recur = f(x) ?
@@ -303,11 +301,10 @@
     (x = b(x), loop);
   };
   return recur;
-})()") "single binding loops compile")
+})(7)") "single binding loops compile")
 
     (assert (identical? (transpile "(loop [] (if (m?) m (recur)))")
 "(function loop() {
-  
   var recur = loop;
   while (recur === loop) {
     recur = isM() ?
@@ -320,10 +317,7 @@
     (assert
       (identical?
         (transpile "(loop [x 3 y 5] (if (> x y) x (recur (+ x 1) (- y 1))))")
-"(function loop() {
-  var x = 3;
-  var y = 5;
-  
+"(function loop(x, y) {
   var recur = loop;
   while (recur === loop) {
     recur = x > y ?
@@ -331,7 +325,7 @@
     (x = x + 1, y = y - 1, loop);
   };
   return recur;
-})()") "multi bindings loops compile"))
+})(3, 5)") "multi bindings loops compile"))
 
 )
 
