@@ -1,6 +1,6 @@
 (import [list list? count empty? first second third rest
          cons rest] "./list")
-(import [odd? dictionary merge keys nil? re-pattern] "./runtime")
+(import [odd? dictionary merge keys nil? re-pattern re-matches] "./runtime")
 (import [symbol? symbol keyword? keyword quote syntax-quote
          unquote unquote-splicing meta with-meta name deref] "./ast")
 
@@ -189,14 +189,6 @@
   [s]
   (parse-float s))
 
-(defn re-matches
-  [pattern source]
-  (let [matches (.exec pattern source)]
-    (when (and (not (nil? matches))
-               (identical? (aget matches 0) source))
-      (if (== (count matches) 1)
-        (aget matches 0)
-        matches))))
 
 (defn match-number
   [s]

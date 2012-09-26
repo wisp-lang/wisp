@@ -132,8 +132,17 @@
   [re s]
   (let [matches (.exec re s)]
     (if (not (nil? matches))
-      (if (== (.-length matches) 1)
+      (if (= (.-length matches) 1)
         (first matches)
+        matches))))
+
+(defn re-matches
+  [pattern source]
+  (let [matches (.exec pattern source)]
+    (if (and (not (nil? matches))
+             (identical? (get matches 0) source))
+      (if (= (.-length matches) 1)
+        (get matches 0)
         matches))))
 
 (defn re-pattern
@@ -145,5 +154,5 @@
 
 (export dictionary? dictionary merge odd? vector? string? number? fn? object?
         nil? boolean? true? false? map-dictionary contains-vector? keys vals
-        re-pattern re-find re-pattern?)
+        re-pattern re-find re-matches re-pattern?)
 
