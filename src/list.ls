@@ -91,11 +91,11 @@
   "Reverse order of items in the list"
   [sequence]
   (if (list? sequence)
-    (loop [items []
+    (loop [items (array)
            source sequence]
       (if (empty? source)
         (.apply list list items)
-        (recur (.concat [(first source)] items)
+        (recur (.concat (array (first source)) items)
                (rest source))))
     (.reverse sequence)))
 

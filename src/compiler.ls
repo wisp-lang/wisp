@@ -772,6 +772,7 @@
 (install-special (symbol "let") compile-let)
 (install-special (symbol "throw") compile-throw)
 (install-special (symbol "vector") compile-vector)
+(install-special (symbol "array") compile-vector)
 (install-special (symbol "try") compile-try)
 (install-special (symbol ".") compile-property)
 (install-special (symbol "apply") compile-apply)
