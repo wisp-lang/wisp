@@ -1,5 +1,7 @@
 var rest = (require("../lib/list")).rest;;
 
+var str = (require("../lib/runtime")).str;;
+
 var readFromString = (require("../lib/reader")).readFromString;;
 
 var compileProgram = (require("../lib/compiler")).compileProgram;;
@@ -8,7 +10,7 @@ var updatePreview = function updatePreview(editor) {
   clearTimeout(updatePreview.id);
   return (function() {
     var code = editor.getValue();
-    var source = "(do " + code + ")";
+    var source = str("(do ", code, ")");
     localStorage.buffer = code;
     return updatePreview.id = setTimeout(function() {
       return (function() {
@@ -20,7 +22,7 @@ var updatePreview = function updatePreview(editor) {
       } catch (error) {
         return (function() {
           updatePreview.line = error.line;
-          return editor.setMarker(error.line || 0, "<span title='" + error.message + "'>●</span> %N%");
+          return editor.setMarker(error.line || 0, str("<span title='", error.message, "'>●</span> %N%"));
         })();
       }})();
     }, 200);
@@ -48,7 +50,7 @@ var input = CodeMirror(document.getElementById("input"), {
     return (function() {
       var output = document.getElementById("output");
       var input = document.getElementById("input");
-      output.hidden = !output.hidden;
+      output.hidden = !(output.hidden);
       return input.style.width = output.hidden ?
         "100%" :
         "50%";
