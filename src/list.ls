@@ -1,4 +1,4 @@
-(import [nil? vector? number? string?] "./runtime")
+(import [nil? vector? number? string? str] "./runtime")
 
 (defn List
   "List type"

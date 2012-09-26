@@ -1,7 +1,7 @@
 (import [list list? count empty? first second third rest
          cons rest] "./list")
-(import [odd? dictionary merge keys nil? inc dec
-         re-pattern re-matches re-find] "./runtime")
+(import [odd? dictionary merge keys nil? inc dec vector? string? object?
+         re-pattern re-matches re-find str] "./runtime")
 (import [symbol? symbol keyword? keyword quote syntax-quote
          unquote unquote-splicing meta with-meta name deref] "./ast")
 

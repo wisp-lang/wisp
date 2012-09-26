@@ -7,7 +7,7 @@
          reverse map-list concat-list reduce-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
          map-dictionary string? number? vector? boolean?
-         true? false? nil? re-pattern?] "./runtime")
+         true? false? nil? re-pattern? inc dec str] "./runtime")
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
@@ -672,13 +672,6 @@
           (compile (macroexpand (first form)))
           (compile (macroexpand (second form))))))
 
-(defn compile-str
-  "Compiles str special form"
-  [form]
-  (if (empty? form)
-    (compile-str (list ""))
-    (compile (cons (symbol "+") form))))
-
 (defn compile-instance
   "Evaluates x and tests if it is an instance of the class
   c. Returns true or false"
@@ -777,7 +770,6 @@
 (install-special (symbol "new") compile-new)
 (install-special (symbol "instance?") compile-instance)
 (install-special (symbol "not") compile-not)
-(install-special (symbol "str") compile-str)
 (install-special (symbol "loop") compile-loop)
 (install-special (symbol "::raw") compile-raw)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)

@@ -159,9 +159,15 @@
   [x]
   (- x 1))
 
+(defn str
+  "With no args, returns the empty string. With one arg x, returns
+  x.toString().  (str nil) returns the empty string. With more than
+  one arg, returns the concatenation of the str values of the args."
+  []
+  (.apply String.prototype.concat "" arguments))
 
 
 (export dictionary? dictionary merge odd? vector? string? number? fn? object?
         nil? boolean? true? false? map-dictionary contains-vector? keys vals
-        re-pattern re-find re-matches re-pattern? inc dec)
+        re-pattern re-find re-matches re-pattern? inc dec str)
 
