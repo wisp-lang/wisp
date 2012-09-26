@@ -20,6 +20,12 @@ runtime:
 list:
 	cat ./src/list.ls | $(MAKE) > ./list.js && mv ./list.js ./lib/list.js
 
+engine:
+	cat ./src/engine.ls | $(MAKE) > ./engine.js && mv ./engine.js ./lib/engine.js
+
+node:
+	cat ./src/engine/node.ls | $(MAKE) > ./node.js && mv ./node.js ./lib/engine/node.js
+
 browserify:
 	cat ./support/embed.ls | $(MAKE) > ./embed.js && mv ./embed.js ./support/embed.js
 	browserify ./support/embed.js > ./support/app.js
