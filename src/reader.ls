@@ -488,23 +488,24 @@
 (defn macros [c]
   (cond
    (identical? c "\"") read-string
-   (identical? c "\:") read-keyword
-   (identical? c "\;") read-comment
-   (identical? c "\'") (wrapping-reader quote)
-   (identical? c "\@") (wrapping-reader deref)
-   (identical? c "\^") read-meta
-   (identical? c "\`") (wrapping-reader syntax-quote)
-   (identical? c "\~") read-unquote
-   (identical? c "\(") read-list
-   (identical? c "\)") read-unmatched-delimiter
-   (identical? c "\[") read-vector
-   (identical? c "\]") read-unmatched-delimiter
-   (identical? c "\{") read-map
-   (identical? c "\}") read-unmatched-delimiter
+   (identical? c \:) read-keyword
+   (identical? c ";") read-comment
+   (identical? c "'") (wrapping-reader quote)
+   (identical? c \@) (wrapping-reader deref)
+   (identical? c \^) read-meta
+   (identical? c "`") (wrapping-reader syntax-quote)
+   (identical? c "~") read-unquote
+   (identical? c "(") read-list
+   (identical? c ")") read-unmatched-delimiter
+   (identical? c "[") read-vector
+   (identical? c "]") read-unmatched-delimiter
+   (identical? c "{") read-map
+   (identical? c "}") read-unmatched-delimiter
    (identical? c \\) read-char
-   (identical? c "\%") not-implemented
-   (identical? c "\#") read-dispatch
+   (identical? c \%) not-implemented
+   (identical? c "#") read-dispatch
    :else nil))
+
 
 (defn dispatch-macros [s]
   (cond
