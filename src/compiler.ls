@@ -519,10 +519,10 @@
 
 (defn define-bindings
   "Returns list of binding definitions"
-  [bindings]
+  [form]
   (loop [defs (list)
-         bindings bindings]
-    (if (= (.-length bindings) 0)
+         bindings form]
+    (if (= (count bindings) 0)
       (reverse defs)
       (recur
         (cons
@@ -530,7 +530,7 @@
                 (get bindings 0)    ; binding name
                 (get bindings 1))   ; binding value
            defs)
-        (.slice bindings 2)))))
+        (rest (rest bindings))))))
 
 (defn compile-let
   "Evaluates the exprs in a lexical context in which the symbols in
