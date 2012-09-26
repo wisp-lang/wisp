@@ -254,14 +254,14 @@
     (if mapresult
       mapresult
       (cond
-        (identical? ch "\\x")
+        (identical? ch \x)
         (make-unicode-char
          (validate-unicode-escape
           unicode-2-pattern
           reader
           ch
           (read-2-chars reader)))
-        (identical? ch "\\u")
+        (identical? ch \u)
         (make-unicode-char
           (validate-unicode-escape
            unicode-4-pattern
