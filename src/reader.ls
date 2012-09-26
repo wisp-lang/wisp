@@ -70,28 +70,28 @@
 
 ;; Predicates
 
-(defn- ^boolean breaking-whitespace?
+(defn ^boolean breaking-whitespace?
  "Checks if a string is all breaking whitespace."
  [ch]
  (>= (.index-of "\t\n\r " ch) 0))
 
-(defn- ^boolean whitespace?
+(defn ^boolean whitespace?
   "Checks whether a given character is whitespace"
   [ch]
   (or (breaking-whitespace? ch) (identical? "," ch)))
 
-(defn- ^boolean numeric?
+(defn ^boolean numeric?
  "Checks whether a given character is numeric"
  [ch]
  (>= (.index-of "01234567890" ch) 0))
 
-(defn- ^boolean comment-prefix?
+(defn ^boolean comment-prefix?
   "Checks whether the character begins a comment."
   [ch]
   (identical? ";" ch))
 
 
-(defn- ^boolean number-literal?
+(defn ^boolean number-literal?
   "Checks whether the reader is at the start of a number literal"
   [reader initch]
   (or (numeric? initch)
@@ -149,7 +149,7 @@
 (def float-pattern (re-pattern "([-+]?[0-9]+(\\.[0-9]*)?([eE][-+]?[0-9]+)?)(M)?"))
 (def symbol-pattern (re-pattern "[:]?([^0-9/].*/)?([^0-9/][^/]*)"))
 
-(defn- re-find
+(defn re-find
   [re s]
   (let [matches (.exec re s)]
     (if (not (nil? matches))
@@ -157,7 +157,7 @@
         (aget matches 0)
         matches))))
 
-(defn- match-int
+(defn match-int
   [s]
   (let [groups (re-find int-pattern s)
         group3 (aget groups 2)]
@@ -178,18 +178,18 @@
           (* negate (parse-int n radix)))))))
 
 
-(defn- match-ratio
+(defn match-ratio
   [s]
   (let [groups (re-find ratio-pattern s)
         numinator (aget groups 1)
         denominator (aget groups 2)]
     (/ (parse-int numinator) (parse-int denominator))))
 
-(defn- match-float
+(defn match-float
   [s]
   (parse-float s))
 
-(defn- re-matches
+(defn re-matches
   [pattern source]
   (let [matches (.exec pattern source)]
     (when (and (not (nil? matches))
@@ -198,7 +198,7 @@
         (aget matches 0)
         matches))))
 
-(defn- match-number
+(defn match-number
   [s]
   (cond
    (re-matches int-pattern s) (match-int s)
