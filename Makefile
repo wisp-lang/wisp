@@ -15,9 +15,6 @@ ast:
 compiler:
 	$(LISPY_MAKE) ./src/compiler.ls ./lib/compiler.js
 
-runtime:
-	$(LISPY_MAKE) ./src/runtime.ls ./lib/runtime.js
-
 lispy:
 	$(LISPY_MAKE) ./src/lispy.ls ./lib/lispy.js
 
@@ -29,6 +26,9 @@ node:
 
 browser:
 	$(LISPY_MAKE) ./src/browser.ls ./lib/browser.js
+
+runtime:
+	cat ./src/runtime.ls | $(MAKE) > ./runtime.js && mv ./runtime.js ./lib/runtime.js
 
 list:
 	cat ./src/list.ls | $(MAKE) > ./list.js && mv ./list.js ./lib/list.js
