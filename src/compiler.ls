@@ -273,8 +273,11 @@
        (special? head) (execute-special head form)
        :else (do
               (if (not (or (symbol? head) (list? head)))
-                (throw (str "operator is not a procedure: " head))
-              (compile (list (symbol "::compile:invoke") head (rest form)))))))))
+                (throw (compiler-error
+                        form
+                        (str "operator is not a procedure: " head)))
+              (compile
+                (list (symbol "::compile:invoke") head (rest form)))))))))
 
 (defn compile-program
   "compiles all expansions"
