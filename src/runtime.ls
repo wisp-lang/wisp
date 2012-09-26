@@ -1,4 +1,6 @@
 ;; Define alias for the clojures alength.
+(def nil)
+
 (defn ^boolean odd? [n]
   (identical? (mod n 2) 1))
 
@@ -92,6 +94,11 @@
   [x]
   (identical? (.call to-string x) "[object Boolean]"))
 
+(defn ^boolean re-pattern?
+  "Returns true if x is a regular expression"
+  [x]
+  (identical? (.call to-string x) "[object RegExp]"))
+
 (defn ^boolean fn?
   "Returns true if x is a function"
   [x]
@@ -118,9 +125,26 @@
   [x]
   (identical? x true))
 
+(defn re-find
+  "Returns the first regex match, if any, of s to re, using
+  re.exec(s). Returns a vector, containing first the matching
+  substring, then any capturing groups if the regular expression contains
+  capturing groups."
+  [re s]
+  (let [matches (.exec re s)]
+    (if (not (nil? matches))
+      (if (== (.-length matches) 1)
+        (first matches)
+        matches))))
 
+(defn re-pattern
+  "Returns an instance of RegExp which has compiled the provided string."
+  [s]
+  (let [match (re-find #"^(?:\(\?([idmsux]*)\))?(.*)" s)]
+    (new RegExp (get match 2) (get match 1))))
 
 
 (export dictionary? dictionary merge odd? vector? string? number? fn? object?
-        nil? boolean? true? false? map-dictionary contains-vector? keys vals)
+        nil? boolean? true? false? map-dictionary contains-vector? keys vals
+        re-pattern re-find re-pattern?)
 

@@ -6,8 +6,10 @@
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge keys contains-vector?
-         map-dictionary nil string? number? vector? boolean?
-         true? false? nil?] "./runtime")
+         map-dictionary string? number? vector? boolean?
+         true? false? nil? re-pattern?] "./runtime")
+
+(def nil)
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
@@ -17,7 +19,8 @@
            (not (symbol? form)))
       (boolean? form)
       (nil? form)
-      (keyword? form)))
+      (keyword? form)
+      (re-pattern? form)))
 
 
 
@@ -190,6 +193,7 @@
     (string? form) (compile (list (symbol "::compile:string") form))
     (boolean? form) (compile (list (symbol "::compile:boolean") form))
     (nil? form) (compile (list (symbol "::compile:nil") form))
+    (re-pattern? form) (compile-re-pattern form)
     (vector? form) (compile (apply-form (symbol "vector") (apply list form)))
     (list? form) (compile (apply-form (symbol "list") form))
     (dictionary? form) (compile-dictionary form)))
@@ -812,6 +816,10 @@
     (set! string (.replace string (RegExp "\t" "g") "\\t"))
     (set! string (.replace string (RegExp "\"" "g") "\\\""))
     (str "\"" string "\"")))
+
+(defn compile-re-pattern
+  [form]
+  (str form))
 
 (defn install-native
   "Creates an adapter for native operator"

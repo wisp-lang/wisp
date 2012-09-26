@@ -1,6 +1,6 @@
 (import [list list? count empty? first second third rest
          cons rest nil] "./list")
-(import [odd? dictionary merge keys nil?] "./runtime")
+(import [odd? dictionary merge keys nil? re-pattern] "./runtime")
 (import [symbol? symbol keyword? keyword quote syntax-quote
          unquote unquote-splicing meta with-meta name deref] "./ast")
 
@@ -475,9 +475,16 @@
                        (read-delimited-list "}" reader true))))
 
 (defn read-regex
-  [reader ch]
-  ;; TODO: Switch to re-pattern instead
-  (list (symbol "re-pattern") (read-string reader ch)))
+  [reader]
+  (loop [buffer ""
+         ch (read-char reader)]
+
+    (cond
+     (nil? ch) (reader-error reader "EOF while reading string")
+     (identical? \\ ch) (recur (str buffer ch (read-char reader))
+                               (read-char reader))
+     (identical? "\"" ch) (re-pattern (.join (.split buffer "/") "\\/"))
+     :default (recur (str buffer ch) (read-char reader)))))
 
 (defn read-discard
   "Discards next form"
