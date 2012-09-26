@@ -6,12 +6,6 @@ all: runtime list ast reader compiler engine engine-node node repl lispy browser
 new: engine-node engine runtime list ast reader compiler
 embed: runtime list ast reader compiler browserify
 
-reader:
-	$(LISPY_MAKE) ./src/reader.ls ./lib/reader.js
-
-compiler:
-	$(LISPY_MAKE) ./src/compiler.ls ./lib/compiler.js
-
 lispy:
 	$(LISPY_MAKE) ./src/lispy.ls ./lib/lispy.js
 
@@ -23,6 +17,12 @@ node:
 
 browser:
 	$(LISPY_MAKE) ./src/browser.ls ./lib/browser.js
+
+reader:
+	cat ./src/reader.ls | $(MAKE) > ./reader.js && mv ./reader.js ./lib/reader.js
+
+compiler:
+	cat ./src/compiler.ls | $(MAKE) > ./compiler.js && mv ./compiler.js ./lib/compiler.js
 
 runtime:
 	cat ./src/runtime.ls | $(MAKE) > ./runtime.js && mv ./runtime.js ./lib/runtime.js
