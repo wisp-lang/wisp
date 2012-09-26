@@ -466,8 +466,12 @@
     (let [o (read reader true nil true)]
       (if (object? o)
         (with-meta o (merge (meta o) m))
-        (reader-error
-         reader "Metadata can only be applied to IWithMetas")))))
+        ;(reader-error
+        ; reader "Metadata can only be applied to IWithMetas")
+
+        o ; For now we don't throw errors as we can't apply metadata to
+          ; symbols, so we just ignore it.
+        ))))
 
 (defn read-set
   [reader _]
