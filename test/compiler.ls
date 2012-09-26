@@ -290,13 +290,6 @@
                         "a(b) instanceof C(D)")
             "(instance? (C D) (a b)) => a(b) instanceof C(D)"))
 
-  ("compiles nil?"
-    (assert (identical? (transpile "(nil? a)")
-                        "typeof(a) === \"undefined\"")
-            "(instance? Object a) => a instanceof Object")
-    (assert (identical? (transpile "(nil? (foo bar))")
-                        "typeof(foo(bar)) === \"undefined\"")
-            "(nil? (foo bar)) => typeof(foo(bar)) === \"undefined\""))
 
   ("compile loop"
     (assert (identical? (transpile "(loop [x 7] (if (f x) x (recur (b x))))")

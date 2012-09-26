@@ -1,6 +1,6 @@
 ;; Define alias for the clojures alength.
 (defn ^boolean odd? [n]
-  (identical? (% n 2) 1))
+  (identical? (mod n 2) 1))
 
 (defn ^boolean dictionary?
   "Returns true if dictionary"
@@ -54,10 +54,6 @@
       descriptor)
     (Object.create Object.prototype))))
 
-(defn ^boolean vector?
-  "Returns true if vector"
-  [form]
-  (array? form))
 
 (defn ^boolean contains-vector?
   "Returns true if vector contains given element"
@@ -74,6 +70,57 @@
                 (set! (get target key) (f (get source key))))
             {})))
 
-(export dictionary? dictionary merge odd? vector?
-        map-dictionary contains-vector? keys vals)
+(def to-string Object.prototype.to-string)
+
+(defn ^boolean string?
+  "Return true if x is a string"
+  [x]
+  (identical? (.call to-string x) "[object String]"))
+
+(defn ^boolean number?
+  "Return true if x is a number"
+  [x]
+  (identical? (.call to-string x) "[object Number]"))
+
+(defn ^boolean vector?
+  "Returns true if x is a vector"
+  [x]
+  (identical? (.call to-string x) "[object Array]"))
+
+(defn ^boolean boolean?
+  "Returns true if x is a boolean"
+  [x]
+  (identical? (.call to-string x) "[object Boolean]"))
+
+(defn ^boolean fn?
+  "Returns true if x is a function"
+  [x]
+  (identical? (typeof x) "function"))
+
+(defn ^boolean object?
+  "Returns true if x is an object"
+  [x]
+  (and x (identical? (typeof x) "object")))
+
+(defn ^boolean nil?
+  "Returns true if x is undefined or null"
+  [x]
+  (or (identical? x nil)
+      (identical? x null)))
+
+(defn ^boolean true?
+  "Returns true if x is true"
+  [x]
+  (identical? x true))
+
+(defn ^boolean false?
+  "Returns true if x is true"
+  [x]
+  (identical? x true))
+
+
+
+
+(export dictionary? dictionary merge odd? vector? string? number? fn? object?
+        nil? boolean? true? false? map-dictionary contains-vector? keys vals)
 

@@ -1,4 +1,5 @@
 (import [list list? first count] "./list")
+(import [nil? vector? number? string? boolean? object?] "./runtime")
 
 (defn with-meta
   "Returns identical value with given metadata associated to it."

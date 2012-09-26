@@ -6,7 +6,8 @@
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge keys contains-vector?
-         map-dictionary nil] "./runtime")
+         map-dictionary nil string? number? vector? boolean?
+         true? false? nil?] "./runtime")
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
@@ -681,12 +682,6 @@
                           (compile (macroexpand (second form)))
                           (compile (macroexpand (first form))))))
 
-(defn compile-is-nil
-  "Returns true if value is nil, false otherwise."
-  [form]
-  (compile (list (symbol "identical?")
-                 (list (symbol "typeof") (first form))
-                 "undefined")))
 
 (defn compile-not
   "Returns true if x is logical false, false otherwise."
@@ -776,7 +771,6 @@
 (install-special (symbol "new") compile-new)
 (install-special (symbol "instance?") compile-instance)
 (install-special (symbol "not") compile-not)
-(install-special (symbol "nil?") compile-is-nil)
 (install-special (symbol "str") compile-str)
 (install-special (symbol "loop") compile-loop)
 (install-special (symbol "::raw") compile-raw)
