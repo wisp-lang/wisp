@@ -1,7 +1,6 @@
-(import (dictionary) "../lib/runtime")
-(import (rest) "../lib/list")
-(import (read-from-string) "../lib/reader")
-(import (compile-program) "../lib/compiler")
+(import [rest] "../lib/list")
+(import [read-from-string] "../lib/reader")
+(import [compile-program] "../lib/compiler")
 
 (defn update-preview
   "updates preview"
@@ -28,9 +27,9 @@
 (def input
   (Code-mirror
      (.get-element-by-id document "input")
-     (dictionary
+     {
       :lineNumbers true
-      :autoClearEmptyLines: true,
+      :autoClearEmptyLines true
       :tabSize 2
       :indentWithTabs false
       :electricChars true
@@ -56,7 +55,7 @@
                 input (.get-element-by-id document "input")]
             (set! output.hidden (not output.hidden))
             (set! input.style.width
-              (if output.hidden "100%" "50%")))))))
+              (if output.hidden "100%" "50%"))))}))
 
 (def hl-line (.set-line-class input 0 "activeline"))
 
@@ -64,11 +63,11 @@
 (def output
   (Code-mirror
     (.get-element-by-id document "output")
-    (dictionary :lineNumbers true
-                :fixedGutter true
-                :matchBrackets true
-                :mode "javascript"
-                :theme "ambiance"
-                :readOnly true)))
+    { :lineNumbers true
+      :fixedGutter true
+      :matchBrackets true
+      :mode "javascript"
+      :theme "ambiance"
+      :readOnly true}))
 
 (set-timeout update-preview 1000 input)
