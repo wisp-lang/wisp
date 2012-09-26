@@ -477,7 +477,7 @@
 (defn read-regex
   [reader ch]
   ;; TODO: Switch to re-pattern instead
-  (_re-pattern (read-string reader ch)))
+  (list (symbol "re-pattern") (read-string reader ch)))
 
 (defn read-discard
   "Discards next form"
