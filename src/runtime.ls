@@ -151,8 +151,17 @@
   (let [match (re-find #"^(?:\(\?([idmsux]*)\))?(.*)" s)]
     (new RegExp (get match 2) (get match 1))))
 
+(defn inc
+  [x]
+  (+ x 1))
+
+(defn dec
+  [x]
+  (- x 1))
+
+
 
 (export dictionary? dictionary merge odd? vector? string? number? fn? object?
         nil? boolean? true? false? map-dictionary contains-vector? keys vals
-        re-pattern re-find re-matches re-pattern?)
+        re-pattern re-find re-matches re-pattern? inc dec)
 

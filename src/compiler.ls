@@ -892,8 +892,6 @@
 (install-native (symbol "*") (symbol "*") nil 1)
 (install-native (symbol "/") (symbol "/") verify-two)
 (install-native (symbol "mod") (symbol "%") verify-two)
-(install-native (symbol "inc") (symbol "++"))
-(install-native (symbol "dec") (symbol "--"))
 
 ;; Logical Operators
 (install-native (symbol "and") (symbol "&&"))
