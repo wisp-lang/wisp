@@ -1,3 +1,4 @@
+(include "./macros")
 (defmacro define-suite
   ([title suite]
    `(set! (get exports (js* "'test ~{}'" (symbol* ~title))) ~suite))

@@ -296,3 +296,48 @@
     (while* (identical? 'recur 'loop)
       (set! 'recur (grouped-statements* ~@body)))
     'recur) ~@values))
+
+(defmacro cond
+  "Takes a set of test/expr pairs. It evaluates each test one at a
+  time.  If a test returns logical true, cond evaluates and returns
+  the value of the corresponding expr and doesn't evaluate any of the
+  other tests or exprs."
+  ([] (void))
+  ([condition then]
+   `(cond ~condition ~then (void)))
+  ([condition then else]
+   `(js* "~{} ? (~{}) :\n~{}" ~condition ~then ~else))
+  ([condition then & rest]
+   (cond ~condition ~then (cond ~@rest))))
+
+(def-macro-alias get aget)
+
+;; Defining helper macros to simplify module import / exports.
+(defmacro destructure*
+  "Helper macro for destructuring object"
+  ([source name] `(def ~name (js* "~{}.~{}" ~source ~name)))
+  ([source name & names]
+   `(statements*
+     (destructure* ~source ~name)
+     (destructure* ~source ~@names))))
+
+(defmacro import
+  "Helper macro for importing node modules"
+  ([path]
+   `(require ~path))
+  ([names path]
+   `(destructure* (import ~path) ~@names)))
+
+(defmacro export*
+  ([source name]
+   `(set! (js* "~{}.~{}" ~source ~name) ~name))
+  ([source name & names]
+   `(statements*
+     (export* ~source ~name)
+     (export* ~source ~@names))))
+
+(defmacro export
+  ([name]
+   `(set! module.exports ~name))
+  ([& names]
+   `(export* 'exports ~@names)))

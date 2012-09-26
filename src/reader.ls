@@ -1,11 +1,8 @@
-(include "./runtime")
 (import [list list? count empty? first second third rest
-         cons rest] "./list")
+         cons rest nil] "./list")
 (import [odd? dictionary merge keys] "./runtime")
 (import [symbol? symbol keyword? keyword quote syntax-quote
          unquote unquote-splicing meta with-meta name deref] "./ast")
-
-(declare nil)
 
 (defn PushbackReader
   "StringPushbackReader"
@@ -319,7 +316,6 @@
                 (str "Reader for " ch " not implemented yet")))
 
 
-(declare maybe-read-tagged-type)
 
 
 (defn read-dispatch

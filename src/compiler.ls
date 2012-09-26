@@ -1,4 +1,3 @@
-(include "./runtime")
 (import [read-from-string] "./reader")
 (import [meta with-meta symbol? symbol keyword? keyword
          unquote? unquote unquote-splicing? unquote-splicing
@@ -7,9 +6,7 @@
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge keys contains-vector?
-         map-dictionary] "./runtime")
-
-(declare nil)
+         map-dictionary nil] "./runtime")
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"

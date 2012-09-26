@@ -1,39 +1,3 @@
-;; Macros
-
-(defmacro apply
-  ([ f ] `(.apply ~f ~f))
-  ([ f args ] `(.apply ~f ~f ~args)))
-
-(defmacro declare
-  "defs the supplied var names with no bindings,
-  useful for making forward declarations."
-  ([name] `(def ~name))
-  ([name & names] `(statements* (declare ~name) (declare ~@names))))
-
-(defmacro cond
-  "Takes a set of test/expr pairs. It evaluates each test one at a
-  time.  If a test returns logical true, cond evaluates and returns
-  the value of the corresponding expr and doesn't evaluate any of the
-  other tests or exprs."
-  ([] (void))
-  ([condition then]
-   `(cond ~condition ~then (void)))
-  ([condition then else]
-   `(js* "~{} ? (~{}) :\n~{}" ~condition ~then ~else))
-  ([condition then & rest]
-   (cond ~condition ~then (cond ~@rest))))
-
-;; Define alias that is being used by clojure to
-;; returns the value at the given index.
-(def-macro-alias get aget)
-(def-macro-alias array? vector?)
-
-(defmacro alength [source]
-  `(.-length ~source))
-
-
-;; Functions
-
 ;; Define alias for the clojures alength.
 (defn ^boolean odd? [n]
   (identical? (% n 2) 1))

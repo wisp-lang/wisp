@@ -1,4 +1,4 @@
-(include "./runtime")
+(include "./macros")
 (import [symbol] "../src/ast")
 (import [list] "../src/list")
 (import [self-evaluating? compile macroexpand macroexpand-1] "../src/compiler")

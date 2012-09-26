@@ -16,5 +16,3 @@
 
 ;; Load macros only after everything else has being set up.
 (require "../src/macros")
-(require "../src/node-macros")
-
