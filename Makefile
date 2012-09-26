@@ -1,5 +1,6 @@
 
 LISPY_MAKE = node ./bin/lispy.js
+MAKE = node ./bin/lispy-2.js
 
 all: list ast runtime reader compiler
 embed: all browserify
@@ -13,11 +14,11 @@ ast:
 compiler:
 	$(LISPY_MAKE) ./src/compiler.ls - > ./lib/compiler.js
 
-list:
-	$(LISPY_MAKE) ./src/list.ls - > ./lib/list.js
-
 runtime:
 	$(LISPY_MAKE) ./src/runtime.ls - > ./lib/runtime.js
+
+list:
+	cat ./src/list.ls | $(MAKE) > ./list.js && mv ./list.js ./lib/list.js
 
 browserify:
 	$(LISPY_MAKE) ./support/embed.ls - > ./support/embed.js
