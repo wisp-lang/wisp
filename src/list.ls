@@ -1,3 +1,5 @@
+(import [nil? vector? number? string?] "./runtime")
+
 (defn List
   "List type"
   [head tail]
