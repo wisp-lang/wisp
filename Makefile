@@ -21,5 +21,5 @@ list:
 	cat ./src/list.ls | $(MAKE) > ./list.js && mv ./list.js ./lib/list.js
 
 browserify:
-	$(LISPY_MAKE) ./support/embed.ls - > ./support/embed.js
+	cat ./support/embed.ls | $(MAKE) > ./embed.js && mv ./embed.js ./support/embed.js
 	browserify ./support/embed.js > ./support/app.js
