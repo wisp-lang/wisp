@@ -9,9 +9,6 @@ embed: runtime list ast reader compiler browserify
 reader:
 	$(LISPY_MAKE) ./src/reader.ls ./lib/reader.js
 
-ast:
-	$(LISPY_MAKE) ./src/ast.ls ./lib/ast.js
-
 compiler:
 	$(LISPY_MAKE) ./src/compiler.ls ./lib/compiler.js
 
@@ -32,6 +29,9 @@ runtime:
 
 list:
 	cat ./src/list.ls | $(MAKE) > ./list.js && mv ./list.js ./lib/list.js
+
+ast:
+	cat ./src/ast.ls | $(MAKE) > ./ast.js && mv ./ast.js ./lib/ast.js
 
 engine:
 	cat ./src/engine.ls | $(MAKE) > ./engine.js && mv ./engine.js ./lib/engine.js
