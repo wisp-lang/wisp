@@ -150,9 +150,6 @@
 (defmacro dispatch*
  ([body] `(js* "/~{}/" (symbol* ~body))))
 
-(defmacro re-pattern
- ([body] `(js* "/~{}/" (symbol* ~body))))
-
 (defmacro array
   ;; TODO improve it and avoid (symbols-join)
   ([]
