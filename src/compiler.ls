@@ -382,11 +382,18 @@
   nil and false constitute logical falsity, and everything else
   constitutes logical truth, and those meanings apply throughout."
   [form]
-  (compile-template
-    (list "~{} ?\n  ~{} :\n  ~{}"
-          (compile (macroexpand (first form)))    ; condition
-          (compile (macroexpand (second form)))   ; then
-          (compile (macroexpand (third form)))))) ; else or nil
+  (let [condition (macroexpand (first form))
+        then-expression (macroexpand (second form))
+        else-expression (macroexpand (third form))]
+    (compile-template
+      (list
+        (if (and (list? else-expression)
+                 (identical? (first else-expression) (symbol "if")))
+          "~{} ?\n  ~{} :\n~{}"
+          "~{} ?\n  ~{} :\n  ~{}")
+        (compile condition)
+        (compile then-expression)
+        (compile else-expression)))))
 
 (defn compile-dictionary
   "Compiles dictionary to JS object"
