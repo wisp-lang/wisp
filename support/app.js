@@ -575,6 +575,7 @@ var third = require("./list").third;
 var rest = require("./list").rest;
 var cons = require("./list").cons;
 var rest = require("./list").rest;
+var nil = require("./list").nil;
 
 var isOdd = require("./runtime").isOdd;
 var dictionary = require("./runtime").dictionary;
@@ -593,8 +594,6 @@ var meta = require("./ast").meta;
 var withMeta = require("./ast").withMeta;
 var name = require("./ast").name;
 var deref = require("./ast").deref;
-
-var nil = void 0;
 
 var PushbackReader = function(source, uri, index, buffer) {
   this.source = source;
@@ -735,7 +734,7 @@ var reFind = function(re, s) {
   return (function() {
     var matches = re.exec(s);
     return !(matches == null) ?
-      ((matches).length == 1) ?
+      (count(matches) == 1) ?
         matches[0] :
         matches :
       void 0;
@@ -746,7 +745,7 @@ var matchInt = function(s) {
   return (function() {
     var groups = reFind(intPattern, s);
     var group3 = groups[2];
-    return !((group3 == null) || ((group3).length < 1)) ?
+    return !((group3 == null) || (count(group3) < 1)) ?
       0 :
       (function() {
         var negate = ("-" === groups[1]) ?
@@ -785,7 +784,7 @@ var reMatches = function(pattern, source) {
     var matches = pattern.exec(source);
     return (!(matches == null) && (matches[0] === source)) ?
       (function() {
-        return ((matches).length == 1) ?
+        return (count(matches) == 1) ?
           matches[0] :
           matches;
       })() :
@@ -843,8 +842,8 @@ var escapeChar = function(buffer, reader) {
     var mapresult = escapeCharMap(ch);
     return mapresult ?
       mapresult :
-      (ch === "\\x") ? (makeUnicodeChar(validateUnicodeEscape(unicode2Pattern, reader, ch, read2Chars(reader)))) :
-      (ch === "\\u") ? (makeUnicodeChar(validateUnicodeEscape(unicode4Pattern, reader, ch, read4Chars(reader)))) :
+      (ch === "x") ? (makeUnicodeChar(validateUnicodeEscape(unicode2Pattern, reader, ch, read2Chars(reader)))) :
+      (ch === "u") ? (makeUnicodeChar(validateUnicodeEscape(unicode4Pattern, reader, ch, read4Chars(reader)))) :
       isNumeric(ch) ? (String.fromCharCode(ch)) :
       "else" ? (readerError(reader, ''.concat("Unexpected unicode escape ", "\\", ch))) :
       void 0;
@@ -905,8 +904,6 @@ var readDelimitedList = function(delim, reader, isRecursive) {
 var notImplemented = function(reader, ch) {
   return readerError(reader, ''.concat("Reader for ", ch, " not implemented yet"));
 };
-
-var maybeReadTaggedType = void 0;
 
 var readDispatch = function(reader, _) {
   return (function() {
@@ -1071,7 +1068,7 @@ var readSet = function(reader, _) {
 };
 
 var readRegex = function(reader, ch) {
-  return _rePattern(readString(reader, ch));
+  return list(symbol("re-pattern"), readString(reader, ch));
 };
 
 var readDiscard = function(reader, _) {
@@ -1252,6 +1249,7 @@ require.define("/lib/ast.js",function(require,module,exports,__dirname,__filenam
 var list = require("./list").list;
 var isList = require("./list").isList;
 var first = require("./list").first;
+var count = require("./list").count;
 
 var withMeta = function(value, metadata) {
   value.metadata = metadata;
@@ -1278,7 +1276,7 @@ var symbol = function(ns, id) {
 };
 
 var isSymbol = function(x) {
-  return ((Object.prototype.toString.call(x) === '[object String]') && (x.charAt(0) === "\uFEFF"));
+  return ((Object.prototype.toString.call(x) === '[object String]') && ((count(x) > 1) && (x.charAt(0) === "\uFEFF")));
 };
 
 var isSymbolIdentical = function(actual, expected) {
@@ -1286,7 +1284,7 @@ var isSymbolIdentical = function(actual, expected) {
 };
 
 var isKeyword = function(x) {
-  return ((Object.prototype.toString.call(x) === '[object String]') && (x.charAt(0) === "\uA789"));
+  return ((Object.prototype.toString.call(x) === '[object String]') && ((count(x) > 1) && (x.charAt(0) === "\uA789")));
 };
 
 var keyword = function(ns, id) {
@@ -1411,8 +1409,7 @@ var merge = require("./runtime").merge;
 var keys = require("./runtime").keys;
 var isContainsVector = require("./runtime").isContainsVector;
 var mapDictionary = require("./runtime").mapDictionary;
-
-var nil = void 0;
+var nil = require("./runtime").nil;
 
 var isSelfEvaluating = function(form) {
   return ((Object.prototype.toString.call(form) === '[object Number]') || (((Object.prototype.toString.call(form) === '[object String]') && !isSymbol(form)) || ((typeof(form) === "boolean") || ((form == null) || isKeyword(form)))));
@@ -1960,6 +1957,8 @@ installSpecial(symbol("let"), compileLet);
 installSpecial(symbol("throw"), compileThrow);
 
 installSpecial(symbol("vector"), compileVector);
+
+installSpecial(symbol("array"), compileVector);
 
 installSpecial(symbol("try"), compileTry);
 
