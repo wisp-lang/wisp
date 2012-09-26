@@ -155,7 +155,7 @@
   (let [groups (re-find int-pattern s)
         group3 (aget groups 2)]
     (if (not (or (nil? group3)
-                (< (count group3) 1)))
+                 (< (count group3) 1)))
       0
       (let [negate (if (identical? "-" (aget groups 1)) -1 1)
             a (cond
@@ -169,7 +169,6 @@
         (if (nil? n)
           nil
           (* negate (parse-int n radix)))))))
-
 
 (defn match-ratio
   [s]
