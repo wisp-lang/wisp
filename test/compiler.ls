@@ -181,7 +181,10 @@
             "compound property access and method call")
     (assert (identical? (transpile "(.slice (.splice arr 0))")
                         "arr.splice(0).slice()")
-            "(.slice (.splice arr 0)) => arr.splice(0).slice()"))
+            "(.slice (.splice arr 0)) => arr.splice(0).slice()")
+   (assert (identical? (transpile "(.a (.b \"/\"))")
+                        "\"/\".b().a()")
+            "(.a (.b \"/\")) => \"/\".b().a()"))
 
   ("compile unquote-splicing forms"
     (assert (identical? (transpile "`(1 ~@'(2 3))")

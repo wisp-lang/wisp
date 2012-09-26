@@ -637,11 +637,11 @@
       (list (if (list? (first form)) "(~{}).~{}" "~{}.~{}")
             (compile (macroexpand (first form)))
             (compile (macroexpand (symbol (.substr (name (second form)) 1))))))
-    (compile
-      (cons (symbol (str (compile (macroexpand (first form)))  ;; object name
-                    "."
-                    (compile (macroexpand (second form)))))    ;; method name
-            (rest (rest form))))))               ;; args
+    (compile-template
+      (list "~{}.~{}(~{})"
+            (compile (macroexpand (first form)))    ;; object name
+            (compile (macroexpand (second form)))   ;; method name
+            (compile-group (rest (rest form)))))))  ;; args
 
 (defn compile-apply
   [form]
