@@ -43,7 +43,7 @@
         (.set-encoding process.stdin :utf8)
         (compile process.stdin process.stdout (.cwd process))
         (setTimeout
-         (fn ()
+         (fn []
            (if (= process.stdin.bytes-read 0)
              (do
                (.remove-all-listeners process.stdin :data)
