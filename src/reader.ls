@@ -408,7 +408,7 @@
         ns (aget a 1)
         name (aget a 2)]
     (if (or
-         (and (not (undefined? ns))
+         (and (not (nil? ns))
               (identical? (.substring ns
                                       (- (.-length ns) 2)
                                       (.-length ns)) ":/"))
