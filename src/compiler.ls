@@ -9,8 +9,6 @@
          map-dictionary string? number? vector? boolean?
          true? false? nil? re-pattern?] "./runtime")
 
-(def nil)
-
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
   [form]

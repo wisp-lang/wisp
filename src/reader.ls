@@ -1,5 +1,5 @@
 (import [list list? count empty? first second third rest
-         cons rest nil] "./list")
+         cons rest] "./list")
 (import [odd? dictionary merge keys nil? re-pattern] "./runtime")
 (import [symbol? symbol keyword? keyword quote syntax-quote
          unquote unquote-splicing meta with-meta name deref] "./ast")
