@@ -1,5 +1,4 @@
 ;; Define alias for the clojures alength.
-(def nil)
 
 (defn ^boolean odd? [n]
   (identical? (mod n 2) 1))
@@ -15,8 +14,8 @@
 (defn dictionary
   "Creates dictionary of given arguments. Odd indexed arguments
   are used for keys and evens for values"
-  []
-  (loop [key-values (.call Array.prototype.slice arguments)
+  [& pairs]
+  (loop [key-values pairs
          result {}]
     (if (.-length key-values)
       (do
@@ -40,14 +39,14 @@
   "Returns a dictionary that consists of the rest of the maps conj-ed onto
   the first. If a key occurs in more than one map, the mapping from
   the latter (left-to-right) will be the mapping in the result."
-  []
+  [& dictionaries]
   (Object.create
    Object.prototype
-   (reduce
-    arguments
+   (.reduce
+    dictionaries
     (fn [descriptor dictionary]
       (if (object? dictionary)
-        (each
+        (.each
          (Object.keys dictionary)
          (fn [name]
            (set!
@@ -67,7 +66,7 @@
   "Maps dictionary values by applying `f` to each one"
   [source f]
   (dictionary
-    (reduce (.keys Object source)
+    (.reduce (.keys Object source)
             (fn [target key]
                 (set! (get target key) (f (get source key))))
             {})))
