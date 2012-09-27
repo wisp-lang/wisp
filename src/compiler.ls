@@ -986,6 +986,16 @@
                          ~(first exports))
                        form)
                (rest exports)))))))
+
+(defmacro assert
+  \"Evaluates expr and throws an exception if it does not evaluate to
+  logical true.\"
+  {:added \"1.0\"}
+  [x message]
+  (if (nil? message)
+    `(assert ~x \"\")
+    `(if (not ~x)
+       (throw (Error. ~(str \"Assert failed: \" message \"\n\" '~x))))))
 ")
 
 ;; TODO:
