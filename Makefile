@@ -1,19 +1,9 @@
+MAKE = node ./bin/lispy.js
 
-LISPY_MAKE = node ./bin/lispy.js
-MAKE = node ./bin/lispy-2.js
-
-all: runtime list ast reader compiler engine engine-node node repl lispy browser
-new: engine-node engine runtime list ast reader compiler
-embed: runtime list ast reader compiler browserify
-
-lispy:
-	$(LISPY_MAKE) ./src/lispy.ls ./lib/lispy.js
-
-node:
-	$(LISPY_MAKE) ./src/node.ls ./lib/node.js
-
-browser:
-	$(LISPY_MAKE) ./src/browser.ls ./lib/browser.js
+core: runtime list ast reader compiler
+node: core engine node-engine repl
+browser: core embed browser-engine browserify
+all: node browser
 
 repl:
 	cat ./src/repl.ls | $(MAKE) > ./repl.js && mv ./repl.js ./lib/repl.js
@@ -36,9 +26,14 @@ ast:
 engine:
 	cat ./src/engine.ls | $(MAKE) > ./engine.js && mv ./engine.js ./lib/engine.js
 
-engine-node:
+node-engine:
 	cat ./src/engine/node.ls | $(MAKE) > ./node.js && mv ./node.js ./lib/engine/node.js
 
-browserify:
+browser-engine:
+	cat ./src/engine/browser.ls | $(MAKE) > ./browser.js && mv ./browser.js ./lib/engine/browser.js
+
+embed:
 	cat ./support/embed.ls | $(MAKE) > ./embed.js && mv ./embed.js ./support/embed.js
+
+browserify:
 	browserify ./support/embed.js > ./support/app.js

@@ -1,3 +1,2 @@
 #!/usr/bin/env node
-global.nil = undefined;
-require('../lib/lispy').run();
+require('../lib/engine')();
