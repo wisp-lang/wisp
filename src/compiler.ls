@@ -563,7 +563,7 @@
   [form]
   (compile-template
     (list "(function() { throw ~{}; })()"
-          (compile (first form)))))
+          (compile (macroexpand (first form))))))
 
 (defn compile-set
   "Assignment special form.
