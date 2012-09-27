@@ -957,7 +957,7 @@
 (defmacro import
   \"Helper macro for importing node modules\"
   [imports path]
-  (if (nil? imports)
+  (if (nil? path)
     `(require ~imports)
     (if (symbol? imports)
       `(def ~imports (require ~path))
