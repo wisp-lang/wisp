@@ -9,14 +9,14 @@ embed: runtime list ast reader compiler browserify
 lispy:
 	$(LISPY_MAKE) ./src/lispy.ls ./lib/lispy.js
 
-repl:
-	$(LISPY_MAKE) ./src/repl.ls ./lib/repl.js
-
 node:
 	$(LISPY_MAKE) ./src/node.ls ./lib/node.js
 
 browser:
 	$(LISPY_MAKE) ./src/browser.ls ./lib/browser.js
+
+repl:
+	cat ./src/repl.ls | $(MAKE) > ./repl.js && mv ./repl.js ./lib/repl.js
 
 reader:
 	cat ./src/reader.ls | $(MAKE) > ./reader.js && mv ./reader.js ./lib/reader.js
