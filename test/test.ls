@@ -1,5 +1,5 @@
 (import "./list")
-;(import "./reader")
-;(import "./ast")
+(import "./ast")
 (import "./runtime")
+;(import "./reader")
 ;(import "./compiler")
