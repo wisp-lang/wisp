@@ -957,16 +957,18 @@
 (defmacro import
   \"Helper macro for importing node modules\"
   [imports path]
-  (if (symbol? imports)
-    `(def ~imports (require ~path))
-    (loop [form '() names imports]
-      (if (empty? names)
-        `(do* ~@form)
-        (let [alias (first names)
-              id (symbol (str \".-\" (name alias)))]
-          (recur (cons `(def ~alias
-                          (~id (require ~path))) form)
-                 (rest names)))))))
+  (if (nil? imports)
+    `(require ~imports)
+    (if (symbol? imports)
+      `(def ~imports (require ~path))
+      (loop [form '() names imports]
+        (if (empty? names)
+          `(do* ~@form)
+          (let [alias (first names)
+                id (symbol (str \".-\" (name alias)))]
+            (recur (cons `(def ~alias
+                            (~id (require ~path))) form)
+                   (rest names))))))))
 
 (defmacro export
   \"Helper macro for exporting multiple / single value\"
