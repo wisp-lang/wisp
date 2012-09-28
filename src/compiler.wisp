@@ -182,7 +182,7 @@
 
 (defn compile-object
   ""
-  [form]
+  [form quoted?]
   ;; TODO: Add regexp to the list.
   (cond
     (keyword? form) (compile (list (symbol "::compile:keyword") form))
@@ -192,8 +192,8 @@
     (boolean? form) (compile (list (symbol "::compile:boolean") form))
     (nil? form) (compile (list (symbol "::compile:nil") form))
     (re-pattern? form) (compile-re-pattern form)
-    (vector? form) (compile (apply-form (symbol "vector") (apply list form)))
-    (list? form) (compile (apply-form (symbol "list") form))
+    (vector? form) (compile (apply-form (symbol "vector") (apply list form) quoted?))
+    (list? form) (compile (apply-form (symbol "list") form quoted?))
     (dictionary? form) (compile-dictionary form)))
 
 (defn compile-reference
@@ -268,7 +268,7 @@
    (list? form)
     (let [head (first form)]
       (cond
-       (quote? form) (compile-object (second form))
+       (quote? form) (compile-object (second form) true)
        (syntax-quote? form) (compile-syntax-quoted (second form))
        (special? head) (execute-special head form)
        :else (do
