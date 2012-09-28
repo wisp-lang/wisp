@@ -2,6 +2,8 @@ var rest = (require("../lib/list")).rest;;
 
 var str = (require("../lib/runtime")).str;;
 
+var transpile = (require("../lib/engine/browser")).transpile;;
+
 var readFromString = (require("../lib/reader")).readFromString;;
 
 var compileProgram = (require("../lib/compiler")).compileProgram;;
@@ -10,14 +12,13 @@ var updatePreview = function updatePreview(editor) {
   clearTimeout(updatePreview.id);
   return (function() {
     var code = editor.getValue();
-    var source = str("(do ", code, ")");
     localStorage.buffer = code;
     return updatePreview.id = setTimeout(function() {
       return (function() {
       try {
         return (function() {
           editor.clearMarker(updatePreview.line || 1);
-          return output.setValue(compileProgram(rest(readFromString(source))));
+          return output.setValue(transpile(code));
         })();
       } catch (error) {
         return (function() {
@@ -58,7 +59,7 @@ var input = CodeMirror(document.getElementById("input"), {
   }
 });
 
-var hlLine = input.setLineClass(0, "activeline");
+var hlLine = input.setLineClass(0, void(0), "activeline");
 
 var output = CodeMirror(document.getElementById("output"), {
   lineNumbers: true,

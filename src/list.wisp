@@ -121,7 +121,7 @@
   "Returns list representing the concatenation of the elements in the
   supplied lists."
   [left right]
-  (loop [result right
+  (loop [result (if (list? right) right (apply list right))
          prefix (reverse left)]
     (if (empty? prefix)
       result

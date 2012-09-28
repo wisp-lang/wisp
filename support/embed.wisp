@@ -1,5 +1,6 @@
 (import [rest] "../lib/list")
 (import [str] "../lib/runtime")
+(import [transpile] "../lib/engine/browser")
 (import [read-from-string] "../lib/reader")
 (import [compile-program] "../lib/compiler")
 
@@ -7,15 +8,14 @@
   "updates preview"
   [editor]
   (clear-timeout update-preview.id)
-  (let [code (.get-value editor)
-        source (str "(do " code ")") ]
+  (let [code (.get-value editor)]
     (set! local-storage.buffer code)
     (set! update-preview.id
       (set-timeout (fn []
         (try
           (do
             (.clear-marker editor (or update-preview.line 1))
-            (.set-value output (compile-program (rest (read-from-string source)))))
+            (.set-value output (transpile code)))
         (catch error
           (do
             (set! update-preview.line error.line)
@@ -58,7 +58,7 @@
             (set! input.style.width
               (if output.hidden "100%" "50%"))))}))
 
-(def hl-line (.set-line-class input 0 "activeline"))
+(def hl-line (.set-line-class input 0 nil "activeline"))
 
 
 (def output

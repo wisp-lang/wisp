@@ -510,7 +510,9 @@ var concatList = function concatList(left, right) {
       (result = cons(first(prefix), result), prefix = rest(prefix), loop);
     };
     return recur;
-  })(right, reverse(left));
+  })(isList(right) ?
+    right :
+    list.apply(list, right), reverse(left));
 };
 
 var listToVector = function listToVector(source) {
@@ -716,6 +718,72 @@ exports.isOdd = isOdd;
 exports.merge = merge;
 exports.dictionary = dictionary;
 exports.isDictionary = isDictionary;
+});
+
+require.define("/lib/engine/browser.js",function(require,module,exports,__dirname,__filename,process){var str = (require("../runtime")).str;;
+
+var rest = (require("../list")).rest;;
+
+var readFromString = (require("../reader")).readFromString;;
+
+var compileProgram = (require("../compiler")).compileProgram;;
+
+var transpile = function transpile(source, uri) {
+  return str(compileProgram(rest(readFromString(str("(do ", source, ")"), uri))), "\n");
+};
+
+var evaluate = function evaluate(code, url) {
+  return eval(transpile(code, url));
+};
+
+var run = function run(code, url) {
+  return (Function(transpile(code, url)))();
+};
+
+var load = function load(url, callback) {
+  var request = window.XMLHttpRequest ?
+    new XMLHttpRequest() :
+    new ActiveXObject("Microsoft.XMLHTTP");
+  request.open("GET", url, true);
+  request.overrideMimeType ?
+    request.overrideMimeType("application/wisp") :
+    void(0);
+  request.onreadystatechange = function() {
+    return request.readyState == 4 ?
+      (request.status == 0) || (request.status == 200) ?
+        callback(run(request.responseText, url)) :
+        callback("Could not load") :
+      void(0);
+  };
+  return request.send(null);
+};
+
+var runScripts = function runScripts() {
+  var scripts = Array.prototype.filter.call(document.getElementsByTagName("script"), function(script) {
+    return script.type == "application/wisp";
+  });
+  var next = function next() {
+    return scripts.length ?
+      (function() {
+        var script = scripts.shift();
+        return script.src ?
+          load(script.src, next) :
+          next(run(script.innerHTML));
+      })() :
+      void(0);
+  };
+  return next();
+};
+
+(document.readyState == "complete") || (document.readyState == "interactive") ?
+  runScripts() :
+window.addEventListener ?
+  window.addEventListener("DOMContentLoaded", runScripts, false) :
+  window.attachEvent("onload", runScripts);
+
+exports.run = run;
+exports.evaluate = evaluate;
+exports.transpile = transpile;
 });
 
 require.define("/lib/reader.js",function(require,module,exports,__dirname,__filename,process){var rest = (require("./list")).rest;
@@ -1975,7 +2043,7 @@ var compileLet = function compileLet(form) {
 };
 
 var compileThrow = function compileThrow(form) {
-  return compileTemplate(list("(function() { throw ~{}; })()", compile(first(form))));
+  return compileTemplate(list("(function() { throw ~{}; })()", compile(macroexpand(first(form)))));
 };
 
 var compileSet = function compileSet(form) {
@@ -2246,7 +2314,7 @@ var defmacroFromString = function defmacroFromString(macroSource) {
   return compileProgram(macroexpand(readFromString(str("(do ", macroSource, ")"))));
 };
 
-defmacroFromString("\n(defmacro cond\n  \"Takes a set of test/expr pairs. It evaluates each test one at a\n  time.  If a test returns logical true, cond evaluates and returns\n  the value of the corresponding expr and doesn't evaluate any of the\n  other tests or exprs. (cond) returns nil.\"\n  ;{:added \"1.0\"}\n  [clauses]\n  (set! clauses (apply list arguments))\n  (if (not (empty? clauses))\n    (list 'if (first clauses)\n          (if (empty? (rest clauses))\n            (throw (Error \"cond requires an even number of forms\"))\n            (second clauses))\n          (cons 'cond (rest (rest clauses))))))\n\n(defmacro defn\n   \"Same as (def name (fn [params* ] exprs*)) or\n   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added\n   to the var metadata\"\n  ;{:added \"1.0\", :special-form true ]}\n  [name]\n  (def body (apply list (Array.prototype.slice.call arguments 1)))\n  `(def ~name (fn ~name ~@body)))\n\n(defmacro import\n  \"Helper macro for importing node modules\"\n  [imports path]\n  (if (symbol? imports)\n    `(def ~imports (require ~path))\n    (loop [form '() names imports]\n      (if (empty? names)\n        `(do* ~@form)\n        (let [alias (first names)\n              id (symbol (str \".-\" (name alias)))]\n          (recur (cons `(def ~alias\n                          (~id (require ~path))) form)\n                 (rest names)))))))\n\n(defmacro export\n  \"Helper macro for exporting multiple / single value\"\n  [& names]\n  (if (empty? names)\n    nil\n    (if (empty? (rest names))\n      `(set! module.exports ~(first names))\n      (loop [form '() exports names]\n        (if (empty? exports)\n          `(do* ~@form)\n          (recur (cons `(set!\n                         (~(symbol (str \".-\" (name (first exports))))\n                           exports)\n                         ~(first exports))\n                       form)\n               (rest exports)))))))\n");
+defmacroFromString("\n(defmacro cond\n  \"Takes a set of test/expr pairs. It evaluates each test one at a\n  time.  If a test returns logical true, cond evaluates and returns\n  the value of the corresponding expr and doesn't evaluate any of the\n  other tests or exprs. (cond) returns nil.\"\n  ;{:added \"1.0\"}\n  [clauses]\n  (set! clauses (apply list arguments))\n  (if (not (empty? clauses))\n    (list 'if (first clauses)\n          (if (empty? (rest clauses))\n            (throw (Error \"cond requires an even number of forms\"))\n            (second clauses))\n          (cons 'cond (rest (rest clauses))))))\n\n(defmacro defn\n   \"Same as (def name (fn [params* ] exprs*)) or\n   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added\n   to the var metadata\"\n  ;{:added \"1.0\", :special-form true ]}\n  [name]\n  (def body (apply list (Array.prototype.slice.call arguments 1)))\n  `(def ~name (fn ~name ~@body)))\n\n(defmacro import\n  \"Helper macro for importing node modules\"\n  [imports path]\n  (if (nil? path)\n    `(require ~imports)\n    (if (symbol? imports)\n      `(def ~imports (require ~path))\n      (loop [form '() names imports]\n        (if (empty? names)\n          `(do* ~@form)\n          (let [alias (first names)\n                id (symbol (str \".-\" (name alias)))]\n            (recur (cons `(def ~alias\n                            (~id (require ~path))) form)\n                   (rest names))))))))\n\n(defmacro export\n  \"Helper macro for exporting multiple / single value\"\n  [& names]\n  (if (empty? names)\n    nil\n    (if (empty? (rest names))\n      `(set! module.exports ~(first names))\n      (loop [form '() exports names]\n        (if (empty? exports)\n          `(do* ~@form)\n          (recur (cons `(set!\n                         (~(symbol (str \".-\" (name (first exports))))\n                           exports)\n                         ~(first exports))\n                       form)\n               (rest exports)))))))\n\n(defmacro assert\n  \"Evaluates expr and throws an exception if it does not evaluate to\n  logical true.\"\n  {:added \"1.0\"}\n  [x message]\n  (if (nil? message)\n    `(assert ~x \"\")\n    `(if (not ~x)\n       (throw (Error. ~(str \"Assert failed: \" message \"\n\" '~x))))))\n");
 
 exports.macroexpand1 = macroexpand1;
 exports.macroexpand = macroexpand;
@@ -2259,6 +2327,8 @@ require.define("/support/embed.js",function(require,module,exports,__dirname,__f
 
 var str = (require("../lib/runtime")).str;;
 
+var transpile = (require("../lib/engine/browser")).transpile;;
+
 var readFromString = (require("../lib/reader")).readFromString;;
 
 var compileProgram = (require("../lib/compiler")).compileProgram;;
@@ -2267,14 +2337,13 @@ var updatePreview = function updatePreview(editor) {
   clearTimeout(updatePreview.id);
   return (function() {
     var code = editor.getValue();
-    var source = str("(do ", code, ")");
     localStorage.buffer = code;
     return updatePreview.id = setTimeout(function() {
       return (function() {
       try {
         return (function() {
           editor.clearMarker(updatePreview.line || 1);
-          return output.setValue(compileProgram(rest(readFromString(source))));
+          return output.setValue(transpile(code));
         })();
       } catch (error) {
         return (function() {
@@ -2315,7 +2384,7 @@ var input = CodeMirror(document.getElementById("input"), {
   }
 });
 
-var hlLine = input.setLineClass(0, "activeline");
+var hlLine = input.setLineClass(0, void(0), "activeline");
 
 var output = CodeMirror(document.getElementById("output"), {
   lineNumbers: true,

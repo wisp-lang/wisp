@@ -1,5 +1,5 @@
-(define (fn [require exports module]
-
+(import [str] "../runtime")
+(import [rest] "../list")
 (import [read-from-string] "../reader")
 (import [compile-program] "../compiler")
 
@@ -32,29 +32,28 @@
   (.open request :GET url true)
 
   (if request.override-mime-type
-    (.override-mime-type request "application/lispyscript"))
+    (.override-mime-type request "application/wisp"))
 
   (set! request.onreadystatechange
         (fn []
           (if (= request.ready-state 4)
             (if (or (= request.status 0)
                     (= request.status 200))
-              (callback (exports.run request.response-text url))
+              (callback (run request.response-text url))
               (callback "Could not load")))))
 
   (.send request null))
 
 ;; Activate LispyScript in the browser by having it compile and evaluate
-;; all script tags with a content-type of `application/lispyscript`.
+;; all script tags with a content-type of `application/wisp`.
 ;; This happens on page load.
 (defn run-scripts
-  "Compiles and exectues all scripts that have type application/lispyscript
-  type"
+  "Compiles and exectues all scripts that have type application/wisp type"
   []
   (def scripts
     (Array.prototype.filter.call
      (document.get-elements-by-tag-name :script)
-     (fn [script] (= script.type "application/lispyscript"))))
+     (fn [script] (= script.type "application/wisp"))))
 
   (defn next []
     (if scripts.length
@@ -71,5 +70,6 @@
   (run-scripts)
   (if window.add-event-listener
     (.add-event-listener window :DOMContentLoaded run-scripts false)
-    (.attach-event window :onload run-scripts)))))
+    (.attach-event window :onload run-scripts)))
 
+(export transpile evaluate run)

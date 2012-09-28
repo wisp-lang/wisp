@@ -1,25 +1,11 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>LispyScript</title>
+    <title>Wisp playground</title>
     <script src=./support/codemirror-compressed.js></script>
-    <!--
-    <script src=./support/codemirror.net/lib/codemirror.js></script>
-    <script src=./support/codemirror.net/mode/scheme/scheme.js></script>
-    <script src=./support/codemirror.net/mode/javascript/javascript.js></script>
-    -->
     <link rel=stylesheet href=./support/codemirror.css>
     <link rel=stylesheet href=./support/ambiance.css>
-
-    <script data-main=./lib/browser type=text/javascript src=./support/require.js></script>
-    <script>
-      require.config({
-        paths: {
-          "underscore": "../support/underscore-min"
-        }
-      })
-    </script>
-    <script type=application/lispyscript src=./src/macros.ls></script>
+    <script src=./support/codemirror-compressed.js></script>
     <style>
       html, body {
         font-size: 12px;
@@ -44,83 +30,92 @@
     </style>
   </head>
   <body>
-  <a href="https://github.com/gozala/lispyscript"><img style="z-index: 3; position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
-<script type=text/expamles id=examples>;; Hello World! in LispyScript.
-;; Hello World! in LispyScript.
-(.log console "Hello LispyScript!")
+  <a href="https://github.com/gozala/wisp"><img style="z-index: 3; position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+<script type=text/expamles id=examples>;; Hello World! in wisp.
+(.log console "Hello wisp!")
 
 ;; A more intricate Hello World!
 (if (undefined? window)
-  (.log console "Hello LispyScript!")
-  (alert "Hello LispyScript!"))
+  (.log console "Hello wisp!")
+  (alert "Hello wisp!"))
 
 ; Functions
-;; An anonymous function in LispyScript
+;; An anonymous function in wisp
 (fn [x] (* x x))
 
 ;; The first element in an expression can be an anonymous function.
 ((fn [x] (* x x)) 2)
 
 ;; You can set a variable name to a function.
-(var square
-  (fn [x]
-    (* x x)))
+(def square
+  (fn [x] (* x x)))
+
 (.log console (square 10))
 
-; LispyScript is Javascript!
+; Wisp is a Javascript!
 
 (Array.prototype.forEach.call (Array 1 2 3)
-  (fn [elem index list]
-    (.log console elem)))
+  (fn [element index list]
+    (.log console element)))
 
 ;; You can access object methods and properties using the ".-" notation.
 
-(.log console (.-greet { greet: "hello" }))
+(.log console (.-greet { :greet "hello" }))
 
 ;; You can also use the 'get' expression to access a property of an object.
 
-(.log console (get { greet: "hello" } "greet"))
+(.log console (get { :greet "hello" } "greet"))
 (.log console (get (Array 1 2 3) 1))
 
 ;; You can 'set' variables too.
 
-(set! window.onload (function [] (alert "Page Loaded")))
+(set! window.onload (fn [] (alert "Page Loaded")))
 
 ; Node
-;; The node server example in LispyScript.
+;; The node server example in wisp.
 
 (def http (require "http"))
 (def server
-  ;; Note: How conventional dash-dilimited lispy style traslates to
+  ;; Note: How conventional dash-dilimited lisp style traslates to
   ;; convetional camelCase style in JS (P.S. you can use cameCase too)
   (.create-server http
     (fn [request response]
-      (.write-head response 200 { "Content-Type": "text/plain" })
+      (.write-head response 200 { :Content-Type "text/plain" })
       (.end response "Hello World\n"))))
 (.listen server 1337 "127.0.0.1")
 (.log console "Server running at http://127.0.0.1:1337/")
 
-; Macros
 
 ;; You can define a macro.
-(defmacro array? [expression]
-  `(=== (.call Object.prototype.toString ~expression) "[object Array]"))
+(defmacro array?
+  [form]
+  `(identical? (.call Object.prototype.to-string ~form) "[object Array]"))
 
-;; Now let us create a Lisp like 'let' macro in LispyScript.
+;; When macro:
 
-(defmacro let (names values & body)
-  ((fn ~names ~@body) ~@values))
+(defmacro when
+  "Evaluates test. If logical true, evaluates body in an implicit do."
+  {:added "1.0"}
+  [test & body]
+  `(if ~test (do ~@body)))
 
-(let (name email tel) ("John" "john@example.org" "555-555-5555")
-  (.log console name)
-  (.log console email)
-  (.log console tel))
+(when raining?
+  (print "Take ambrella")
+  (print "Keep on walking"))
+
+
+(defmacro unless [condition form]
+  (list 'if condition nil form))
+
+(unless monday? (print "It's not monday"))
+
 
 ;; Conditions
 
 (if (= document.ready-state "complete")
   (.log console "loaded")    ;; true expression
   (.log console "loading"))  ;; optional false expression
+
 
 ;; Do expression
 
@@ -133,21 +128,15 @@
      process.stdout
      (.cwd process))))
 
-;; Each macro
-
-(each (Array 1 2 3)
-  (fn (elem index list)
-    (.log console elem)))
-
 ;; Exception handling
 
-(var fs (require "fs"))
-(var outfile "text.txt")
-(try
-  (.write-file-sync fs outfile "Hello World")
-  (catch Error e
-    (.log console (+ "Cannot write file " outfile))
-    (.exit process 1)))
+(let [fs (require "fs")
+      outfile "text.txt"]
+  (try
+    (.write-file-sync fs outfile "Hello World")
+    (catch e
+      (.log console (+ "Cannot write file " outfile))
+      (.exit process 1))))
 
 
 ;; Recursive loops
@@ -159,65 +148,8 @@
     ; loop i will take this value
     (recur (inc i))))
 </script>
-
 <div id="input" name="input"></div>
 <div id="output" name="output"></div>
-    <script>
-
-      function updatePreview(editor) {
-        clearTimeout(updatePreview.id)
-        var code = editor.getValue()
-        localStorage.buffer = code
-        updatePreview.id = setTimeout(function() {
-          try {
-            editor.clearMarker(updatePreview.line || 1)
-            output.setValue(require('../lib/ls')._compile(code))
-          } catch (error) {
-            updatePreview.line = error.line
-            editor.setMarker(error.line, "<span title='"
-                                         + error.message + "'>●</span> %N%")
-          }
-        }, 200)
-      }
-
-      var input = CodeMirror(document.getElementById("input"), {
-        lineNumbers: true,
-        autoClearEmptyLines: true,
-        tabSize: 2,
-        indentWithTabs: false,
-        electricChars: true,
-        autoClearEmptyLines: true,
-        mode: "clojure",
-        theme: "ambiance",
-        autofocus: true,
-        fixedGutter: true,
-        matchBrackets: true,
-        value: localStorage.buffer ||
-               document.getElementById("examples").innerHTML,
-        onChange: updatePreview,
-        onCursorActivity: function() {
-          input.setLineClass(hlLine, null, null);
-          hlLine = input.setLineClass(input.getCursor().line, null, "activeline");
-        },
-        onGutterClick: function() {
-          var output = document.getElementById("output")
-          var input = document.getElementById("input")
-          output.hidden = !output.hidden
-          input.style.width = output.hidden ? '100%' : '50%'
-        }
-      });
-      var hlLine = input.setLineClass(0, "activeline");
-
-      var output = CodeMirror(document.getElementById("output"), {
-        lineNumbers: true,
-        fixedGutter: true,
-        matchBrackets: true,
-        mode: "javascript",
-        theme: "ambiance",
-        readOnly: true
-      });
-
-      setTimeout(updatePreview, 1000, input)
-    </script>
+    <script src=./support/app.js></script>
   </body>
 </html>
