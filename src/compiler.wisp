@@ -794,10 +794,7 @@
   (fn [form] (name (compile-reference (first form)))))
 
 (install-special (symbol "::compile:symbol")
-  (fn [form]
-    (compile
-      (list (symbol "symbol") (name (first form))))))
-  ;(fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
+  (fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
 
 (install-special (symbol "::compile:nil")
   (fn [form] "void(0)"))

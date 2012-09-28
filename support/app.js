@@ -2193,7 +2193,7 @@ installSpecial(symbol("::compile:reference"), function(form) {
 });
 
 installSpecial(symbol("::compile:symbol"), function(form) {
-  return compile(list(symbol("symbol"), name(first(form))));
+  return str("\"", "﻿", name(first(form)), "\"");
 });
 
 installSpecial(symbol("::compile:nil"), function(form) {
