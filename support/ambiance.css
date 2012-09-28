@@ -15,20 +15,43 @@
 .cm-s-ambiance .cm-string { color: #8f9d6a; }
 .cm-s-ambiance .cm-string-2 { color: #9d937c; }
 .cm-s-ambiance .cm-meta { color: #D2A8A1; }
-.cm-s-ambiance .cm-error { color: #AF2018; }
+.cm-s-ambiance .cm-error { 
+  color: #999;
+  border-bottom: 1px dotted #AF2018;
+}
 .cm-s-ambiance .cm-qualifier { color: yellow; }
 .cm-s-ambiance .cm-builtin { color: #9999cc; }
 .cm-s-ambiance .cm-bracket { color: #24C2C7; }
 .cm-s-ambiance .cm-tag { color: #fee4ff }
 .cm-s-ambiance .cm-attribute {  color: #9B859D; }
-.cm-s-ambiance .cm-header {color: blue;}
-.cm-s-ambiance .cm-quote { color: #24C2C7; }
-.cm-s-ambiance .cm-hr { color: pink; }
-.cm-s-ambiance .cm-link { color: #F4C20B; }
+.cm-s-ambiance .cm-header { color: #eee; font-size: 170%; font-weight: bold; }
+.cm-s-ambiance .cm-quote { color: #999; }
+.cm-s-ambiance .cm-hr {
+  color: transparent;
+  border-top: 1px solid #666;
+  display: block;
+}
+.cm-s-ambiance .cm-link { color: #aac6e3; cursor: pointer; }
 .cm-s-ambiance .cm-special { color: #FF9D00; }
+.cm-s-ambiance .cm-em {
+  color: #999;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.cm-s.ambiance .cm-em:first-letter,
+.cm-s.ambiance .cm-em:first-letter,
+.cm-s.ambiance .cm-header:first-letter {
+  opacity: 0.5;
+}
+.cm-s-ambiance .cm-strong { color: #eee; }
 .cm-s-ambiance .cm-tab:before {
   content: "➤";
-  color: #333;
+  color: #444;
+}
+.cm-s-ambiance .cm-invalidchar {
+  color: #999;
+  border-bottom: 1px dotted #AF2018;
 }
 
 .cm-s-ambiance .CodeMirror-matchingbracket { color: #0f0; }
@@ -37,8 +60,8 @@
 .cm-s-ambiance .CodeMirror-selected {
   background: rgba(255, 255, 255, 0.15);
 }
-.CodeMirror-focused .cm-s-ambiance .CodeMirror-selected {
-  background: rgba(255, 255, 255, 0.10);
+.CodeMirror-focused.cm-s-ambiance  .CodeMirror-selected {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* Editor styling */
@@ -46,7 +69,7 @@
 .cm-s-ambiance {
   line-height: 1.40em;
   font-family: Monaco, Menlo,"Andale Mono","lucida console","Courier New",monospace !important;
-  color: #E6E1DC;
+  color: #bbb;
   background-color: #202020;
   -webkit-box-shadow: inset 0 0 10px black;
   -moz-box-shadow: inset 0 0 10px black;
@@ -68,7 +91,7 @@
 }
 
 .cm-s-ambiance .CodeMirror-lines {
-  
+  padding-left: 20px;
 }
 
 .cm-s-ambiance .CodeMirror-lines .CodeMirror-cursor {
@@ -77,6 +100,17 @@
 
 .cm-s-ambiance .activeline {
   background: none repeat scroll 0% 0% rgba(255, 255, 255, 0.031);
+  margin-left: -20px;
+}
+
+.cm-s-ambiance .cm-code.cm-prose {
+  font-style: normal;
+  color: #ccc;
+  background: #333;
+}
+
+.cm-prose {
+  color: #ddd;
 }
 
 .cm-s-ambiance,
