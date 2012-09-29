@@ -454,7 +454,7 @@ var rest = function rest(sequence) {
 var cons = function cons(head, tail) {
   return isList(tail) ?
     new List(head, tail) :
-    Array(head).concat(tail);
+    [head].concat(tail);
 };
 
 var list = function list() {
@@ -527,7 +527,7 @@ var listToVector = function listToVector(source) {
       })(), list = rest(list), loop);
     };
     return recur;
-  })(Array(), source);
+  })([], source);
 };
 
 var sortList = function sortList(items, f) {
@@ -2037,7 +2037,7 @@ var compileGroup = function compileGroup(form, wrap) {
 };
 
 var compileDo = function compileDo(form) {
-  return compile(list(cons(symbol("fn"), cons(Array(), form))));
+  return compile(list(cons(symbol("fn"), cons([], form))));
 };
 
 var defineBindings = function defineBindings(form) {
@@ -2177,8 +2177,6 @@ installSpecial(symbol("let"), compileLet);
 installSpecial(symbol("throw"), compileThrow);
 
 installSpecial(symbol("vector"), compileVector);
-
-installSpecial(symbol("array"), compileVector);
 
 installSpecial(symbol("try"), compileTry);
 

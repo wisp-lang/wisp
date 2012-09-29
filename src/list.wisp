@@ -78,7 +78,7 @@
   [head tail]
   (if (list? tail)
     (new List head tail)
-    (.concat (Array head) tail)))
+    (.concat [head] tail)))
 
 (defn list
   "Creates list of the given items"
@@ -93,11 +93,11 @@
   "Reverse order of items in the list"
   [sequence]
   (if (list? sequence)
-    (loop [items (array)
+    (loop [items []
            source sequence]
       (if (empty? source)
         (.apply list list items)
-        (recur (.concat (array (first source)) items)
+        (recur (.concat [(first source)] items)
                (rest source))))
     (.reverse sequence)))
 
@@ -129,7 +129,7 @@
              (rest prefix)))))
 
 (defn list-to-vector [source]
-  (loop [result (Array)
+  (loop [result []
          list source]
     (if (empty? list)
       result

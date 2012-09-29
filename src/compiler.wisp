@@ -536,7 +536,7 @@
   "Evaluates the expressions in order and returns the value of the last.
   If no expressions are supplied, returns nil."
   [form]
-  (compile (list (cons (symbol "fn") (cons (Array) form)))))
+  (compile (list (cons (symbol "fn") (cons [] form)))))
 
 
 (defn define-bindings
@@ -782,7 +782,6 @@
 (install-special (symbol "let") compile-let)
 (install-special (symbol "throw") compile-throw)
 (install-special (symbol "vector") compile-vector)
-(install-special (symbol "array") compile-vector)
 (install-special (symbol "try") compile-try)
 (install-special (symbol ".") compile-property)
 (install-special (symbol "apply") compile-apply)

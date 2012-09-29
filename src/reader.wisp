@@ -159,11 +159,11 @@
       0
       (let [negate (if (identical? "-" (aget groups 1)) -1 1)
             a (cond
-               (aget groups 3) (array (aget groups 3) 10)
-               (aget groups 4) (array (aget groups 4) 16)
-               (aget groups 5) (array (aget groups 5) 8)
-               (aget groups 7) (array (aget groups 7) (parse-int (aget groups 7)))
-               :default (array nil nil))
+               (aget groups 3) [(aget groups 3) 10]
+               (aget groups 4) [(aget groups 4) 16]
+               (aget groups 5) [(aget groups 5) 8]
+               (aget groups 7) [(aget groups 7) (parse-int (aget groups 7))]
+               :default [nil nil])
             n (aget a 0)
             radix (aget a 1)]
         (if (nil? n)
@@ -274,7 +274,7 @@
 (defn read-delimited-list
   "Reads out delimited list"
   [delim reader recursive?]
-  (loop [a (array)]
+  (loop [a []]
     (let [ch (read-past whitespace? reader)]
       (if (not ch) (reader-error reader "EOF"))
       (if (identical? delim ch)
@@ -284,13 +284,13 @@
             (let [mret (macrofn reader ch)]
               (recur (if (identical? mret reader)
                        a
-                       (.concat a (array mret)))))
+                       (.concat a [mret]))))
             (do
               (unread-char reader ch)
               (let [o (read reader true nil recursive?)]
                 (recur (if (identical? o reader)
                          a
-                         (.concat a (array o))))))))))))
+                         (.concat a [o])))))))))))
 
 ;; data structure readers
 
@@ -455,7 +455,7 @@
 
 (defn read-set
   [reader _]
-  (apply list (.concat (array (symbol "set"))
+  (apply list (.concat [(symbol "set")]
                        (read-delimited-list "}" reader true))))
 
 (defn read-regex
