@@ -453,7 +453,7 @@
 
 (defn read-set
   [reader _]
-  (apply list (.concat [(symbol "set")]
+  (apply list (.concat ['set]
                        (read-delimited-list "}" reader true))))
 
 (defn read-regex

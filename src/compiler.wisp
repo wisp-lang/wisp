@@ -49,7 +49,7 @@
         program (compile
                   (macroexpand
                     ; `(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))
-                    (cons (symbol "fn")
+                    (cons 'fn
                       (cons pattern body))))
         ;; compile the macro into native code and use the host's native
         ;; eval to eval it into a function.
@@ -64,7 +64,7 @@
 
 ;; system macros
 (install-macro
- (symbol "defmacro")
+ 'defmacro
  (fn [form]
    (let [signature (rest form)]
      (let [name (first signature)
@@ -190,10 +190,10 @@
     (boolean? form) (compile (list (symbol "::compile:boolean") form))
     (nil? form) (compile (list (symbol "::compile:nil") form))
     (re-pattern? form) (compile-re-pattern form)
-    (vector? form) (compile (apply-form (symbol "vector")
+    (vector? form) (compile (apply-form 'vector
                                         (apply list form)
                                         quoted?))
-    (list? form) (compile (apply-form (symbol "list")
+    (list? form) (compile (apply-form 'list
                                       form
                                       quoted?))
     (dictionary? form) (compile-dictionary
@@ -304,14 +304,14 @@
             (if (< (count form) 2)
               (throw (Error
                 "Malformed member expression, expecting (.member target ...)"))
-              (cons (symbol ".")
+              (cons '.
                     (cons (second form)
                           (cons (symbol (.substr id 1))
                                 (rest (rest form))))))
 
             ;; (StringBuilder. "foo") => (new StringBuilder "foo")
             (if (identical? (.char-at id (- (.-length id) 1)) ".")
-              (cons (symbol "new")
+              (cons 'new
                     (cons (symbol (.substr id 0 (- (.-length id) 1)))
                           (rest form)))
               form))
@@ -367,7 +367,7 @@
   [form]
   (compile-template
    (list "var ~{}"
-         (compile (cons (symbol "set!") form)))))
+         (compile (cons 'set! form)))))
 
 (defn compile-if-else
   "Evaluates test. If not the singular values nil or false,
@@ -383,7 +383,7 @@
     (compile-template
       (list
         (if (and (list? else-expression)
-                 (identical? (first else-expression) (symbol "if")))
+                 (identical? (first else-expression) 'if))
           "~{} ?\n  ~{} :\n~{}"
           "~{} ?\n  ~{} :\n  ~{}")
         (compile condition)
@@ -439,8 +439,8 @@
 (defn compile-fn-params
   ;"compiles function params"
   [params]
-  (if (contains-vector? params (symbol "&"))
-    (.join (.map (.slice params 0 (.index-of params (symbol "&"))) compile) ", ")
+  (if (contains-vector? params '&)
+    (.join (.map (.slice params 0 (.index-of params '&)) compile) ", ")
     (.join (.map params compile) ", ")))
 
 (defn compile-desugared-fn
@@ -475,14 +475,14 @@
 
 (defn compile-fn-body
   [form params]
-  (if (and (vector? params) (contains-vector? params (symbol "&")))
+  (if (and (vector? params) (contains-vector? params '&))
     (compile-statements
-      (cons (list (symbol "def")
-                  (get params (inc (.index-of params (symbol "&"))))
+      (cons (list 'def
+                  (get params (inc (.index-of params '&)))
                   (list
-                    (symbol "Array.prototype.slice.call")
-                    (symbol "arguments")
-                    (.index-of params (symbol "&"))))
+                    'Array.prototype.slice.call
+                    'arguments
+                    (.index-of params '&)))
       form)
       "return ")
     (compile-statements form "return ")))
@@ -519,7 +519,7 @@
   "Evaluates the expressions in order and returns the value of the last.
   If no expressions are supplied, returns nil."
   [form]
-  (compile (list (cons (symbol "fn") (cons [] form)))))
+  (compile (list (cons 'fn (cons [] form)))))
 
 
 (defn define-bindings
@@ -531,7 +531,7 @@
       (reverse defs)
       (recur
         (cons
-          (list (symbol "def")      ; '(def (get bindings 0) (get bindings 1))
+          (list 'def                ; '(def (get bindings 0) (get bindings 1))
                 (get bindings 0)    ; binding name
                 (get bindings 1))   ; binding value
            defs)
@@ -548,7 +548,7 @@
   ;; Consider making let a macro:
   ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3999
   (compile
-    (cons (symbol "do")
+    (cons 'do
           (concat-list
             (define-bindings (first form))
             (rest form)))))
@@ -612,14 +612,12 @@
               (compile (first catch-exprs))
               (compile-fn-body (rest catch-exprs))
               (compile-fn-body finally-exprs)))))
-        (if (identical? (first (first exprs))
-                               (symbol "catch"))
+        (if (identical? (first (first exprs)) 'catch)
           (recur try-exprs
                  (rest (first exprs))
                  finally-exprs
                  (rest exprs))
-          (if (identical? (first (first exprs))
-                                 (symbol "finally"))
+          (if (identical? (first (first exprs)) 'finally)
             (recur try-exprs
                    catch-exprs
                    (rest (first exprs))
@@ -651,9 +649,9 @@
 (defn compile-apply
   [form]
   (compile
-    (list (symbol ".")
+    (list '.
           (first form)
-          (symbol "apply")
+          'apply
           (first form)
           (second form))))
 
@@ -702,8 +700,8 @@
     ;;    ~@(define-bindings bindings)
     ;;    ~@(compile-recur body names)))
     (compile
-      (cons (cons (symbol "fn")
-              (cons (symbol "loop")
+      (cons (cons 'fn
+              (cons 'loop
                 (cons names
                   (compile-recur names body))))
             (apply list values)))))
@@ -718,7 +716,7 @@
     (if (empty? names)
       (reverse result)
       (recur
-       (cons (list (symbol "set!") (first names) (first values)) result)
+       (cons (list 'set! (first names) (first values)) result)
        (rest names)
        (rest values)))))
 
@@ -728,12 +726,12 @@
   (map-list body
        (fn [form]
          (if (list? form)
-           (if (identical? (first form) (symbol "recur"))
+           (if (identical? (first form) 'recur)
              (list (symbol "::raw")
                    (compile-group
                     (concat-list
                       (rebind-bindings names (rest form))
-                      (list (symbol "loop")))
+                      (list 'loop))
                     true))
              (expand-recur names form))
            form))))
@@ -747,31 +745,31 @@
           (compile-template
           (list "var recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}"
                 (compile-statements (expand-recur names body)))))
-    (symbol "recur")))
+    'recur))
 
 (defn compile-raw
   "returns form back since it's already compiled"
   [form]
   (first form))
 
-(install-special (symbol "set!") compile-set)
-(install-special (symbol "get") compile-compound-accessor)
-(install-special (symbol "aget") compile-compound-accessor)
-(install-special (symbol "def") compile-def)
-(install-special (symbol "if") compile-if-else)
-(install-special (symbol "do") compile-do)
-(install-special (symbol "do*") compile-statements)
-(install-special (symbol "fn") compile-fn)
-(install-special (symbol "let") compile-let)
-(install-special (symbol "throw") compile-throw)
-(install-special (symbol "vector") compile-vector)
-(install-special (symbol "try") compile-try)
-(install-special (symbol ".") compile-property)
-(install-special (symbol "apply") compile-apply)
-(install-special (symbol "new") compile-new)
-(install-special (symbol "instance?") compile-instance)
-(install-special (symbol "not") compile-not)
-(install-special (symbol "loop") compile-loop)
+(install-special 'set! compile-set)
+(install-special 'get compile-compound-accessor)
+(install-special 'aget compile-compound-accessor)
+(install-special 'def compile-def)
+(install-special 'if compile-if-else)
+(install-special 'do compile-do)
+(install-special 'do* compile-statements)
+(install-special 'fn compile-fn)
+(install-special 'let compile-let)
+(install-special 'throw compile-throw)
+(install-special 'vector compile-vector)
+(install-special 'try compile-try)
+(install-special '. compile-property)
+(install-special 'apply compile-apply)
+(install-special 'new compile-new)
+(install-special 'instance? compile-instance)
+(install-special 'not compile-not)
+(install-special 'loop compile-loop)
 (install-special (symbol "::raw") compile-raw)
 (install-special (symbol "::compile:invoke") compile-fn-invoke)
 
@@ -877,36 +875,36 @@
         (str (first form) " form requires at least two operands")))))
 
 ;; Arithmetic Operators
-(install-native (symbol "+") (symbol "+") nil 0)
-(install-native (symbol "-") (symbol "-") nil "NaN")
-(install-native (symbol "*") (symbol "*") nil 1)
-(install-native (symbol "/") (symbol "/") verify-two)
-(install-native (symbol "mod") (symbol "%") verify-two)
+(install-native '+ '+ nil 0)
+(install-native '- '- nil "NaN")
+(install-native '* '* nil 1)
+(install-native '/ '/ verify-two)
+(install-native 'mod (symbol "%") verify-two)
 
 ;; Logical Operators
-(install-native (symbol "and") (symbol "&&"))
-(install-native (symbol "or") (symbol "||"))
+(install-native 'and '&&)
+(install-native 'or '||)
 
 ;; Comparison Operators
 
-(install-operator (symbol "=") (symbol "=="))
-(install-operator (symbol "not=") (symbol "!="))
-(install-operator (symbol "==") (symbol "=="))
-(install-operator (symbol "identical?") (symbol "==="))
-(install-operator (symbol ">") (symbol ">"))
-(install-operator (symbol ">=") (symbol ">="))
-(install-operator (symbol "<") (symbol "<"))
-(install-operator (symbol "<=") (symbol "<="))
+(install-operator '= '==)
+(install-operator 'not= '!=)
+(install-operator '== '==)
+(install-operator 'identical? '===)
+(install-operator '> '>)
+(install-operator '>= '>=)
+(install-operator '< '<)
+(install-operator '<= '<=)
 
 ;; Bitwise Operators
 
-(install-native (symbol "bit-and") (symbol "&") verify-two)
-(install-native (symbol "bit-or") (symbol "|") verify-two)
-(install-native (symbol "bit-xor") (symbol "^"))
-(install-native (symbol "bit-not ") (symbol "~") verify-two)
-(install-native (symbol "bit-shift-left") (symbol "<<") verify-two)
-(install-native (symbol "bit-shift-right") (symbol ">>") verify-two)
-(install-native (symbol "bit-shift-right-zero-fil") (symbol ">>>") verify-two)
+(install-native 'bit-and '& verify-two)
+(install-native 'bit-or '| verify-two)
+(install-native 'bit-xor (symbol "^"))
+(install-native 'bit-not (symbol "~") verify-two)
+(install-native 'bit-shift-left '<< verify-two)
+(install-native 'bit-shift-right '>> verify-two)
+(install-native 'bit-shift-right-zero-fil '>>> verify-two)
 
 (defn defmacro-from-string
   "Installs macro by from string, by using new reader and compiler.
