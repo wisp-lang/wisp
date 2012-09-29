@@ -26,12 +26,13 @@
 (defn execute-macro
   "Applies macro registered with given `name` to a given `form`"
   [name form]
-  ((get __macros__ name) form))
+  (apply (get __macros__ name)
+         (list-to-vector form)))
 
 (defn install-macro
   "Registers given `macro` with a given `name`"
-  [name macro]
-  (set! (get __macros__ name) macro))
+  [name macro-fn]
+  (set! (get __macros__ name) macro-fn))
 
 (defn macro?
   "Returns true if macro with a given name is registered"
@@ -44,11 +45,7 @@
 (defn make-macro
   "Makes macro"
   [pattern body]
-  (let [form (gensym)
-        macro-fn `(fn [~form]
-                    (apply (fn ~pattern ~@body)
-                           (list-to-vector (rest ~form))))]
-
+  (let [macro-fn `(fn ~pattern ~@body)]
         ;; compile the macro into native code and use the host's native
         ;; eval to eval it into a function.
         (eval (str "(" (compile (macroexpand macro-fn)) ")"))))
@@ -57,14 +54,8 @@
 ;; system macros
 (install-macro
  'defmacro
- (fn [form]
-   (let [signature (rest form)]
-     (let [name (first signature)
-           pattern (second signature)
-           body (rest (rest signature))]
-
-       ;; install it during expand-time
-       (install-macro name (make-macro pattern body))))))
+ (fn [name signature & body]
+  (install-macro name (make-macro signature body))))
 
 
 ;; special forms
@@ -283,7 +274,7 @@
           id (name op)]
       (cond
         (special? op) form
-        (macro? op) (execute-macro op form)
+        (macro? op) (execute-macro op (rest form))
         (and (symbol? op)
              (not (identical? id ".")))
           ;; (.substring s 2 5) => (. s substring 2 5)
