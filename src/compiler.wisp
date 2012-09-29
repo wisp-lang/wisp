@@ -60,7 +60,7 @@
     (fn [form]
       (try
         (apply macro (list-to-vector (rest form)))
-        (catch Error error
+        (catch error
           (throw (compiler-error form error.message)))))))
 
 
