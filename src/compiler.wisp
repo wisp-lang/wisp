@@ -867,84 +867,81 @@
 (install-native 'bit-shift-right '>> verify-two)
 (install-native 'bit-shift-right-zero-fil '>>> verify-two)
 
-(defn defmacro-from-string
-  "Installs macro by from string, by using new reader and compiler.
-  This is temporary workaround until we switch to new compiler"
-  [macro-source]
-  (compile-program
-    (macroexpand
-      (read-from-string (str "(do " macro-source ")")))))
-
-(defmacro-from-string
-"
-(defmacro cond
-  \"Takes a set of test/expr pairs. It evaluates each test one at a
-  time.  If a test returns logical true, cond evaluates and returns
-  the value of the corresponding expr and doesn't evaluate any of the
-  other tests or exprs. (cond) returns nil.\"
-  ;{:added \"1.0\"}
-  [clauses]
-  (set! clauses (apply list arguments))
-  (if (not (empty? clauses))
-    (list 'if (first clauses)
-          (if (empty? (rest clauses))
-            (throw (Error \"cond requires an even number of forms\"))
-            (second clauses))
-          (cons 'cond (rest (rest clauses))))))
-
-(defmacro defn
-   \"Same as (def name (fn [params* ] exprs*)) or
+(install-macro
+ 'defn
+ (fn defn
+   "Same as (def name (fn [params* ] exprs*)) or
    (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
-   to the var metadata\"
-  ;{:added \"1.0\", :special-form true ]}
-  [name]
-  (def body (apply list (Array.prototype.slice.call arguments 1)))
-  `(def ~name (fn ~name ~@body)))
+   to the var metadata"
+   {:added "1.0" :special-form true }
+   [name & body]
+   `(def ~name (fn ~name ~@body))))
 
-(defmacro import
-  \"Helper macro for importing node modules\"
-  [imports path]
-  (if (nil? path)
-    `(require ~imports)
-    (if (symbol? imports)
-      `(def ~imports (require ~path))
-      (loop [form '() names imports]
-        (if (empty? names)
-          `(do* ~@form)
-          (let [alias (first names)
-                id (symbol (str \".-\" (name alias)))]
-            (recur (cons `(def ~alias
-                            (~id (require ~path))) form)
-                   (rest names))))))))
+(install-macro
+ 'cond
+ (fn cond
+   "Takes a set of test/expr pairs. It evaluates each test one at a
+   time.  If a test returns logical true, cond evaluates and returns
+   the value of the corresponding expr and doesn't evaluate any of the
+   other tests or exprs. (cond) returns nil."
+   {:added "1.0"}
+   [clauses]
+   (set! clauses (apply list arguments))
+   (if (not (empty? clauses))
+     (list 'if (first clauses)
+           (if (empty? (rest clauses))
+             (throw (Error "cond requires an even number of forms"))
+             (second clauses))
+           (cons 'cond (rest (rest clauses)))))))
 
-(defmacro export
-  \"Helper macro for exporting multiple / single value\"
-  [& names]
-  (if (empty? names)
-    nil
-    (if (empty? (rest names))
-      `(set! module.exports ~(first names))
-      (loop [form '() exports names]
-        (if (empty? exports)
-          `(do* ~@form)
-          (recur (cons `(set!
-                         (~(symbol (str \".-\" (name (first exports))))
-                           exports)
-                         ~(first exports))
-                       form)
-               (rest exports)))))))
+(install-macro
+ 'assert
+ (fn assert
+   "Evaluates expr and throws an exception if it does not evaluate to
+   logical true."
+   {:added "1.0"}
+   [x message]
+   (if (nil? message)
+     `(assert ~x "")
+     `(if (not ~x)
+        (throw (Error. (.concat "Assert failed: " ~message "\n" '~x)))))))
 
-(defmacro assert
-  \"Evaluates expr and throws an exception if it does not evaluate to
-  logical true.\"
-  {:added \"1.0\"}
-  [x message]
-  (if (nil? message)
-    `(assert ~x \"\")
-    `(if (not ~x)
-       (throw (Error. (.concat \"Assert failed: \" ~message \"\n\" '~x))))))
-")
+(install-macro
+ 'export
+ (fn
+   "Helper macro for exporting multiple / single value"
+   [& names]
+   (if (empty? names)
+     nil
+     (if (empty? (rest names))
+       `(set! module.exports ~(first names))
+       (loop [form '() exports names]
+         (if (empty? exports)
+           `(do* ~@form)
+           (recur (cons `(set!
+                          (~(symbol (str ".-" (name (first exports))))
+                            exports)
+                          ~(first exports))
+                        form)
+                  (rest exports))))))))
 
+(install-macro
+ 'import
+ (fn
+   "Helper macro for importing node modules"
+   [imports path]
+   (if (nil? path)
+     `(require ~imports)
+     (if (symbol? imports)
+       `(def ~imports (require ~path))
+       (loop [form '() names imports]
+         (if (empty? names)
+           `(do* ~@form)
+           (let [alias (first names)
+                 id (symbol (str ".-" (name alias)))]
+             (recur (cons `(def ~alias
+                             (~id (require ~path))) form)
+                    (rest names)))))))))
 ;; TODO:
 ;; - alength
 ;; - defn with metadata in front of name
