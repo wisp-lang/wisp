@@ -1,8 +1,6 @@
 (import [read-from-string] "./reader")
 (import [meta with-meta symbol? symbol keyword? keyword
-         unquote? unquote-splicing?
-         quote? syntax-quote?
-         name gensym atom?] "./ast")
+         unquote? unquote-splicing? quote? syntax-quote? name gensym] "./ast")
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?

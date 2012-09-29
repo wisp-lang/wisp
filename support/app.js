@@ -1465,10 +1465,6 @@ var meta = function meta(value) {
     void(0);
 };
 
-var isAtom = function isAtom(form) {
-  return (isNumber(form)) || (isString(form)) || (isBoolean(form)) || (isNil(form)) || (isKeyword(form)) || (isSymbol(form)) || ((isList(form)) && (isEmpty(form)));
-};
-
 var symbol = function symbol(ns, id) {
   return isSymbol(ns) ?
     ns :
@@ -1545,14 +1541,12 @@ exports.keyword = keyword;
 exports.isKeyword = isKeyword;
 exports.symbol = symbol;
 exports.isSymbol = isSymbol;
-exports.isAtom = isAtom;
 exports.withMeta = withMeta;
 exports.meta = meta;
 });
 
 require.define("/lib/compiler.js",function(require,module,exports,__dirname,__filename,process){var readFromString = (require("./reader")).readFromString;;
 
-var isAtom = (require("./ast")).isAtom;
 var gensym = (require("./ast")).gensym;
 var name = (require("./ast")).name;
 var isSyntaxQuote = (require("./ast")).isSyntaxQuote;

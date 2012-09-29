@@ -12,18 +12,6 @@
   [value]
   (if (object? value) (.-metadata value)))
 
-(defn atom?
- "Returns true if the form passed is of atomic type"
- [form]
- (or
-  (number? form)
-  (string? form)
-  (boolean? form)
-  (nil? form)
-  (keyword? form)
-  (symbol? form)
-  (and (list? form)
-       (empty? form))))
 
 (defn symbol
   "Returns a Symbol with the given namespace and name."
@@ -102,7 +90,7 @@
 
 
 
-(export meta with-meta atom?
+(export meta with-meta
         symbol? symbol
         keyword? keyword
         gensym name
