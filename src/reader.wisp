@@ -422,9 +422,9 @@
 (defn desugar-meta
   [f]
   (cond
-   (symbol? f) (dictionary (keyword "tag") f)
-   (string? f) (dictionary (keyword "tag") f)
-   (keyword? f) (dictionary f true)
+   (symbol? f) {:tag f}
+   (string? f) {:tag f}
+   (keyword? f) (dictionary (name f) true)
    :else f))
 
 (defn wrapping-reader

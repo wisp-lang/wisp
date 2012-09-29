@@ -15,6 +15,8 @@
   "Creates dictionary of given arguments. Odd indexed arguments
   are used for keys and evens for values"
   []
+  ; TODO: We should convert keywords to names to make sure that keys are not
+  ; used in their keyword form.
   (loop [key-values (.call Array.prototype.slice arguments)
          result {}]
     (if (.-length key-values)
@@ -46,12 +48,12 @@
     (.call Array.prototype.slice arguments)
     (fn [descriptor dictionary]
       (if (object? dictionary)
-        (each
+        (.for-each
          (Object.keys dictionary)
-         (fn [name]
+         (fn [key]
            (set!
-            (get descriptor name)
-            (Object.get-own-property-descriptor dictionary name)))))
+            (get descriptor key)
+            (Object.get-own-property-descriptor dictionary key)))))
       descriptor)
     (Object.create Object.prototype))))
 
