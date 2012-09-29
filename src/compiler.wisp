@@ -1001,7 +1001,7 @@
   (if (nil? message)
     `(assert ~x \"\")
     `(if (not ~x)
-       (throw (Error. ~(str \"Assert failed: \" message \"\n\" x))))))
+       (throw (Error. (.concat \"Assert failed: \" ~message \"\n\" '~x))))))
 ")
 
 ;; TODO:
