@@ -1,5 +1,5 @@
 (import [symbol quote deref name keyword
-         unquote unquote-splicing meta dictionary] "../src/ast")
+         unquote meta dictionary] "../src/ast")
 (import [dictionary nil? str] "../src/runtime")
 (import [read-from-string] "../src/reader")
 (import [list] "../src/list")

@@ -41,15 +41,6 @@
        (identical? (.char-at x 0) "\uFEFF")))
 
 
-(defn symbol-identical?
-  ;; We can not use `identical?` or `=` since in JS we can not
-  ;; make `==` or `===` on object which we use to implement symbols.
-  "Returns true if symbol is identical"
-  [actual expected]
-  (identical? actual expected))
-
-
-
 (defn ^boolean keyword? [x]
   (and (string? x)
        (> (count x) 1)
@@ -89,48 +80,33 @@
 (set! gensym.base 0)
 
 
-
-;; Common symbols
-
-(def unquote (symbol "unquote"))
-(def unquote-splicing (symbol "unquote-splicing"))
-(def syntax-quote (symbol "syntax-quote"))
-(def quote (symbol "quote"))
-(def deref (symbol "deref"))
-
-;; sets are not part of standard library but implementations can be provided
-;; if necessary.
-(def set (symbol "set"))
-
-
 (defn ^boolean unquote?
   "Returns true if it's unquote form: ~foo"
   [form]
-  (and (list? form) (identical? (first form) unquote)))
+  (and (list? form) (identical? (first form) 'unquote)))
 
 (defn ^boolean unquote-splicing?
   "Returns true if it's unquote-splicing form: ~@foo"
   [form]
-  (and (list? form) (identical? (first form) unquote-splicing)))
+  (and (list? form) (identical? (first form) 'unquote-splicing)))
 
 (defn ^boolean quote?
   "Returns true if it's quote form: 'foo '(foo)"
   [form]
-  (and (list? form) (symbol-identical? (first form) quote)))
+  (and (list? form) (identical? (first form) 'quote)))
 
 (defn ^boolean syntax-quote?
   "Returns true if it's syntax quote form: `foo `(foo)"
   [form]
-  (and (list? form) (identical? (first form) syntax-quote)))
+  (and (list? form) (identical? (first form) 'syntax-quote)))
 
 
 
 (export meta with-meta atom?
-        symbol? symbol symbol-identical?
+        symbol? symbol
         keyword? keyword
-        gensym name deref set
-
-        unquote? unquote
-        unquote-splicing? unquote-splicing
-        quote? quote
-        syntax-quote? syntax-quote)
+        gensym name
+        unquote?
+        unquote-splicing?
+        quote?
+        syntax-quote?)

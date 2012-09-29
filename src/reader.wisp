@@ -2,8 +2,8 @@
          cons rest] "./list")
 (import [odd? dictionary merge keys nil? inc dec vector? string? object?
          re-pattern re-matches re-find str] "./runtime")
-(import [symbol? symbol keyword? keyword quote syntax-quote
-         unquote unquote-splicing meta with-meta name deref] "./ast")
+(import [symbol? symbol keyword? keyword
+         meta with-meta name] "./ast")
 
 (defn PushbackReader
   "StringPushbackReader"
@@ -376,10 +376,10 @@
     (if (not ch)
       (reader-error reader "EOF while reading character")
       (if (identical? ch "@")
-        (list unquote-splicing (read reader true nil true))
+        (list 'unquote-splicing (read reader true nil true))
         (do
           (unread-char reader ch)
-          (list unquote (read reader true nil true)))))))
+          (list 'unquote (read reader true nil true)))))))
 
 
 (defn special-symbols [text not-found]
@@ -481,10 +481,10 @@
    (identical? c "\"") read-string
    (identical? c \:) read-keyword
    (identical? c ";") read-comment
-   (identical? c "'") (wrapping-reader quote)
-   (identical? c \@) (wrapping-reader deref)
+   (identical? c "'") (wrapping-reader 'quote)
+   (identical? c \@) (wrapping-reader 'deref)
    (identical? c \^) read-meta
-   (identical? c "`") (wrapping-reader syntax-quote)
+   (identical? c "`") (wrapping-reader 'syntax-quote)
    (identical? c "~") read-unquote
    (identical? c "(") read-list
    (identical? c ")") read-unmatched-delimiter

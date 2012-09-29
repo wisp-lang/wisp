@@ -1,8 +1,8 @@
 (import [read-from-string] "./reader")
 (import [meta with-meta symbol? symbol keyword? keyword
-         unquote? unquote unquote-splicing? unquote-splicing
-         quote? quote syntax-quote? syntax-quote
-         name gensym deref set atom? symbol-identical?] "./ast")
+         unquote? unquote-splicing?
+         quote? syntax-quote?
+         name gensym atom?] "./ast")
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
@@ -119,7 +119,7 @@
   [fn-name form quoted?]
   (cons fn-name
         (if quoted?
-            (map-list form (fn [e] (list quote e))) form)
+            (map-list form (fn [e] (list 'quote e))) form)
             form))
 
 (defn apply-unquoted-form
@@ -133,8 +133,8 @@
                   (second e)
                   (if (and (list? e)
                            (keyword? (first e)))
-                      (list syntax-quote (second e))
-                      (list syntax-quote e)))))))
+                      (list 'syntax-quote (second e))
+                      (list 'syntax-quote e)))))))
 
 (defn split-splices
   ""
@@ -200,7 +200,7 @@
                                       quoted?))
     (dictionary? form) (compile-dictionary
                         (if quoted?
-                          (map-dictionary form (fn [x] (list quote x)))
+                          (map-dictionary form (fn [x] (list 'quote x)))
                           form))))
 
 (defn compile-reference
@@ -629,13 +629,13 @@
               (compile (first catch-exprs))
               (compile-fn-body (rest catch-exprs))
               (compile-fn-body finally-exprs)))))
-        (if (symbol-identical? (first (first exprs))
+        (if (identical? (first (first exprs))
                                (symbol "catch"))
           (recur try-exprs
                  (rest (first exprs))
                  finally-exprs
                  (rest exprs))
-          (if (symbol-identical? (first (first exprs))
+          (if (identical? (first (first exprs))
                                  (symbol "finally"))
             (recur try-exprs
                    catch-exprs

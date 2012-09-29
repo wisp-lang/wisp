@@ -813,14 +813,9 @@ var merge = (require("./runtime")).merge;
 var dictionary = (require("./runtime")).dictionary;
 var isOdd = (require("./runtime")).isOdd;;
 
-var deref = (require("./ast")).deref;
 var name = (require("./ast")).name;
 var withMeta = (require("./ast")).withMeta;
 var meta = (require("./ast")).meta;
-var unquoteSplicing = (require("./ast")).unquoteSplicing;
-var unquote = (require("./ast")).unquote;
-var syntaxQuote = (require("./ast")).syntaxQuote;
-var quote = (require("./ast")).quote;
 var keyword = (require("./ast")).keyword;
 var isKeyword = (require("./ast")).isKeyword;
 var symbol = (require("./ast")).symbol;
@@ -1206,10 +1201,10 @@ var readUnquote = function readUnquote(reader) {
     return !(ch) ?
       readerError(reader, "EOF while reading character") :
     ch === "@" ?
-      list(unquoteSplicing, read(reader, true, void(0), true)) :
+      list("﻿unquote-splicing", read(reader, true, void(0), true)) :
       (function() {
         unreadChar(reader, ch);
-        return list(unquote, read(reader, true, void(0), true));
+        return list("﻿unquote", read(reader, true, void(0), true));
       })();
   })();
 };
@@ -1328,13 +1323,13 @@ var macros = function macros(c) {
   c === ";" ?
     readComment :
   c === "'" ?
-    wrappingReader(quote) :
+    wrappingReader("﻿quote") :
   c === "@" ?
-    wrappingReader(deref) :
+    wrappingReader("﻿deref") :
   c === "^" ?
     readMeta :
   c === "`" ?
-    wrappingReader(syntaxQuote) :
+    wrappingReader("﻿syntax-quote") :
   c === "~" ?
     readUnquote :
   c === "(" ?
@@ -1490,10 +1485,6 @@ var isSymbol = function isSymbol(x) {
   return (isString(x)) && (count(x) > 1) && (x.charAt(0) === "﻿");
 };
 
-var isSymbolIdentical = function isSymbolIdentical(actual, expected) {
-  return actual === expected;
-};
-
 var isKeyword = function isKeyword(x) {
   return (isString(x)) && (count(x) > 1) && (x.charAt(0) === "꞉");
 };
@@ -1528,49 +1519,30 @@ var gensym = function gensym(prefix) {
 
 gensym.base = 0;
 
-var unquote = symbol("unquote");
-
-var unquoteSplicing = symbol("unquote-splicing");
-
-var syntaxQuote = symbol("syntax-quote");
-
-var quote = symbol("quote");
-
-var deref = symbol("deref");
-
-var set = symbol("set");
-
 var isUnquote = function isUnquote(form) {
-  return (isList(form)) && (first(form) === unquote);
+  return (isList(form)) && (first(form) === "﻿unquote");
 };
 
 var isUnquoteSplicing = function isUnquoteSplicing(form) {
-  return (isList(form)) && (first(form) === unquoteSplicing);
+  return (isList(form)) && (first(form) === "﻿unquote-splicing");
 };
 
 var isQuote = function isQuote(form) {
-  return (isList(form)) && (isSymbolIdentical(first(form), quote));
+  return (isList(form)) && (first(form) === "﻿quote");
 };
 
 var isSyntaxQuote = function isSyntaxQuote(form) {
-  return (isList(form)) && (first(form) === syntaxQuote);
+  return (isList(form)) && (first(form) === "﻿syntax-quote");
 };
 
-exports.syntaxQuote = syntaxQuote;
 exports.isSyntaxQuote = isSyntaxQuote;
-exports.quote = quote;
 exports.isQuote = isQuote;
-exports.unquoteSplicing = unquoteSplicing;
 exports.isUnquoteSplicing = isUnquoteSplicing;
-exports.unquote = unquote;
 exports.isUnquote = isUnquote;
-exports.set = set;
-exports.deref = deref;
 exports.name = name;
 exports.gensym = gensym;
 exports.keyword = keyword;
 exports.isKeyword = isKeyword;
-exports.isSymbolIdentical = isSymbolIdentical;
 exports.symbol = symbol;
 exports.isSymbol = isSymbol;
 exports.isAtom = isAtom;
@@ -1580,19 +1552,12 @@ exports.meta = meta;
 
 require.define("/lib/compiler.js",function(require,module,exports,__dirname,__filename,process){var readFromString = (require("./reader")).readFromString;;
 
-var isSymbolIdentical = (require("./ast")).isSymbolIdentical;
 var isAtom = (require("./ast")).isAtom;
-var set = (require("./ast")).set;
-var deref = (require("./ast")).deref;
 var gensym = (require("./ast")).gensym;
 var name = (require("./ast")).name;
-var syntaxQuote = (require("./ast")).syntaxQuote;
 var isSyntaxQuote = (require("./ast")).isSyntaxQuote;
-var quote = (require("./ast")).quote;
 var isQuote = (require("./ast")).isQuote;
-var unquoteSplicing = (require("./ast")).unquoteSplicing;
 var isUnquoteSplicing = (require("./ast")).isUnquoteSplicing;
-var unquote = (require("./ast")).unquote;
 var isUnquote = (require("./ast")).isUnquote;
 var keyword = (require("./ast")).keyword;
 var isKeyword = (require("./ast")).isKeyword;
@@ -1710,7 +1675,7 @@ var opt = function opt(argument, fallback) {
 var applyForm = function applyForm(fnName, form, isQuoted) {
   return cons(fnName, isQuoted ?
     mapList(form, function(e) {
-      return list(quote, e);
+      return list("﻿quote", e);
     }) :
     form, form);
 };
@@ -1720,8 +1685,8 @@ var applyUnquotedForm = function applyUnquotedForm(fnName, form) {
     return isUnquote(e) ?
       second(e) :
     (isList(e)) && (isKeyword(first(e))) ?
-      list(syntaxQuote, second(e)) :
-      list(syntaxQuote, e);
+      list("﻿syntax-quote", second(e)) :
+      list("﻿syntax-quote", e);
   }));
 };
 
@@ -1782,7 +1747,7 @@ var compileObject = function compileObject(form, isQuoted) {
   isDictionary(form) ?
     compileDictionary(isQuoted ?
       mapDictionary(form, function(x) {
-        return list(quote, x);
+        return list("﻿quote", x);
       }) :
       form) :
     void(0);
@@ -2078,9 +2043,9 @@ var compileTry = function compileTry(form) {
       isEmpty(finallyExprs) ?
         compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n}})()", compileFnBody(tryExprs), compile(first(catchExprs)), compileFnBody(rest(catchExprs)))) :
         compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}})()", compileFnBody(tryExprs), compile(first(catchExprs)), compileFnBody(rest(catchExprs)), compileFnBody(finallyExprs))) :
-    isSymbolIdentical(first(first(exprs)), symbol("catch")) ?
+    first(first(exprs)) === symbol("catch") ?
       (tryExprs = tryExprs, catchExprs = rest(first(exprs)), finallyExprs = finallyExprs, exprs = rest(exprs), loop) :
-    isSymbolIdentical(first(first(exprs)), symbol("finally")) ?
+    first(first(exprs)) === symbol("finally") ?
       (tryExprs = tryExprs, catchExprs = catchExprs, finallyExprs = rest(first(exprs)), exprs = rest(exprs), loop) :
       (tryExprs = cons(first(exprs), tryExprs), catchExprs = catchExprs, finallyExprs = finallyExprs, exprs = rest(exprs), loop);
     };
