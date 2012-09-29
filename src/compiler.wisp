@@ -788,7 +788,7 @@
   ;; Note: Intentionally do not prefix keywords (unlike clojurescript)
   ;; so that they can be used with regular JS code:
   ;; (.add-event-listener window :load handler)
-  (fn [form] (str "\"" (name (first form)) "\"")))
+  (fn [form] (str "\"" "\uA789" (name (first form)) "\"")))
 
 (install-special (symbol "::compile:reference")
   (fn [form] (name (compile-reference (first form)))))
@@ -992,7 +992,7 @@
   (if (nil? message)
     `(assert ~x \"\")
     `(if (not ~x)
-       (throw (Error. ~(str \"Assert failed: \" message \"\n\" '~x))))))
+       (throw (Error. ~(str \"Assert failed: \" message \"\n\" x))))))
 ")
 
 ;; TODO:
