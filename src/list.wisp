@@ -78,7 +78,7 @@
   [head tail]
   (if (list? tail)
     (new List head tail)
-    (.concat [head] tail)))
+    (apply list (.concat [head] tail))))
 
 (defn list
   "Creates list of the given items"
