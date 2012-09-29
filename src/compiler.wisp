@@ -14,10 +14,10 @@
   [form]
   (or (number? form)
       (and (string? form)
-           (not (symbol? form)))
+           (not (symbol? form))
+           (not (keyword? form)))
       (boolean? form)
       (nil? form)
-      (keyword? form)
       (re-pattern? form)))
 
 
@@ -232,6 +232,10 @@
             ""))
   id)
 
+(defn compile-keyword-reference
+  [form]
+  (str "\"" (name form) "\""))
+
 (defn compile-syntax-quoted
   ""
   [form]
@@ -263,6 +267,7 @@
   (cond
    (self-evaluating? form) (compile-object form)
    (symbol? form) (compile-reference form)
+   (keyword? form) (compile-keyword-reference form)
    (vector? form) (compile-object form)
    (dictionary? form) (compile-object form)
    (list? form)
@@ -789,9 +794,6 @@
   ;; so that they can be used with regular JS code:
   ;; (.add-event-listener window :load handler)
   (fn [form] (str "\"" "\uA789" (name (first form)) "\"")))
-
-(install-special (symbol "::compile:reference")
-  (fn [form] (name (compile-reference (first form)))))
 
 (install-special (symbol "::compile:symbol")
   (fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
