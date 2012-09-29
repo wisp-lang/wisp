@@ -19,7 +19,6 @@
       (re-pattern? form)))
 
 
-
 ;; Macros
 
 (def __macros__ {})
@@ -106,8 +105,6 @@
   ((get __specials__ name) form))
 
 
-
-
 (defn opt [argument fallback]
   (if (or (nil? argument) (empty? argument)) fallback (first argument)))
 
@@ -183,12 +180,12 @@
   [form quoted?]
   ;; TODO: Add regexp to the list.
   (cond
-    (keyword? form) (compile (list (symbol "::compile:keyword") form))
-    (symbol? form) (compile (list (symbol "::compile:symbol") form))
-    (number? form) (compile (list (symbol "::compile:number") form))
-    (string? form) (compile (list (symbol "::compile:string") form))
-    (boolean? form) (compile (list (symbol "::compile:boolean") form))
-    (nil? form) (compile (list (symbol "::compile:nil") form))
+    (keyword? form) (compile-keyword form)
+    (symbol? form) (compile-symbol form)
+    (number? form) (compile-number form)
+    (string? form) (compile-string form)
+    (boolean? form) (compile-boolean form)
+    (nil? form) (compile-nil form)
     (re-pattern? form) (compile-re-pattern form)
     (vector? form) (compile (apply-form 'vector
                                         (apply list form)
@@ -207,7 +204,6 @@
   **macros**      __macros__
   list->vector    listToVector
   set!            set
-  raw%            raw$
   foo_bar         foo_bar
   number?         isNumber
   create-server   createServer"
@@ -219,7 +215,6 @@
   (set! id (.join (.split id "->") "-to-"))
   ;; set! ->  set
   (set! id (.join (.split id "!") ""))
-  ;; raw% -> raw$
   (set! id (.join (.split id "%") "$"))
   ;; number? -> isNumber
   (set! id (if (identical? (.substr id -1) "?")
@@ -271,8 +266,7 @@
                 (throw (compiler-error
                         form
                         (str "operator is not a procedure: " head)))
-              (compile
-                (list (symbol "::compile:invoke") head (rest form)))))))))
+              (compile-invoke form)))))))
 
 (defn compile-program
   "compiles all expansions"
@@ -500,13 +494,13 @@
         body (rest (rest (rest (rest signature))))]
     (compile-desugared-fn name doc attrs params body)))
 
-(defn compile-fn-invoke
+(defn compile-invoke
   [form]
   (compile-template
    ;; Wrap functions returned by expressions into parenthesis.
    (list (if (list? (first form)) "(~{})(~{})" "~{}(~{})")
          (compile (first form))
-         (compile-group (second form)))))
+         (compile-group (rest form)))))
 
 (defn compile-group
   [form wrap]
@@ -727,7 +721,7 @@
        (fn [form]
          (if (list? form)
            (if (identical? (first form) 'recur)
-             (list (symbol "::raw")
+             (list 'raw*
                    (compile-group
                     (concat-list
                       (rebind-bindings names (rest form))
@@ -741,7 +735,7 @@
   of the recursion point to the parameters of the recur"
   [names body]
   (list
-    (list (symbol "::raw")
+    (list 'raw*
           (compile-template
           (list "var recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}"
                 (compile-statements (expand-recur names body)))))
@@ -770,39 +764,22 @@
 (install-special 'instance? compile-instance)
 (install-special 'not compile-not)
 (install-special 'loop compile-loop)
-(install-special (symbol "::raw") compile-raw)
-(install-special (symbol "::compile:invoke") compile-fn-invoke)
+(install-special 'raw* compile-raw)
 
 
-
-
-(install-special (symbol "::compile:keyword")
-  ;; Note: Intentionally do not prefix keywords (unlike clojurescript)
-  ;; so that they can be used with regular JS code:
-  ;; (.add-event-listener window :load handler)
-  (fn [form] (str "\"" "\uA789" (name (first form)) "\"")))
-
-(install-special (symbol "::compile:symbol")
-  (fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
-
-(install-special (symbol "::compile:nil")
-  (fn [form] "void(0)"))
-
-(install-special (symbol "::compile:number")
-  (fn [form] (first form)))
-
-(install-special (symbol "::compile:boolean")
-  (fn [form] (if (true? (first form)) "true" "false")))
-
-(install-special (symbol "::compile:string")
-  (fn [form]
-    (def string (first form))
-    (set! string (.replace string (RegExp "\\\\" "g") "\\\\"))
-    (set! string (.replace string (RegExp "\n" "g") "\\n"))
-    (set! string (.replace string (RegExp "\r" "g") "\\r"))
-    (set! string (.replace string (RegExp "\t" "g") "\\t"))
-    (set! string (.replace string (RegExp "\"" "g") "\\\""))
-    (str "\"" string "\"")))
+(defn compile-keyword [form] (str "\"" "\uA789" (name form) "\""))
+(defn compile-symbol [form] (str "\"" "\uFEFF" (name form) "\""))
+(defn compile-nil [form] "void(0)")
+(defn compile-number [form] form)
+(defn compile-boolean [form] (if (true? form) "true" "false"))
+(defn compile-string
+  [form]
+  (set! form (.replace form (RegExp "\\\\" "g") "\\\\"))
+  (set! form (.replace form (RegExp "\n" "g") "\\n"))
+  (set! form (.replace form (RegExp "\r" "g") "\\r"))
+  (set! form (.replace form (RegExp "\t" "g") "\\t"))
+  (set! form (.replace form (RegExp "\"" "g") "\\\""))
+  (str "\"" form "\""))
 
 (defn compile-re-pattern
   [form]

@@ -1720,17 +1720,17 @@ var syntaxQuoteSplit = function syntaxQuoteSplit(appendName, fnName, form) {
 
 var compileObject = function compileObject(form, isQuoted) {
   return isKeyword(form) ?
-    compile(list(symbol("::compile:keyword"), form)) :
+    compileKeyword(form) :
   isSymbol(form) ?
-    compile(list(symbol("::compile:symbol"), form)) :
+    compileSymbol(form) :
   isNumber(form) ?
-    compile(list(symbol("::compile:number"), form)) :
+    compileNumber(form) :
   isString(form) ?
-    compile(list(symbol("::compile:string"), form)) :
+    compileString(form) :
   isBoolean(form) ?
-    compile(list(symbol("::compile:boolean"), form)) :
+    compileBoolean(form) :
   isNil(form) ?
-    compile(list(symbol("::compile:nil"), form)) :
+    compileNil(form) :
   isRePattern(form) ?
     compileRePattern(form) :
   isVector(form) ?
@@ -1803,7 +1803,7 @@ var compile = function compile(form) {
         (function() {
           return !((isSymbol(head)) || (isList(head))) ?
             (function() { throw compilerError(form, str("operator is not a procedure: ", head)); })() :
-            compile(list(symbol("::compile:invoke"), head, rest(form)));
+            compileInvoke(form);
         })() :
         void(0);
     })() :
@@ -1982,10 +1982,10 @@ var compileFn = function compileFn(form) {
   })();
 };
 
-var compileFnInvoke = function compileFnInvoke(form) {
+var compileInvoke = function compileInvoke(form) {
   return compileTemplate(list(isList(first(form)) ?
     "(~{})(~{})" :
-    "~{}(~{})", compile(first(form)), compileGroup(second(form))));
+    "~{}(~{})", compile(first(form)), compileGroup(rest(form))));
 };
 
 var compileGroup = function compileGroup(form, wrap) {
@@ -2100,14 +2100,14 @@ var expandRecur = function expandRecur(names, body) {
   return mapList(body, function(form) {
     return isList(form) ?
       first(form) === "﻿recur" ?
-        list(symbol("::raw"), compileGroup(concatList(rebindBindings(names, rest(form)), list("﻿loop")), true)) :
+        list("﻿raw*", compileGroup(concatList(rebindBindings(names, rest(form)), list("﻿loop")), true)) :
         expandRecur(names, form) :
       form;
   });
 };
 
 var compileRecur = function compileRecur(names, body) {
-  return list(list(symbol("::raw"), compileTemplate(list("var recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}", compileStatements(expandRecur(names, body))))), "﻿recur");
+  return list(list("﻿raw*", compileTemplate(list("var recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}", compileStatements(expandRecur(names, body))))), "﻿recur");
 };
 
 var compileRaw = function compileRaw(form) {
@@ -2150,41 +2150,38 @@ installSpecial("﻿not", compileNot);
 
 installSpecial("﻿loop", compileLoop);
 
-installSpecial(symbol("::raw"), compileRaw);
+installSpecial("﻿raw*", compileRaw);
 
-installSpecial(symbol("::compile:invoke"), compileFnInvoke);
+var compileKeyword = function compileKeyword(form) {
+  return str("\"", "꞉", name(form), "\"");
+};
 
-installSpecial(symbol("::compile:keyword"), function(form) {
-  return str("\"", "꞉", name(first(form)), "\"");
-});
+var compileSymbol = function compileSymbol(form) {
+  return str("\"", "﻿", name(form), "\"");
+};
 
-installSpecial(symbol("::compile:symbol"), function(form) {
-  return str("\"", "﻿", name(first(form)), "\"");
-});
-
-installSpecial(symbol("::compile:nil"), function(form) {
+var compileNil = function compileNil(form) {
   return "void(0)";
-});
+};
 
-installSpecial(symbol("::compile:number"), function(form) {
-  return first(form);
-});
+var compileNumber = function compileNumber(form) {
+  return form;
+};
 
-installSpecial(symbol("::compile:boolean"), function(form) {
-  return isTrue(first(form)) ?
+var compileBoolean = function compileBoolean(form) {
+  return isTrue(form) ?
     "true" :
     "false";
-});
+};
 
-installSpecial(symbol("::compile:string"), function(form) {
-  var string = first(form);
-  string = string.replace(RegExp("\\\\", "g"), "\\\\");
-  string = string.replace(RegExp("\n", "g"), "\\n");
-  string = string.replace(RegExp("\r", "g"), "\\r");
-  string = string.replace(RegExp("\t", "g"), "\\t");
-  string = string.replace(RegExp("\"", "g"), "\\\"");
-  return str("\"", string, "\"");
-});
+var compileString = function compileString(form) {
+  form = form.replace(RegExp("\\\\", "g"), "\\\\");
+  form = form.replace(RegExp("\n", "g"), "\\n");
+  form = form.replace(RegExp("\r", "g"), "\\r");
+  form = form.replace(RegExp("\t", "g"), "\\t");
+  form = form.replace(RegExp("\"", "g"), "\\\"");
+  return str("\"", form, "\"");
+};
 
 var compileRePattern = function compileRePattern(form) {
   return str(form);
