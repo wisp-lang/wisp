@@ -421,7 +421,7 @@
               (compile-template
                (list
                 "~{}: ~{}"
-                (name (first names))
+                (compile (first names))
                 (compile (macroexpand
                           (get form (first names)))))))
              (rest names))))
