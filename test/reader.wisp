@@ -1,189 +1,230 @@
-(include "./macros")
 (import [symbol quote deref name keyword
          unquote unquote-splicing meta dictionary] "../src/ast")
-(import [dictionary] "../src/runtime")
+(import [dictionary nil? str] "../src/runtime")
 (import [read-from-string] "../src/reader")
 (import [list] "../src/list")
+(import [equivalent?] "./utils")
 
 (def read-string read-from-string)
 
-(test
-  ("name fn"
-    (assert (identical? (name (read-string ":foo")) "foo")
-            "name of :foo is foo")
-    (assert (identical? (name (read-string ":foo/bar")) "bar")
-            "name of :foo/bar is bar")
-    (assert (identical? (name (read-string "foo")) "foo")
-            "name of foo is foo")
-    (assert (identical? (name (read-string "foo/bar")) "bar")
-            "name of foo/bar is bar")
-    (assert (identical? (name (read-string "\"foo\"")) "foo")
-            "name of \"foo\" is foo")
-    (assert (nil? (name (read-string "()"))) "name of list is nil")
-    (assert (nil? (name (read-string "[]"))) "name of vector is nil")
-    (assert (nil? (name (read-string "{}"))) "name of dictionary is nil")
-    (assert (nil? (name (read-string "nil"))) "name of nil is nil")
-    (assert (nil? (name (read-string "7"))) "name of number is nil"))
+(.log console "name fn")
+
+(assert (identical? (name (read-string ":foo")) "foo")
+        "name of :foo is foo")
+(assert (identical? (name (read-string ":foo/bar")) "bar")
+        "name of :foo/bar is bar")
+(assert (identical? (name (read-string "foo")) "foo")
+        "name of foo is foo")
+(assert (identical? (name (read-string "foo/bar")) "bar")
+        "name of foo/bar is bar")
+(assert (identical? (name (read-string "\"foo\"")) "foo")
+        "name of \"foo\" is foo")
+(assert (nil? (name (read-string "()"))) "name of list is nil")
+(assert (nil? (name (read-string "[]"))) "name of vector is nil")
+(assert (nil? (name (read-string "{}"))) "name of dictionary is nil")
+(assert (nil? (name (read-string "nil"))) "name of nil is nil")
+(assert (nil? (name (read-string "7"))) "name of number is nil")
+
+(.log console "read simple list")
+
+(assert (equivalent?
+         (read-string "(foo bar)")
+         '(foo bar))
+        "(foo bar) -> (foo bar)")
+
+(.log console "read comma is a whitespace")
+
+(assert (equivalent?
+         (read-string "(foo, bar)")
+         '(foo bar))
+        "(foo, bar) -> (foo bar)")
+
+(.log console "read numbers")
+
+(assert (equivalent?
+         (read-string "(+ 1 2 0)")
+         '(+ 1 2 0))
+        "(+ 1 2 0) -> (+ 1 2 0)")
+
+(.log console "read keywords")
+(assert (equivalent?
+         (read-string "(foo :bar)")
+         '(foo :bar))
+        "(foo :bar) -> (foo :bar)")
+
+(.log console "read quoted list")
+(assert (equivalent?
+         (read-string "'(foo bar)")
+         '(quote (foo bar)))
+        "'(foo bar) -> (quote (foo bar))")
+
+(.log console "read vector")
+(assert (equivalent?
+         (read-string "(foo [bar :baz 2])")
+         '(foo [bar :baz 2]))
+        "(foo [bar :baz 2]) -> (foo [bar :baz 2])")
+
+(.log console "read special symbols")
+(assert (equivalent?
+         (read-string "(true false nil)")
+         '(true false nil))
+        "(true false nil) -> (true false nil)")
+
+(.log console "read chars")
+(assert (equivalent?
+         (read-string "(\\x \\y \\z)")
+         '("x" "y" "z"))
+        "(\\x \\y \\z) -> (\"x\" \"y\" \"z\")")
+
+(.log console "read strings")
+(assert (equivalent?
+         (read-string "(\"hello world\" \"hi \\n there\")")
+         '("hello world" "hi \n there"))
+        "strings are read precisely")
+
+(.log console "read deref")
+(assert (equivalent?
+         (read-string "(+ @foo 2)")
+         '(+ (deref foo) 2))
+        "(+ @foo 2) -> (+ (deref foo) 2)")
+
+(.log console "read unquote")
+
+(assert (equivalent?
+         (read-string "(~foo ~@bar ~(baz))")
+         '((unquote foo)
+           (unquote-splicing bar)
+           (unquote (baz))))
+        "(~foo ~@bar ~(baz)) -> ((unquote foo) (unquote-splicing bar) (unquote (baz))")
 
 
-  ("read simple list"
-    (deep-equal?
-      (read-string "(foo bar)")
-      (list (symbol "foo") (symbol "bar"))
-      "(foo bar) -> (foo bar)"))
+(assert (equivalent?
+         (read-string "(~@(foo bar))")
+         '((unquote-splicing (foo bar))))
+        "(~@(foo bar)) -> ((unquote-splicing (foo bar)))")
 
-  ("read comma is a whitespace"
-    (deep-equal?
-      (read-string "(foo, bar)")
-      (list (symbol "foo") (symbol "bar"))
-      "(foo, bar) -> (foo bar)"))
+(.log console "read function")
 
-  ("read numbers"
-    (deep-equal?
-      (read-string "(+ 1 2 0)")
-      (list (symbol "+") 1 2 0)
-      "(+ 1 2 0) -> (+ 1 2 0)"))
+(assert (equivalent?
+         (read-string "(defn List
+                      \"List type\"
+                      [head tail]
+                      (set! this.head head)
+                      (set! this.tail tail)
+                      (set! this.length (+ (.-length tail) 1))
+                      this)")
+         '(defn List
+            "List type"
+             [head tail]
+             (set! this.head head)
+             (set! this.tail tail)
+             (set! this.length (+ (.-length tail) 1))
+             this))
+        "function read correctly")
 
-  ("read keywords"
-    (deep-equal?
-      (read-string "(foo :bar)")
-      (list (symbol "foo") (keyword "bar"))
-      "(foo :bar) -> (foo :bar)"))
+(.log console "read comments")
+(assert (equivalent?
+         (read-string "; comment
+                      (program)")
+         '(program))
+        "comments are ignored")
 
+(assert (equivalent?
+         (read-string "(hello ;; world\n you)")
+         '(hello you)))
 
-  ("read quoted list"
-    (deep-equal?
-      (read-string "'(foo bar)")
-      (list quote (list (symbol "foo") (symbol "bar")))
-      "'(foo bar) -> (quote (foo bar))"))
+(.log console "clojurescript")
 
-  ("read vector"
-    (deep-equal?
-      (read-string "(foo [bar :baz 2])")
-      (list (symbol "foo") (array (symbol "bar") (keyword "baz") 2))
-      "(foo [bar :baz 2]) -> (foo [bar :baz 2])"))
+(assert (= 1 (reader/read-string "1")))
+(assert (= 2 (reader/read-string "#_nope 2")))
+(assert (= -1 (reader/read-string "-1")))
+(assert (= -1.5 (reader/read-string "-1.5")))
+(assert (equivalent? [3 4] (reader/read-string "[3 4]")))
+(assert (= "foo" (reader/read-string "\"foo\"")))
+(assert (equivalent? ':hello (reader/read-string ":hello")))
+(assert (= 'goodbye (reader/read-string "goodbye")))
+(assert (equivalent? '#{1 2 3} (reader/read-string "#{1 2 3}")))
+(assert (equivalent? '(7 8 9) (reader/read-string "(7 8 9)")))
+(assert (equivalent? '(deref foo) (reader/read-string "@foo")))
+(assert (equivalent? '(quote bar) (reader/read-string "'bar")))
+;; TODO: Implement `namespace` fn and proper namespace support ?
+;;(assert (= 'foo/bar (reader/read-string "foo/bar")))
+;;(assert (= ':foo/bar (reader/read-string ":foo/bar")))
+(assert (= \a (reader/read-string "\\a")))
+(assert (equivalent? {:tag 'String}
+                     (meta (reader/read-string "^String {:a 1}"))))
+;; TODO: In quoted sets both keys and values should remain quoted
+;; (assert (equivalent? [:a 'b '#{c {:d [:e :f :g]}}]
+;;                     (reader/read-string "[:a b #{c {:d [:e :f :g]}}]")))
+(assert (= nil (reader/read-string "nil")))
+(assert (= true (reader/read-string "true")))
+(assert (= false (reader/read-string "false")))
+(assert (= "string" (reader/read-string "\"string\"")))
+(assert (= "escape chars \t \r \n \\ \" \b \f"
+           (reader/read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\"")))
 
-  ("read special symbols"
-    (deep-equal?
-      (read-string "(true false nil)")
-      (list true false undefined)
-      "(true false nil) -> (true false undefined)"))
+;; queue literals
+(assert (equivalent? '(new PersistentQueue [])
+                     (reader/read-string "#queue []")))
+(assert (equivalent? '(new PersistentQueue [1])
+                     (reader/read-string "#queue [1]")))
+(assert (equivalent? '(new PersistentQueue [1 2])
+                     (reader/read-string "#queue [1 2]")))
 
-  ("read chars"
-    (deep-equal?
-      (read-string "(\\x \\y \\z)")
-      (list "x" "y" "z")
-      "(\\x \\y \\z) -> (\"x\" \"y\" \"z\")"))
+;; uuid literals
+(assert (equivalent? '(new UUID "550e8400-e29b-41d4-a716-446655440000")
+                     (reader/read-string "#uuid \"550e8400-e29b-41d4-a716-446655440000\"")))
 
-  ("read strings"
-    (deep-equal?
-      (read-string "(\"hello world\" \"hi \\n there\")")
-      (list "hello world" "hi \n there")
-      "strings are read precisely"))
+(let [assets
+      ["اختبار" ; arabic
+       "ทดสอบ" ; thai
+       "こんにちは" ; japanese hiragana
+       "你好" ; chinese traditional
+       "אַ גוט יאָר" ; yiddish
+       "cześć" ; polish
+       "привет" ; russian
+       "გამარჯობა" ; georgian
 
-  ("read deref"
-    (deep-equal?
-      (read-string "(+ @foo 2)")
-      (list (symbol "+") (list deref (symbol "foo")) 2)
-      "(+ @foo 2) -> (+ (deref foo) 2)"))
+       ;; RTL languages skipped below because tricky to insert
+       ;; ' and : at the "start"
 
-  ("read unquote"
-   (deep-equal?
-    (read-string "(~foo ~@bar ~(baz))")
-    (list (list unquote (symbol "foo"))
-          (list unquote-splicing (symbol "bar"))
-          (list unquote (list (symbol "baz"))))
-    "(~foo ~@bar ~(baz)) -> ((unquote foo) (unquote-splicing bar) (unquote (baz))")
-   (deep-equal?
-    (read-string "(~@(foo bar))")
-    (list (list unquote-splicing (list (symbol "foo") (symbol "bar"))))
-    "(~@(foo bar)) -> ((unquote-splicing (foo bar)))"))
+       'ทดสอบ
+       'こんにちは
+       '你好
+       'cześć
+       'привет
+       'გამარჯობა
 
-  ("read function"
-   (deep-equal?
-    (read-string "(defn List
-      \"List type\"
-      [head tail]
-      (set! this.head head)
-      (set! this.tail tail)
-      (set! this.length (+ (.-length tail) 1))
-      this)")
+       :ทดสอบ
+       :こんにちは
+       :你好
+       :cześć
+       :привет
+       :გამარჯობა
 
-    (list (symbol "defn") (symbol "List")
-        "List type"
-        (array  (symbol "head") (symbol "tail"))
-        (list (symbol "set!") (symbol "this.head") (symbol "head"))
-        (list (symbol "set!") (symbol "this.tail") (symbol "tail"))
-        (list (symbol "set!") (symbol "this.length")
-              (list (symbol "+") (list (symbol ".-length") (symbol "tail")) 1))
-        (symbol "this"))
-    "function read correctly"))
+       ;compound data
+       ;{:привет :ru "你好" :cn} // TODO: Implement serialized function
+       ]]
+  (.for-each assets
+             (fn [unicode]
+               (assert (equivalent? unicode
+                                    (read-string (str "\"" unicode "\"")))
+                       (str "Failed to read-string " unicode)))))
 
-  ("read comments"
-   (deep-equal?
-    (read-string "; comment
-                  (program)")
-    (list (symbol "program"))
-    "comments are ignored")
+; unicode error cases
+(let [unicode-errors
+      ["\"abc \\ua\"" ; truncated
+       "\"abc \\x0z ...etc\"" ; incorrect code
+       "\"abc \\u0g00 ..etc\"" ; incorrect code
+       ]]
+  (.for-each
+   unicode-errors
+   (fn [unicode-error]
+     (assert
+      (= :threw
+         (try
+           (reader/read-string unicode-error)
+           :failed-to-throw
+           (catch e :threw)))
+      (str "Failed to throw reader error for: " unicode-error)))))
 
-    (deep-equal?
-     (read-string "(hello ;; world\n you)")
-     (list (symbol "hello") (symbol "you"))))
-
-  ("clojurescript"
-    (assert (= 1 (read-string "1")) "1 -> 1")
-    (assert (= 2 (read-string "2")) "#_nope 2 -> 2")
-    (assert (= -1 (read-string "-1")) "-1 -> -1")
-
-    ;(assert (= (parse-float "-1.5") (read-string "-1.5")))
-    (deep-equal? (array 3 4) (read-string "[3 4]") "[3 4] -> [3 4]")
-    (assert (= "foo" (read-string "\"foo\"")) "\"foo\" -> \"foo\"")
-    (assert (= (keyword "hello") (read-string ":hello")) ":hello -> :hello")
-    (deep-equal? (symbol "goodbye") (read-string "goodbye") "goodbye -> goodbye")
-    (deep-equal? (list (symbol "set") 1 2 3) (read-string "#{1 2 3}")
-                 "#{1 2 3} -> (set 1 2 3)")
-    (deep-equal? (list 7 8 9) (read-string "(7 8 9)") "(7 8 9) -> (7 8 9)")
-    (deep-equal? (list deref (symbol "foo")) (read-string "@foo")
-                 "@foo -> (deref foo)")
-    (deep-equal? (list quote (symbol "bar")) (read-string "'bar")
-                 "'bar -> (quote bar)")
-    (deep-equal? (symbol "foo" "bar") (read-string "foo/bar")
-                 "foo/bar -> foo/bar")
-    (assert (= "a" (read-string "\\a")) "\\a -> \"a\"")
-    (deep-equal? (dictionary (keyword "tag") (symbol "String"))
-                 (meta (read-string "^String {:a 1}"))
-                 "(meta ^String {:a 1}) -> {:tag String}")
-    (deep-equal? (array (keyword "a")
-                        (symbol "b")
-                        (list (symbol "set") (symbol "c")
-                              (dictionary (keyword "d")
-                                          (array (keyword "e")
-                                                 (keyword "f")
-                                                 (keyword "g")))))
-                 (read-string "[:a b #{c {:d [:e :f :g]}}]")
-                 "[:a b #{c {:d [:e :f :g]}}] -> [:a b (set c {:d [:e :f :g]})]")
-    (assert (= (keyword "foo" "bar") (read-string ":foo/bar"))
-            ":foo/bar -> :foo/bar")
-    (assert (= undefined (read-string "nil")) "nil -> undefined")
-    (assert (= true (read-string "true")) "true -> true")
-    (assert (= false (read-string "false")) "false -> false")
-    (assert (= "string" (read-string "\"string\"")) "\"string\" -> \"string\"")
-
-    (assert (= "escape chars \t \r \n \\ \" \b \f"
-               (read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\""))
-            "escape chars read properly")
-
-    (deep-equal? (list (symbol "new") (symbol "PersistentQueue") (array))
-                 (read-string "#queue []")
-                 "#queue [] -> (new PersistentQueue [])")
-
-    (deep-equal? (list (symbol "new") (symbol "PersistentQueue") (array 1))
-                 (read-string "#queue [1]")
-                 "#queue [1] -> (new PersistentQueue [1])")
-
-    (deep-equal? (list (symbol "new") (symbol "UUID")
-                       "550e8400-e29b-41d4-a716-446655440000")
-                 (read-string "#uuid \"550e8400-e29b-41d4-a716-446655440000\"")
-                 (str "#uuid \"550e8400-e29b-41d4-a716-446655440000\""
-                      " -> "
-                      "(new UUID \"550e8400-e29b-41d4-a716-446655440000\")"))))
