@@ -816,7 +816,7 @@
 
 (install-special (symbol "::compile:string")
   (fn [form]
-    (set! string (first form))
+    (def string (first form))
     (set! string (.replace string (RegExp "\\\\" "g") "\\\\"))
     (set! string (.replace string (RegExp "\n" "g") "\\n"))
     (set! string (.replace string (RegExp "\r" "g") "\\r"))
