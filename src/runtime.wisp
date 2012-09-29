@@ -67,11 +67,10 @@
 (defn map-dictionary
   "Maps dictionary values by applying `f` to each one"
   [source f]
-  (dictionary
-    (.reduce (.keys Object source)
-            (fn [target key]
-                (set! (get target key) (f (get source key))))
-            {})))
+  (.reduce (.keys Object source)
+           (fn [target key]
+              (set! (get target key) (f (get source key)))
+              target) {}))
 
 (def to-string Object.prototype.to-string)
 
