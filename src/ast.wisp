@@ -1,4 +1,4 @@
-(import [list list? first count] "./list")
+(import [list? first count] "./list")
 (import [nil? vector? number? string? boolean? object? str] "./runtime")
 
 (defn with-meta

@@ -1,9 +1,7 @@
-(import [list list? count empty? first second third rest
-         cons rest] "./list")
+(import [list list? count empty? first second third rest cons rest] "./list")
 (import [odd? dictionary merge keys nil? inc dec vector? string? object?
          re-pattern re-matches re-find str] "./runtime")
-(import [symbol? symbol keyword? keyword
-         meta with-meta name] "./ast")
+(import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
 
 (defn PushbackReader
   "StringPushbackReader"
@@ -542,14 +540,14 @@
 (defn ^:private read-uuid
   [uuid]
   (if (string? uuid)
-    (list (symbol "new") (symbol "UUID") uuid)
+    `(UUID. ~uuid)
     (reader-error
      nil "UUID literal expects a string as its representation.")))
 
 (defn ^:private read-queue
   [items]
   (if (vector? items)
-    (list (symbol "new") (symbol  "PersistentQueue") items)
+    `(PersistentQueue. ~items)
     (reader-error
      nil "Queue literal expects a vector for its elements.")))
 

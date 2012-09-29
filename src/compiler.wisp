@@ -147,8 +147,8 @@
         (apply-unquoted-form fn-name form)))
 
   (loop [nodes form
-         slices (list)
-         acc (list)]
+         slices '()
+         acc '()]
    (if (empty? nodes)
        (reverse
         (if (empty? acc)
@@ -161,7 +161,7 @@
                          (if (empty? acc)
                              slices
                              (cons (make-splice (reverse acc)) slices)))
-                   (list))
+                   '())
             (recur (rest nodes)
                    slices
                    (cons node acc)))))))
@@ -245,26 +245,11 @@
   ""
   [form]
   (cond
-   (list? form)
-    (compile
-      (syntax-quote-split
-        (symbol "concat-list")
-        (symbol "list")
-        form))
+   (list? form) (compile (syntax-quote-split 'concat-list 'list form))
    (vector? form)
-    (compile
-      (syntax-quote-split
-        (symbol "concat-vector")
-        (symbol "vector")
-        (apply list form)))
-   (dictionary? form)
-    (compile
-      (syntax-quote-split
-        (symbol "merge")
-        (symbol "dictionary")
-        form))
-   :else
-    (compile-object form)))
+    (compile (syntax-quote-split 'concat-vector 'vector (apply list form)))
+   (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
+   :else (compile-object form)))
 
 (defn compile
   "compiles given form"
@@ -540,7 +525,7 @@
 (defn define-bindings
   "Returns list of binding definitions"
   [form]
-  (loop [defs (list)
+  (loop [defs '()
          bindings form]
     (if (= (count bindings) 0)
       (reverse defs)
@@ -602,9 +587,9 @@
   propagates out of the function. Before returning, normally or abnormally,
   any finally exprs will be evaluated for their side effects."
   [form]
-  (loop [try-exprs (list)
-         catch-exprs (list)
-         finally-exprs (list)
+  (loop [try-exprs '()
+         catch-exprs '()
+         finally-exprs '()
          exprs (reverse form)]
     (if (empty? exprs)
       (if (empty? catch-exprs)
@@ -727,7 +712,7 @@
   "Rebinds given bindings to a given names in a form of
   (set! foo bar) expressions"
   [names values]
-  (loop [result (list)
+  (loop [result '()
          names names
          values values]
     (if (empty? names)

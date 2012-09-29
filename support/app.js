@@ -1415,13 +1415,13 @@ var readFromString = function readFromString(source, uri) {
 
 var readUuid = function readUuid(uuid) {
   return isString(uuid) ?
-    list(symbol("new"), symbol("UUID"), uuid) :
+    list("﻿UUID.", uuid) :
     readerError(void(0), "UUID literal expects a string as its representation.");
 };
 
 var readQueue = function readQueue(items) {
   return isVector(items) ?
-    list(symbol("new"), symbol("PersistentQueue"), items) :
+    list("﻿PersistentQueue.", items) :
     readerError(void(0), "Queue literal expects a vector for its elements.");
 };
 
@@ -1443,8 +1443,7 @@ exports.read = read;
 
 require.define("/lib/ast.js",function(require,module,exports,__dirname,__filename,process){var count = (require("./list")).count;
 var first = (require("./list")).first;
-var isList = (require("./list")).isList;
-var list = (require("./list")).list;;
+var isList = (require("./list")).isList;;
 
 var str = (require("./runtime")).str;
 var isObject = (require("./runtime")).isObject;
@@ -1770,11 +1769,11 @@ var compileKeywordReference = function compileKeywordReference(form) {
 
 var compileSyntaxQuoted = function compileSyntaxQuoted(form) {
   return isList(form) ?
-    compile(syntaxQuoteSplit(symbol("concat-list"), symbol("list"), form)) :
+    compile(syntaxQuoteSplit("﻿concat-list", "﻿list", form)) :
   isVector(form) ?
-    compile(syntaxQuoteSplit(symbol("concat-vector"), symbol("vector"), list.apply(list, form))) :
+    compile(syntaxQuoteSplit("﻿concat-vector", "﻿vector", list.apply(list, form))) :
   isDictionary(form) ?
-    compile(syntaxQuoteSplit(symbol("merge"), symbol("dictionary"), form)) :
+    compile(syntaxQuoteSplit("﻿merge", "﻿dictionary", form)) :
   "else" ?
     compileObject(form) :
     void(0);
