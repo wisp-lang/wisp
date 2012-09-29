@@ -44,21 +44,14 @@
 (defn make-macro
   "Makes macro"
   [pattern body]
-  (let [x (gensym)
-        program (compile
-                  (macroexpand
-                    ; `(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))
-                    (cons 'fn
-                      (cons pattern body))))
+  (let [form (gensym)
+        macro-fn `(fn [~form]
+                    (apply (fn ~pattern ~@body)
+                           (list-to-vector (rest ~form))))]
+
         ;; compile the macro into native code and use the host's native
         ;; eval to eval it into a function.
-        macro (eval (str "(" program ")"))
-        ]
-    (fn [form]
-      (try
-        (apply macro (list-to-vector (rest form)))
-        (catch error
-          (throw (compiler-error form error.message)))))))
+        (eval (str "(" (compile (macroexpand macro-fn)) ")"))))
 
 
 ;; system macros

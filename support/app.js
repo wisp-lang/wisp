@@ -1614,17 +1614,9 @@ var isMacro = function isMacro(name) {
 
 var makeMacro = function makeMacro(pattern, body) {
   return (function() {
-    var x = gensym();
-    var program = compile(macroexpand(cons("﻿fn", cons(pattern, body))));
-    var macro = eval(str("(", program, ")"));
-    return function(form) {
-      return (function() {
-      try {
-        return macro.apply(macro, listToVector(rest(form)));
-      } catch (error) {
-        return (function() { throw compilerError(form, error.message); })();
-      }})();
-    };
+    var form = gensym();
+    var macroFn = list("﻿fn", [form], list("﻿apply", concatList(list("﻿fn", pattern), body), list("﻿list-to-vector", list("﻿rest", form))));
+    return eval(str("(", compile(macroexpand(macroFn)), ")"));
   })();
 };
 
