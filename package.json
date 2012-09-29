@@ -30,10 +30,7 @@
     "wisp": "./bin/wisp.js"
   },
   "scripts": {
-    "prepublish": "make",
+    "prepublish": "make all",
     "test": "./bin/wisp.js ./test/test.wisp"
-  },
-  "devDependencies": {
-    "test": ">=0.4.4"
   }
 }
