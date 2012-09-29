@@ -2,4 +2,4 @@
 (import "./ast")
 (import "./runtime")
 (import "./reader")
-;(import "./compiler")
+(import "./compiler")
