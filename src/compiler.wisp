@@ -192,9 +192,16 @@
     (boolean? form) (compile (list (symbol "::compile:boolean") form))
     (nil? form) (compile (list (symbol "::compile:nil") form))
     (re-pattern? form) (compile-re-pattern form)
-    (vector? form) (compile (apply-form (symbol "vector") (apply list form) quoted?))
-    (list? form) (compile (apply-form (symbol "list") form quoted?))
-    (dictionary? form) (compile-dictionary form)))
+    (vector? form) (compile (apply-form (symbol "vector")
+                                        (apply list form)
+                                        quoted?))
+    (list? form) (compile (apply-form (symbol "list")
+                                      form
+                                      quoted?))
+    (dictionary? form) (compile-dictionary
+                        (if quoted?
+                          (map-dictionary form (fn [x] (list quote x)))
+                          form))))
 
 (defn compile-reference
   "Translates references from clojure convention to JS:
