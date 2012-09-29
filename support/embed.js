@@ -31,23 +31,23 @@ var updatePreview = function updatePreview(editor) {
 };
 
 var input = CodeMirror(document.getElementById("input"), {
-  lineNumbers: true,
-  autoClearEmptyLines: true,
-  tabSize: 2,
-  indentWithTabs: false,
-  electricChars: true,
-  mode: "clojure",
-  theme: "ambiance",
-  autofocus: true,
-  fixedGutter: true,
-  matchBrackets: true,
-  value: localStorage.buffer || ((document.getElementById("examples")).innerHTML),
-  onChange: updatePreview,
-  onCursorActivity: function() {
+  "lineNumbers": true,
+  "autoClearEmptyLines": true,
+  "tabSize": 2,
+  "indentWithTabs": false,
+  "electricChars": true,
+  "mode": "clojure",
+  "theme": "ambiance",
+  "autofocus": true,
+  "fixedGutter": true,
+  "matchBrackets": true,
+  "value": localStorage.buffer || ((document.getElementById("examples")).innerHTML),
+  "onChange": updatePreview,
+  "onCursorActivity": function() {
     input.setLineClass(hlLine, null, null);
     return hlLine = input.setLineClass((input.getCursor()).line, null, "activeline");
   },
-  onGutterClick: function() {
+  "onGutterClick": function() {
     return (function() {
       var output = document.getElementById("output");
       var input = document.getElementById("input");
@@ -62,12 +62,12 @@ var input = CodeMirror(document.getElementById("input"), {
 var hlLine = input.setLineClass(0, void(0), "activeline");
 
 var output = CodeMirror(document.getElementById("output"), {
-  lineNumbers: true,
-  fixedGutter: true,
-  matchBrackets: true,
-  mode: "javascript",
-  theme: "ambiance",
-  readOnly: true
+  "lineNumbers": true,
+  "fixedGutter": true,
+  "matchBrackets": true,
+  "mode": "javascript",
+  "theme": "ambiance",
+  "readOnly": true
 });
 
 setTimeout(updatePreview, 1000, input)

@@ -593,8 +593,8 @@ var vals = function vals(dictionary) {
 var merge = function merge() {
   return Object.create(Object.prototype, Array.prototype.slice.call(arguments).reduce(function(descriptor, dictionary) {
     isObject(dictionary) ?
-      each(Object.keys(dictionary), function(name) {
-        return descriptor[name] = Object.getOwnPropertyDescriptor(dictionary, name);
+      Object.keys(dictionary).forEach(function(key) {
+        return descriptor[key] = Object.getOwnPropertyDescriptor(dictionary, key);
       }) :
       void(0);
     return descriptor;
@@ -606,9 +606,10 @@ var isContainsVector = function isContainsVector(vector, element) {
 };
 
 var mapDictionary = function mapDictionary(source, f) {
-  return dictionary(Object.keys(source).reduce(function(target, key) {
-    return target[key] = f(source[key]);
-  }, {}));
+  return Object.keys(source).reduce(function(target, key) {
+    target[key] = f(source[key]);
+    return target;
+  }, {});
 };
 
 var toString = Object.prototype.toString;
@@ -1251,11 +1252,15 @@ var readKeyword = function readKeyword(reader, initch) {
 
 var desugarMeta = function desugarMeta(f) {
   return isSymbol(f) ?
-    dictionary(keyword("tag"), f) :
+    {
+      "tag": f
+    } :
   isString(f) ?
-    dictionary(keyword("tag"), f) :
+    {
+      "tag": f
+    } :
   isKeyword(f) ?
-    dictionary(f, true) :
+    dictionary(name(f), true) :
   "else" ?
     f :
     void(0);
@@ -1632,7 +1637,7 @@ var isDictionary = (require("./runtime")).isDictionary;
 var isOdd = (require("./runtime")).isOdd;;
 
 var isSelfEvaluating = function isSelfEvaluating(form) {
-  return (isNumber(form)) || ((isString(form)) && (!(isSymbol(form)))) || (isBoolean(form)) || (isNil(form)) || (isKeyword(form)) || (isRePattern(form));
+  return (isNumber(form)) || ((isString(form)) && (!(isSymbol(form))) && (!(isKeyword(form)))) || (isBoolean(form)) || (isNil(form)) || (isRePattern(form));
 };
 
 var __macros__ = {};
@@ -1658,8 +1663,7 @@ var makeMacro = function makeMacro(pattern, body) {
       return (function() {
       try {
         return macro.apply(macro, listToVector(rest(form)));
-      } catch (Error) {
-        error;
+      } catch (error) {
         return (function() { throw compilerError(form, error.message); })();
       }})();
     };
@@ -1776,7 +1780,11 @@ var compileObject = function compileObject(form, isQuoted) {
   isList(form) ?
     compile(applyForm(symbol("list"), form, isQuoted)) :
   isDictionary(form) ?
-    compileDictionary(form) :
+    compileDictionary(isQuoted ?
+      mapDictionary(form, function(x) {
+        return list(quote, x);
+      }) :
+      form) :
     void(0);
 };
 
@@ -1797,6 +1805,10 @@ var compileReference = function compileReference(form) {
   return id;
 };
 
+var compileKeywordReference = function compileKeywordReference(form) {
+  return str("\"", name(form), "\"");
+};
+
 var compileSyntaxQuoted = function compileSyntaxQuoted(form) {
   return isList(form) ?
     compile(syntaxQuoteSplit(symbol("concat-list"), symbol("list"), form)) :
@@ -1814,6 +1826,8 @@ var compile = function compile(form) {
     compileObject(form) :
   isSymbol(form) ?
     compileReference(form) :
+  isKeyword(form) ?
+    compileKeywordReference(form) :
   isVector(form) ?
     compileObject(form) :
   isDictionary(form) ?
@@ -1932,7 +1946,7 @@ var compileDictionary = function compileDictionary(form) {
         body :
         (body = str(isNil(body) ?
           "" :
-          str(body, ",\n"), compileTemplate(list("~{}: ~{}", name(first(names)), compile(macroexpand(form[first(names)]))))), names = rest(names), loop);
+          str(body, ",\n"), compileTemplate(list("~{}: ~{}", compile(first(names)), compile(macroexpand(form[first(names)]))))), names = rest(names), loop);
       };
       return recur;
     })(void(0), keys(form));
@@ -2185,11 +2199,7 @@ installSpecial(symbol("::raw"), compileRaw);
 installSpecial(symbol("::compile:invoke"), compileFnInvoke);
 
 installSpecial(symbol("::compile:keyword"), function(form) {
-  return str("\"", name(first(form)), "\"");
-});
-
-installSpecial(symbol("::compile:reference"), function(form) {
-  return name(compileReference(first(form)));
+  return str("\"", "꞉", name(first(form)), "\"");
 });
 
 installSpecial(symbol("::compile:symbol"), function(form) {
@@ -2211,7 +2221,7 @@ installSpecial(symbol("::compile:boolean"), function(form) {
 });
 
 installSpecial(symbol("::compile:string"), function(form) {
-  string = first(form);
+  var string = first(form);
   string = string.replace(RegExp("\\\\", "g"), "\\\\");
   string = string.replace(RegExp("\n", "g"), "\\n");
   string = string.replace(RegExp("\r", "g"), "\\r");
@@ -2314,7 +2324,7 @@ var defmacroFromString = function defmacroFromString(macroSource) {
   return compileProgram(macroexpand(readFromString(str("(do ", macroSource, ")"))));
 };
 
-defmacroFromString("\n(defmacro cond\n  \"Takes a set of test/expr pairs. It evaluates each test one at a\n  time.  If a test returns logical true, cond evaluates and returns\n  the value of the corresponding expr and doesn't evaluate any of the\n  other tests or exprs. (cond) returns nil.\"\n  ;{:added \"1.0\"}\n  [clauses]\n  (set! clauses (apply list arguments))\n  (if (not (empty? clauses))\n    (list 'if (first clauses)\n          (if (empty? (rest clauses))\n            (throw (Error \"cond requires an even number of forms\"))\n            (second clauses))\n          (cons 'cond (rest (rest clauses))))))\n\n(defmacro defn\n   \"Same as (def name (fn [params* ] exprs*)) or\n   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added\n   to the var metadata\"\n  ;{:added \"1.0\", :special-form true ]}\n  [name]\n  (def body (apply list (Array.prototype.slice.call arguments 1)))\n  `(def ~name (fn ~name ~@body)))\n\n(defmacro import\n  \"Helper macro for importing node modules\"\n  [imports path]\n  (if (nil? path)\n    `(require ~imports)\n    (if (symbol? imports)\n      `(def ~imports (require ~path))\n      (loop [form '() names imports]\n        (if (empty? names)\n          `(do* ~@form)\n          (let [alias (first names)\n                id (symbol (str \".-\" (name alias)))]\n            (recur (cons `(def ~alias\n                            (~id (require ~path))) form)\n                   (rest names))))))))\n\n(defmacro export\n  \"Helper macro for exporting multiple / single value\"\n  [& names]\n  (if (empty? names)\n    nil\n    (if (empty? (rest names))\n      `(set! module.exports ~(first names))\n      (loop [form '() exports names]\n        (if (empty? exports)\n          `(do* ~@form)\n          (recur (cons `(set!\n                         (~(symbol (str \".-\" (name (first exports))))\n                           exports)\n                         ~(first exports))\n                       form)\n               (rest exports)))))))\n\n(defmacro assert\n  \"Evaluates expr and throws an exception if it does not evaluate to\n  logical true.\"\n  {:added \"1.0\"}\n  [x message]\n  (if (nil? message)\n    `(assert ~x \"\")\n    `(if (not ~x)\n       (throw (Error. ~(str \"Assert failed: \" message \"\n\" x))))))\n");
+defmacroFromString("\n(defmacro cond\n  \"Takes a set of test/expr pairs. It evaluates each test one at a\n  time.  If a test returns logical true, cond evaluates and returns\n  the value of the corresponding expr and doesn't evaluate any of the\n  other tests or exprs. (cond) returns nil.\"\n  ;{:added \"1.0\"}\n  [clauses]\n  (set! clauses (apply list arguments))\n  (if (not (empty? clauses))\n    (list 'if (first clauses)\n          (if (empty? (rest clauses))\n            (throw (Error \"cond requires an even number of forms\"))\n            (second clauses))\n          (cons 'cond (rest (rest clauses))))))\n\n(defmacro defn\n   \"Same as (def name (fn [params* ] exprs*)) or\n   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added\n   to the var metadata\"\n  ;{:added \"1.0\", :special-form true ]}\n  [name]\n  (def body (apply list (Array.prototype.slice.call arguments 1)))\n  `(def ~name (fn ~name ~@body)))\n\n(defmacro import\n  \"Helper macro for importing node modules\"\n  [imports path]\n  (if (nil? path)\n    `(require ~imports)\n    (if (symbol? imports)\n      `(def ~imports (require ~path))\n      (loop [form '() names imports]\n        (if (empty? names)\n          `(do* ~@form)\n          (let [alias (first names)\n                id (symbol (str \".-\" (name alias)))]\n            (recur (cons `(def ~alias\n                            (~id (require ~path))) form)\n                   (rest names))))))))\n\n(defmacro export\n  \"Helper macro for exporting multiple / single value\"\n  [& names]\n  (if (empty? names)\n    nil\n    (if (empty? (rest names))\n      `(set! module.exports ~(first names))\n      (loop [form '() exports names]\n        (if (empty? exports)\n          `(do* ~@form)\n          (recur (cons `(set!\n                         (~(symbol (str \".-\" (name (first exports))))\n                           exports)\n                         ~(first exports))\n                       form)\n               (rest exports)))))))\n\n(defmacro assert\n  \"Evaluates expr and throws an exception if it does not evaluate to\n  logical true.\"\n  {:added \"1.0\"}\n  [x message]\n  (if (nil? message)\n    `(assert ~x \"\")\n    `(if (not ~x)\n       (throw (Error. (.concat \"Assert failed: \" ~message \"\n\" '~x))))))\n");
 
 exports.macroexpand1 = macroexpand1;
 exports.macroexpand = macroexpand;
@@ -2356,23 +2366,23 @@ var updatePreview = function updatePreview(editor) {
 };
 
 var input = CodeMirror(document.getElementById("input"), {
-  lineNumbers: true,
-  autoClearEmptyLines: true,
-  tabSize: 2,
-  indentWithTabs: false,
-  electricChars: true,
-  mode: "clojure",
-  theme: "ambiance",
-  autofocus: true,
-  fixedGutter: true,
-  matchBrackets: true,
-  value: localStorage.buffer || ((document.getElementById("examples")).innerHTML),
-  onChange: updatePreview,
-  onCursorActivity: function() {
+  "lineNumbers": true,
+  "autoClearEmptyLines": true,
+  "tabSize": 2,
+  "indentWithTabs": false,
+  "electricChars": true,
+  "mode": "clojure",
+  "theme": "ambiance",
+  "autofocus": true,
+  "fixedGutter": true,
+  "matchBrackets": true,
+  "value": localStorage.buffer || ((document.getElementById("examples")).innerHTML),
+  "onChange": updatePreview,
+  "onCursorActivity": function() {
     input.setLineClass(hlLine, null, null);
     return hlLine = input.setLineClass((input.getCursor()).line, null, "activeline");
   },
-  onGutterClick: function() {
+  "onGutterClick": function() {
     return (function() {
       var output = document.getElementById("output");
       var input = document.getElementById("input");
@@ -2387,12 +2397,12 @@ var input = CodeMirror(document.getElementById("input"), {
 var hlLine = input.setLineClass(0, void(0), "activeline");
 
 var output = CodeMirror(document.getElementById("output"), {
-  lineNumbers: true,
-  fixedGutter: true,
-  matchBrackets: true,
-  mode: "javascript",
-  theme: "ambiance",
-  readOnly: true
+  "lineNumbers": true,
+  "fixedGutter": true,
+  "matchBrackets": true,
+  "mode": "javascript",
+  "theme": "ambiance",
+  "readOnly": true
 });
 
 setTimeout(updatePreview, 1000, input)
