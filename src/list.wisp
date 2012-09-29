@@ -96,7 +96,7 @@
     (loop [items []
            source sequence]
       (if (empty? source)
-        (.apply list list items)
+        (apply list items)
         (recur (.concat [(first source)] items)
                (rest source))))
     (.reverse sequence)))
