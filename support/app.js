@@ -501,18 +501,13 @@ var reduceList = function reduceList(form, f, initial) {
     form);
 };
 
-var concatList = function concatList(left, right) {
-  return (function loop(result, prefix) {
-    var recur = loop;
-    while (recur === loop) {
-      recur = isEmpty(prefix) ?
-      result :
-      (result = cons(first(prefix), result), prefix = rest(prefix), loop);
-    };
-    return recur;
-  })(isList(right) ?
-    right :
-    list.apply(list, right), reverse(left));
+var concatList = function concatList() {
+  var sequences = Array.prototype.slice.call(arguments, 0);
+  return reverse(sequences.reduce(function(result, sequence) {
+    return reduceList(sequence, function(result, item) {
+      return cons(item, result);
+    }, result);
+  }, list()));
 };
 
 var listToVector = function listToVector(source) {
@@ -1574,6 +1569,10 @@ var isList = (require("./list")).isList;
 var count = (require("./list")).count;
 var isEmpty = (require("./list")).isEmpty;;
 
+var take = (require("./sequence")).take;
+var filter = (require("./sequence")).filter;
+var map = (require("./sequence")).map;;
+
 var str = (require("./runtime")).str;
 var dec = (require("./runtime")).dec;
 var inc = (require("./runtime")).inc;
@@ -1783,6 +1782,8 @@ var compile = function compile(form) {
         compileSyntaxQuoted(second(form)) :
       isSpecial(head) ?
         executeSpecial(head, form) :
+      isKeyword(head) ?
+        compile(list("﻿get", second(form), head)) :
       "else" ?
         (function() {
           return !((isSymbol(head)) || (isList(head))) ?
@@ -2314,11 +2315,260 @@ installMacro("﻿import", function(imports, path) {
     })(list(), imports);
 });
 
+var isVariadic = function isVariadic(params) {
+  return params.indexOf("﻿&") >= 0;
+};
+
+var overloadArity = function overloadArity(params) {
+  return isVariadic() ?
+    params.indexOf("﻿&") :
+    params.length;
+};
+
+var analyzeOverloadedFn = function analyzeOverloadedFn(name, doc, attrs, overloads) {
+  return map(function(overload) {
+    return (function() {
+      var params = first(overload);
+      var variadic = isVariadic(params);
+      var fixedArity = variadic ?
+        (count(params)) - 2 :
+        count(params);
+      return {
+        "variadic": variadic,
+        "rest": isVariadic ?
+          params[dec(count(params))] :
+          void(0),
+        "fixed-arity": fixedArity,
+        "params": take(fixedArity, params),
+        "body": rest(overload)
+      };
+    })();
+  }, overloads);
+};
+
+var compileOverloadedFn = function compileOverloadedFn(name, doc, attrs, overloads) {
+  return (function() {
+    var methods = analyzeOverloadedFn(name, doc, attrs, overloads);
+    var fixedMethods = filter(function(method) {
+      return !(method["variadic"]);
+    }, methods);
+    var variadic = first(filter(function(method) {
+      return method["variadic"];
+    }, methods));
+    var names = reduceList(methods, function(a, b) {
+      return count(a) > count(b["params"]) ?
+        a :
+        b["params"];
+    }, []);
+    return list("﻿fn", name, doc, attrs, names, list("﻿raw*", compileSwitch("﻿arguments.length", map(function(method) {
+      return cons(method["fixed-arity"], list("﻿raw*", compileFnBody(concatList(compileRebind(names, method["params"]), method["body"]))));
+    }, fixedMethods), isNil(variadic) ?
+      list("﻿throw", list("﻿Error", "Invalid arity")) :
+      list("﻿raw*", compileFnBody(concatList(compileRebind(cons(list("﻿Array.prototype.slice.call", "﻿arguments", variadic["fixed-arity"]), names), cons(variadic["rest"], variadic["params"])), variadic["body"]))))), void(0));
+  })();
+};
+
+var compileRebind = function compileRebind(bindings, names) {
+  return (function loop(form, bindings, names) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = isEmpty(names) ?
+      reverse(form) :
+      (form = first(names) === first(bindings) ?
+        form :
+        cons(list("﻿def", first(names), first(bindings)), form), bindings = rest(bindings), names = rest(names), loop);
+    };
+    return recur;
+  })(list(), bindings, names);
+};
+
+var compileSwitchCases = function compileSwitchCases(cases) {
+  return reduceList(cases, function(form, caseExpression) {
+    return str(form, compileTemplate(list("case ~{}:\n  ~{}\n", compile(macroexpand(first(caseExpression))), compile(macroexpand(rest(caseExpression))))));
+  }, "");
+};
+
+var compileSwitch = function compileSwitch(value, cases, defaultCase) {
+  return compileTemplate(list("switch (~{}) {\n  ~{}\n  default:\n    ~{}\n}", compile(macroexpand(value)), compileSwitchCases(cases), compile(macroexpand(defaultCase))));
+};
+
+installMacro("﻿fn*", function(name, doc, attrs) {
+  var body = Array.prototype.slice.call(arguments, 3);
+  return isVector(first(body)) ?
+    concatList(list("﻿fn", name, doc, attrs), body) :
+    compileOverloadedFn(name, doc, attrs, body);
+});
+
 exports.macroexpand1 = macroexpand1;
 exports.macroexpand = macroexpand;
 exports.compileProgram = compileProgram;
 exports.compile = compile;
 exports.isSelfEvaluating = isSelfEvaluating;
+});
+
+require.define("/lib/sequence.js",function(require,module,exports,__dirname,__filename,process){var dec = (require("./runtime")).dec;
+var isVector = (require("./runtime")).isVector;;
+
+var reverse = (require("./list")).reverse;
+var cons = (require("./list")).cons;
+var list = (require("./list")).list;
+var isEmpty = (require("./list")).isEmpty;;
+
+var reverse = function reverse(sequence) {
+  return isList(sequence) ?
+    (function loop(items, source) {
+      var recur = loop;
+      while (recur === loop) {
+        recur = isEmpty(source) ?
+        list.apply(list, items) :
+        (items = [first(source)].concat(items), source = rest(source), loop);
+      };
+      return recur;
+    })([], sequence) :
+    sequence.reverse();
+};
+
+var map = function map(f, sequence) {
+  return isVector(sequence) ?
+    mapVector(f, sequence) :
+    mapList(f, sequence);
+};
+
+var mapVector = function mapVector(f, sequence) {
+  return sequence.map(f);
+};
+
+var mapList = function mapList(f, sequence) {
+  return (function loop(result, items) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = isEmpty(items) ?
+      reverse(result) :
+      (result = cons(f(first(items), result), rest(items)), items = void(0), loop);
+    };
+    return recur;
+  })(list(), sequence);
+};
+
+var filter = function filter(isF, sequence) {
+  return isVector(sequence) ?
+    filterVector(isF, sequence) :
+    filterList(isF, sequence);
+};
+
+var filterVector = function filterVector(isF, vector) {
+  return vector.filter(isF);
+};
+
+var filterList = function filterList(isF, list) {
+  return (function loop(result, items) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = isEmpty(items) ?
+      reverse(result) :
+      (result = isF(first(items)) ?
+        cons(first(items), result) :
+        result, items = rest(items), loop);
+    };
+    return recur;
+  })(list(), list);
+};
+
+var take = function take(n, sequence) {
+  return isVector(sequence) ?
+    takeVector(n, sequence) :
+    takeList(n, sequence);
+};
+
+var takeVector = function takeVector(n, vector) {
+  return vector.slice(0, n);
+};
+
+var takeList = function takeList(n, list) {
+  return (function loop(taken, items, n) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = (n == 0) || (isEmpty(items)) ?
+      reverse(taken) :
+      (taken = cons(first(items), taken), items = rest(items), n = dec(n), loop);
+    };
+    return recur;
+  })(list(), list, n);
+};
+
+var reduce = function reduce(f, initial, sequence) {
+  return isNil(sequence) ?
+    reduce(f, void(0), sequence) :
+  isVector(sequence) ?
+    reduceVector(f, initial, sequence) :
+    reduceList(f, initial, sequence);
+};
+
+var reduceVector = function reduceVector(f, initial, sequence) {
+  return isNil(initial) ?
+    sequence.reduce(f) :
+    sequence.reduce(f, initial);
+};
+
+var reduceList = function reduceList(f, initial, sequence) {
+  return (function loop(result, items) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = isEmpty(items) ?
+      result :
+      (result = f(result, first(items)), items = rest(items), loop);
+    };
+    return recur;
+  })(isNil(initial) ?
+    first(form) :
+    initial, isNil(initial) ?
+    rest(form) :
+    form);
+};
+
+var count = function count(sequence) {
+  return sequence.length;
+};
+
+var isEmpty = function isEmpty(sequence) {
+  return count(sequence) == 0;
+};
+
+var first = function first(sequence) {
+  return isList(sequence) ?
+    sequence.head :
+    sequence[0];
+};
+
+var second = function second(sequence) {
+  return isList(sequence) ?
+    first(rest(sequence)) :
+    sequence[1];
+};
+
+var third = function third(sequence) {
+  return isList(sequence) ?
+    first(rest(rest(sequence))) :
+    sequence[2];
+};
+
+var rest = function rest(sequence) {
+  return isList(sequence) ?
+    sequence.tail :
+    sequence.slice(1);
+};
+
+exports.rest = rest;
+exports.third = third;
+exports.second = second;
+exports.first = first;
+exports.count = count;
+exports.isEmpty = isEmpty;
+exports.reverse = reverse;
+exports.take = take;
+exports.reduce = reduce;
+exports.filter = filter;
+exports.map = map;
 });
 
 require.define("/support/embed.js",function(require,module,exports,__dirname,__filename,process){var rest = (require("../lib/list")).rest;;

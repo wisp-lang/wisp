@@ -3,6 +3,7 @@
          unquote? unquote-splicing? quote? syntax-quote? name gensym] "./ast")
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
+(import [map filter take] "./sequence")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
          map-dictionary string? number? vector? boolean?
          true? false? nil? re-pattern? inc dec str] "./runtime")
@@ -953,70 +954,6 @@
 ;; - declare
 
 
-
-
-(defn map
-  [f sequence]
-  (if (vector? sequence)
-    (map-vector f sequence)
-    (map-list2 f sequence)))
-
-(defn map-vector
-  [f sequence]
-  (.map sequence f))
-
-
-(defn map-list2
-  [f sequence]
-  (loop [result '()
-         items sequence]
-    (if (empty? items)
-      (reverse result)
-      (recur (cons (f (first items) result) (rest items))))))
-
-(defn filter
-  [f sequence]
-  (if (vector? sequence)
-    (filter-vector f sequence)
-    (filter-list f sequence)))
-
-(defn filter-vector
-  [f vector]
-  (.filter vector f))
-
-(defn filter-list
-  [f? list]
-  (loop [result '()
-         items list]
-    (if (empty? items)
-      (reverse result)
-      (recur (if (f? (first items))
-              (cons (first items) result)
-              result)
-              (rest items)))))
-
-
-
-(defn take-vector
-  [n vector]
-  (.slice vector 0 n))
-
-(defn take-list
-  [n list]
-  (loop [taken '()
-         items list
-         n n]
-    (if (or (= n 0) (empty? items))
-      (reverse taken)
-      (recur (cons (first items) taken)
-             (rest items)
-             (dec n)))))
-
-(defn take
-  [n sequence]
-  (if (vector? sequence)
-    (take-vector n sequence)
-    (take-list n sequence)))
 
 
 
