@@ -120,13 +120,14 @@
 (defn concat-list
   "Returns list representing the concatenation of the elements in the
   supplied lists."
-  [left right]
-  (loop [result (if (list? right) right (apply list right))
-         prefix (reverse left)]
-    (if (empty? prefix)
-      result
-      (recur (cons (first prefix) result)
-             (rest prefix)))))
+  [& sequences]
+  (reverse
+    (.reduce sequences
+             (fn [result sequence]
+              (reduce-list sequence
+                           (fn [result item] (cons item result))
+                           result))
+           '())))
 
 (defn list-to-vector [source]
   (loop [result []
