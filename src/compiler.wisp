@@ -51,10 +51,13 @@
         (eval (str "(" (compile (macroexpand macro-fn)) ")"))))
 
 
-;; system macros
 (install-macro
  'defmacro
- (fn [name signature & body]
+ (fn
+  "Like defn, but the resulting function name is declared as a
+  macro and will be used as a macro by the compiler when it is
+  called."
+  [name signature & body]
   (install-macro name (make-macro signature body))))
 
 
@@ -245,6 +248,8 @@
        (quote? form) (compile-object (second form) true)
        (syntax-quote? form) (compile-syntax-quoted (second form))
        (special? head) (execute-special head form)
+       ;; Compile keyword invoke as a property access.
+       (keyword? head) (compile (list 'get (second form) head))
        :else (do
               (if (not (or (symbol? head) (list? head)))
                 (throw (compiler-error
