@@ -1,10 +1,9 @@
 # Wisp
 
-Wisp is [homoiconic][homoiconicity] JS dialect with a [clojure] syntax,
-[s-expressions] and [macros]. Wisp code compiles to a human readable
-javascript, which is one of they key differences from [clojurescript]. It
-attempts to compile to a JS code that you would have written yourself if you
-were writing in pure JS, think of wisp as [markdown] for JS programing!
+Wisp is a [homoiconic][homoiconicity] JavaScript dialect with [clojure] syntax,
+[s-expressions] and [macros]. Unlike [clojurescript], Wisp code compiles to
+human-readable JavaScript. The goal of Wisp is to compile to the JavaScript
+you would have written anyway. Think of Wisp as [markdown] for JS programing!
 
 [Homoiconic][homoiconicity] syntax and [macros] are the primary motivations!
 
@@ -22,3 +21,4 @@ were writing in pure JS, think of wisp as [markdown] for JS programing!
 [s-expressions]:http://en.wikipedia.org/wiki/S-expression
 [clojurescript]:https://github.com/clojure/clojurescript
 [markdown]:http://daringfireball.net/projects/markdown/
+
