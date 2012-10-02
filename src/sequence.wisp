@@ -1,5 +1,5 @@
 (import [vector? dec] "./runtime")
-(import [empty? list cons reverse] "./list")
+(import [list? list cons] "./list")
 
 (defn reverse
   "Reverse order of items in the sequence"
@@ -36,7 +36,7 @@
          items sequence]
     (if (empty? items)
       (reverse result)
-      (recur (cons (f (first items) result) (rest items))))))
+      (recur (cons (f (first items)) result) (rest items)))))
 
 (defn filter
   "Returns a sequence of the items in coll for which (f? item) returns true.
@@ -53,9 +53,9 @@
 
 (defn filter-list
   "Like filter but for lists"
-  [f? list]
+  [f? sequence]
   (loop [result '()
-         items list]
+         items sequence]
     (if (empty? items)
       (reverse result)
       (recur (if (f? (first items))
@@ -80,9 +80,9 @@
 
 (defn take-list
   "Like take but for lists"
-  [n list]
+  [n sequence]
   (loop [taken '()
-         items list
+         items sequence
          n n]
     (if (or (= n 0) (empty? items))
       (reverse taken)

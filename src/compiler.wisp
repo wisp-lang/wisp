@@ -395,6 +395,10 @@
         ]
       (if (nil? body) "{}" (compile-template (list "{\n  ~{}\n}" body)))))
 
+
+;; Function parser / compiler
+
+
 (defn desugar-fn-name [form]
   (if (symbol? (first form)) form (cons nil form)))
 
@@ -411,15 +415,6 @@
           (cons (second form)
             (cons nil (rest (rest form)))))))
 
-(defn desugar-body [form]
-  (if (list? (third form))
-    form
-    (with-meta
-     (cons (first form)
-           (cons (second form)
-                 (list (rest (rest form)))))
-     (meta (third form)))))
-
 (defn compile-fn-params
   ;"compiles function params"
   [params]
@@ -429,7 +424,6 @@
 
 (defn compile-desugared-fn
   ;"(fn name? [params* ] exprs*)
-
   ;Defines a function (fn)"
   [name doc attrs params body]
   (compile-template
@@ -471,6 +465,120 @@
       "return ")
     (compile-statements form "return ")))
 
+(defn variadic?
+  "Returns true if function signature is variadic"
+  [params]
+  (>= (.index-of params '&) 0))
+
+(defn overload-arity
+  "Returns aritiy of the expected arguments for the
+  overleads signature"
+  [params]
+  (if (variadic?)
+    (.index-of params '&)
+    (.-length params)))
+
+
+(defn analyze-overloaded-fn
+  "Compiles function that has overloads defined"
+  [name doc attrs overloads]
+  (map (fn [overload]
+         (let [params (first overload)
+               variadic (variadic? params)
+               fixed-arity (if variadic
+                              (- (count params) 2)
+                              (count params))]
+           {:variadic variadic
+            :rest (if variadic? (get params (dec (count params))) nil)
+            :fixed-arity fixed-arity
+            :params (take fixed-arity params)
+            :body (rest overload)}))
+       overloads))
+
+(defn compile-overloaded-fn
+  [name doc attrs overloads]
+  (let [methods (analyze-overloaded-fn name doc attrs overloads)
+        fixed-methods (filter (fn [method] (not (:variadic method))) methods)
+        variadic (first (filter (fn [method] (:variadic method)) methods))
+        names (reduce-list methods
+                           (fn [a b]
+                            (if (> (count a) (count (get b :params)))
+                              a
+                              (get b :params))) [])]
+    (list 'fn name doc attrs names
+          (list 'raw*
+                (compile-switch
+                  'arguments.length
+                  (map (fn [method]
+                    (cons (:fixed-arity method)
+                          (list 'raw*
+                                (compile-fn-body
+                                  (concat-list
+                                    (compile-rebind names (:params method))
+                                    (:body method))))))
+                    fixed-methods)
+                  (if (nil? variadic)
+                    '(throw (Error "Invalid arity"))
+                    (list 'raw*
+                          (compile-fn-body
+                            (concat-list
+                              (compile-rebind
+                                (cons `(Array.prototype.slice.call
+                                        arguments
+                                        ~(:fixed-arity variadic))
+                                      names)
+                                (cons (:rest variadic)
+                                      (:params variadic)))
+                              (:body variadic)))))))
+          nil)))
+
+
+(defn compile-rebind
+  "Takes vector of bindings and a vector of names this binding needs to
+  get bound to and returns list of def expressions that bind bindings to
+  a new names. If names matches associated binding it will be ignored."
+  [bindings names]
+  ;; Loop through the given names and bindings and assembling a `form`
+  ;; list containing set expressions.
+  (loop [form '()
+         bindings bindings
+         names names]
+    ;; If all the names have bing iterated return reversed form. Form is
+    ;; reversed since later bindings will be cons-ed later, appearing in
+    ;; inverse order.
+    (if (empty? names)
+      (reverse form)
+      (recur
+       ;; If name and binding are identical then rebind is unnecessary
+       ;; and it's skipped. Also not skipping such rebinds could be
+       ;; problematic as definitions may shadow bindings.
+       (if (identical? (first names) (first bindings))
+         form
+         (cons (list 'def (first names) (first bindings)) form))
+       (rest bindings)
+       (rest names)))))
+
+(defn compile-switch-cases
+  [cases]
+  (reduce-list
+   cases
+   (fn [form case-expression]
+     (str form
+          (compile-template
+           (list "case ~{}:\n  ~{}\n"
+                 (compile (macroexpand (first case-expression)))
+                 (compile (macroexpand (rest case-expression)))))))
+   ""))
+
+
+(defn compile-switch
+  [value cases default-case]
+  (compile-template
+   (list "switch (~{}) {\n  ~{}\n  default:\n    ~{}\n}"
+         (compile (macroexpand value))
+         (compile-switch-cases cases)
+         (compile (macroexpand default-case)))))
+
 (defn compile-fn
   "(fn name? [params* ] exprs*)
 
@@ -479,10 +587,13 @@
   (let [signature (desugar-fn-attrs (desugar-fn-doc (desugar-fn-name form)))
         name (first signature)
         doc (second signature)
-        attrs (third signature)
-        params (third (rest signature))
-        body (rest (rest (rest (rest signature))))]
-    (compile-desugared-fn name doc attrs params body)))
+        attrs (third signature)]
+    (if (vector? (third (rest signature)))
+      (compile-desugared-fn name doc attrs
+                            (third (rest signature))
+                            (rest (rest (rest (rest signature)))))
+      (compile
+        (compile-overloaded-fn name doc attrs (rest (rest (rest signature))))))))
 
 (defn compile-invoke
   [form]
@@ -952,138 +1063,6 @@
 ;; - alength
 ;; - defn with metadata in front of name
 ;; - declare
-
-
-
-
-
-(defn variadic?
-  "Returns true if function signature is variadic"
-  [params]
-  (>= (.index-of params '&) 0))
-
-(defn overload-arity
-  "Returns aritiy of the expected arguments for the
-  overleads signature"
-  [params]
-  (if (variadic?)
-    (.index-of params '&)
-    (.-length params)))
-
-
-(defn analyze-overloaded-fn
-  "Compiles function that has overloads defined"
-  [name doc attrs overloads]
-  (map (fn [overload]
-         (let [params (first overload)
-               variadic (variadic? params)
-               fixed-arity (if variadic
-                              (- (count params) 2)
-                              (count params))]
-           {:variadic variadic
-            :rest (if variadic? (get params (dec (count params))) nil)
-            :fixed-arity fixed-arity
-            :params (take fixed-arity params)
-            :body (rest overload)}))
-       overloads))
-
-(defn compile-overloaded-fn
-  [name doc attrs overloads]
-  (let [methods (analyze-overloaded-fn name doc attrs overloads)
-        fixed-methods (filter (fn [method] (not (:variadic method))) methods)
-        variadic (first (filter (fn [method] (:variadic method)) methods))
-        names (reduce-list methods
-                           (fn [a b]
-                            (if (> (count a) (count (get b :params)))
-                              a
-                              (get b :params))) [])]
-    (list 'fn name doc attrs names
-          (list 'raw*
-                (compile-switch
-                  'arguments.length
-                  (map (fn [method]
-                    (cons (:fixed-arity method)
-                          (list 'raw*
-                                (compile-fn-body
-                                  (concat-list
-                                    (compile-rebind names (:params method))
-                                    (:body method))))))
-                    fixed-methods)
-                  (if (nil? variadic)
-                    '(throw (Error "Invalid arity"))
-                    (list 'raw*
-                          (compile-fn-body
-                            (concat-list
-                              (compile-rebind
-                                (cons `(Array.prototype.slice.call
-                                        arguments
-                                        ~(:fixed-arity variadic))
-                                      names)
-                                (cons (:rest variadic)
-                                      (:params variadic)))
-                              (:body variadic)))))))
-          nil)))
-
-
-(defn compile-rebind
-  "Takes vector of bindings and a vector of names this binding needs to
-  get bound to and returns list of def expressions that bind bindings to
-  a new names. If names matches associated binding it will be ignored."
-  [bindings names]
-  ;; Loop through the given names and bindings and assembling a `form`
-  ;; list containing set expressions.
-  (loop [form '()
-         bindings bindings
-         names names]
-    ;; If all the names have bing iterated return reversed form. Form is
-    ;; reversed since later bindings will be cons-ed later, appearing in
-    ;; inverse order.
-    (if (empty? names)
-      (reverse form)
-      (recur
-       ;; If name and binding are identical then rebind is unnecessary
-       ;; and it's skipped. Also not skipping such rebinds could be
-       ;; problematic as definitions may shadow bindings.
-       (if (identical? (first names) (first bindings))
-         form
-         (cons (list 'def (first names) (first bindings)) form))
-       (rest bindings)
-       (rest names)))))
-
-(defn compile-switch-cases
-  [cases]
-  (reduce-list
-   cases
-   (fn [form case-expression]
-     (str form
-          (compile-template
-           (list "case ~{}:\n  ~{}\n"
-                 (compile (macroexpand (first case-expression)))
-                 (compile (macroexpand (rest case-expression)))))))
-   ""))
-
-
-(defn compile-switch
-  [value cases default-case]
-  (compile-template
-   (list "switch (~{}) {\n  ~{}\n  default:\n    ~{}\n}"
-         (compile (macroexpand value))
-         (compile-switch-cases cases)
-         (compile (macroexpand default-case)))))
-
-(install-macro
-  'fn*
-  (fn
-  "Defines function form"
-  [name doc attrs & body]
-  ;; If second argument is a vector than function does not defiens
-  ;; any overloads so we just create reguralr `fn`.
-  (if (vector? (first body))
-    `(fn ~name ~doc ~attrs ~@body)
-    ;; Otherwise we iterate over each overlead forming a relevant
-    ;; conditions.
-    (compile-overloaded-fn name doc attrs body))))
-
 
 (export
   self-evaluating?

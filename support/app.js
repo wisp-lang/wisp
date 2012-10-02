@@ -1917,12 +1917,6 @@ var desugarFnAttrs = function desugarFnAttrs(form) {
     cons(first(form), cons(second(form), cons(void(0), rest(rest(form)))));
 };
 
-var desugarBody = function desugarBody(form) {
-  return isList(third(form)) ?
-    form :
-    withMeta(cons(first(form), cons(second(form), list(rest(rest(form))))), meta(third(form)));
-};
-
 var compileFnParams = function compileFnParams(params) {
   return isContainsVector(params, "﻿&") ?
     params.slice(0, params.indexOf("﻿&")).map(compile).join(", ") :
@@ -1955,15 +1949,92 @@ var compileFnBody = function compileFnBody(form, params) {
     compileStatements(form, "return ");
 };
 
+var isVariadic = function isVariadic(params) {
+  return params.indexOf("﻿&") >= 0;
+};
+
+var overloadArity = function overloadArity(params) {
+  return isVariadic() ?
+    params.indexOf("﻿&") :
+    params.length;
+};
+
+var analyzeOverloadedFn = function analyzeOverloadedFn(name, doc, attrs, overloads) {
+  return map(function(overload) {
+    return (function() {
+      var params = first(overload);
+      var variadic = isVariadic(params);
+      var fixedArity = variadic ?
+        (count(params)) - 2 :
+        count(params);
+      return {
+        "variadic": variadic,
+        "rest": isVariadic ?
+          params[dec(count(params))] :
+          void(0),
+        "fixed-arity": fixedArity,
+        "params": take(fixedArity, params),
+        "body": rest(overload)
+      };
+    })();
+  }, overloads);
+};
+
+var compileOverloadedFn = function compileOverloadedFn(name, doc, attrs, overloads) {
+  return (function() {
+    var methods = analyzeOverloadedFn(name, doc, attrs, overloads);
+    var fixedMethods = filter(function(method) {
+      return !(method["variadic"]);
+    }, methods);
+    var variadic = first(filter(function(method) {
+      return method["variadic"];
+    }, methods));
+    var names = reduceList(methods, function(a, b) {
+      return count(a) > count(b["params"]) ?
+        a :
+        b["params"];
+    }, []);
+    return list("﻿fn", name, doc, attrs, names, list("﻿raw*", compileSwitch("﻿arguments.length", map(function(method) {
+      return cons(method["fixed-arity"], list("﻿raw*", compileFnBody(concatList(compileRebind(names, method["params"]), method["body"]))));
+    }, fixedMethods), isNil(variadic) ?
+      list("﻿throw", list("﻿Error", "Invalid arity")) :
+      list("﻿raw*", compileFnBody(concatList(compileRebind(cons(list("﻿Array.prototype.slice.call", "﻿arguments", variadic["fixed-arity"]), names), cons(variadic["rest"], variadic["params"])), variadic["body"]))))), void(0));
+  })();
+};
+
+var compileRebind = function compileRebind(bindings, names) {
+  return (function loop(form, bindings, names) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = isEmpty(names) ?
+      reverse(form) :
+      (form = first(names) === first(bindings) ?
+        form :
+        cons(list("﻿def", first(names), first(bindings)), form), bindings = rest(bindings), names = rest(names), loop);
+    };
+    return recur;
+  })(list(), bindings, names);
+};
+
+var compileSwitchCases = function compileSwitchCases(cases) {
+  return reduceList(cases, function(form, caseExpression) {
+    return str(form, compileTemplate(list("case ~{}:\n  ~{}\n", compile(macroexpand(first(caseExpression))), compile(macroexpand(rest(caseExpression))))));
+  }, "");
+};
+
+var compileSwitch = function compileSwitch(value, cases, defaultCase) {
+  return compileTemplate(list("switch (~{}) {\n  ~{}\n  default:\n    ~{}\n}", compile(macroexpand(value)), compileSwitchCases(cases), compile(macroexpand(defaultCase))));
+};
+
 var compileFn = function compileFn(form) {
   return (function() {
     var signature = desugarFnAttrs(desugarFnDoc(desugarFnName(form)));
     var name = first(signature);
     var doc = second(signature);
     var attrs = third(signature);
-    var params = third(rest(signature));
-    var body = rest(rest(rest(rest(signature))));
-    return compileDesugaredFn(name, doc, attrs, params, body);
+    return isVector(third(rest(signature))) ?
+      compileDesugaredFn(name, doc, attrs, third(rest(signature)), rest(rest(rest(rest(signature))))) :
+      compile(compileOverloadedFn(name, doc, attrs, rest(rest(rest(signature)))));
   })();
 };
 
@@ -2315,90 +2386,6 @@ installMacro("﻿import", function(imports, path) {
     })(list(), imports);
 });
 
-var isVariadic = function isVariadic(params) {
-  return params.indexOf("﻿&") >= 0;
-};
-
-var overloadArity = function overloadArity(params) {
-  return isVariadic() ?
-    params.indexOf("﻿&") :
-    params.length;
-};
-
-var analyzeOverloadedFn = function analyzeOverloadedFn(name, doc, attrs, overloads) {
-  return map(function(overload) {
-    return (function() {
-      var params = first(overload);
-      var variadic = isVariadic(params);
-      var fixedArity = variadic ?
-        (count(params)) - 2 :
-        count(params);
-      return {
-        "variadic": variadic,
-        "rest": isVariadic ?
-          params[dec(count(params))] :
-          void(0),
-        "fixed-arity": fixedArity,
-        "params": take(fixedArity, params),
-        "body": rest(overload)
-      };
-    })();
-  }, overloads);
-};
-
-var compileOverloadedFn = function compileOverloadedFn(name, doc, attrs, overloads) {
-  return (function() {
-    var methods = analyzeOverloadedFn(name, doc, attrs, overloads);
-    var fixedMethods = filter(function(method) {
-      return !(method["variadic"]);
-    }, methods);
-    var variadic = first(filter(function(method) {
-      return method["variadic"];
-    }, methods));
-    var names = reduceList(methods, function(a, b) {
-      return count(a) > count(b["params"]) ?
-        a :
-        b["params"];
-    }, []);
-    return list("﻿fn", name, doc, attrs, names, list("﻿raw*", compileSwitch("﻿arguments.length", map(function(method) {
-      return cons(method["fixed-arity"], list("﻿raw*", compileFnBody(concatList(compileRebind(names, method["params"]), method["body"]))));
-    }, fixedMethods), isNil(variadic) ?
-      list("﻿throw", list("﻿Error", "Invalid arity")) :
-      list("﻿raw*", compileFnBody(concatList(compileRebind(cons(list("﻿Array.prototype.slice.call", "﻿arguments", variadic["fixed-arity"]), names), cons(variadic["rest"], variadic["params"])), variadic["body"]))))), void(0));
-  })();
-};
-
-var compileRebind = function compileRebind(bindings, names) {
-  return (function loop(form, bindings, names) {
-    var recur = loop;
-    while (recur === loop) {
-      recur = isEmpty(names) ?
-      reverse(form) :
-      (form = first(names) === first(bindings) ?
-        form :
-        cons(list("﻿def", first(names), first(bindings)), form), bindings = rest(bindings), names = rest(names), loop);
-    };
-    return recur;
-  })(list(), bindings, names);
-};
-
-var compileSwitchCases = function compileSwitchCases(cases) {
-  return reduceList(cases, function(form, caseExpression) {
-    return str(form, compileTemplate(list("case ~{}:\n  ~{}\n", compile(macroexpand(first(caseExpression))), compile(macroexpand(rest(caseExpression))))));
-  }, "");
-};
-
-var compileSwitch = function compileSwitch(value, cases, defaultCase) {
-  return compileTemplate(list("switch (~{}) {\n  ~{}\n  default:\n    ~{}\n}", compile(macroexpand(value)), compileSwitchCases(cases), compile(macroexpand(defaultCase))));
-};
-
-installMacro("﻿fn*", function(name, doc, attrs) {
-  var body = Array.prototype.slice.call(arguments, 3);
-  return isVector(first(body)) ?
-    concatList(list("﻿fn", name, doc, attrs), body) :
-    compileOverloadedFn(name, doc, attrs, body);
-});
-
 exports.macroexpand1 = macroexpand1;
 exports.macroexpand = macroexpand;
 exports.compileProgram = compileProgram;
@@ -2409,10 +2396,9 @@ exports.isSelfEvaluating = isSelfEvaluating;
 require.define("/lib/sequence.js",function(require,module,exports,__dirname,__filename,process){var dec = (require("./runtime")).dec;
 var isVector = (require("./runtime")).isVector;;
 
-var reverse = (require("./list")).reverse;
 var cons = (require("./list")).cons;
 var list = (require("./list")).list;
-var isEmpty = (require("./list")).isEmpty;;
+var isList = (require("./list")).isList;;
 
 var reverse = function reverse(sequence) {
   return isList(sequence) ?
@@ -2444,7 +2430,7 @@ var mapList = function mapList(f, sequence) {
     while (recur === loop) {
       recur = isEmpty(items) ?
       reverse(result) :
-      (result = cons(f(first(items), result), rest(items)), items = void(0), loop);
+      (result = cons(f(first(items)), result), items = rest(items), loop);
     };
     return recur;
   })(list(), sequence);
@@ -2460,7 +2446,7 @@ var filterVector = function filterVector(isF, vector) {
   return vector.filter(isF);
 };
 
-var filterList = function filterList(isF, list) {
+var filterList = function filterList(isF, sequence) {
   return (function loop(result, items) {
     var recur = loop;
     while (recur === loop) {
@@ -2471,7 +2457,7 @@ var filterList = function filterList(isF, list) {
         result, items = rest(items), loop);
     };
     return recur;
-  })(list(), list);
+  })(list(), sequence);
 };
 
 var take = function take(n, sequence) {
@@ -2484,7 +2470,7 @@ var takeVector = function takeVector(n, vector) {
   return vector.slice(0, n);
 };
 
-var takeList = function takeList(n, list) {
+var takeList = function takeList(n, sequence) {
   return (function loop(taken, items, n) {
     var recur = loop;
     while (recur === loop) {
@@ -2493,7 +2479,7 @@ var takeList = function takeList(n, list) {
       (taken = cons(first(items), taken), items = rest(items), n = dec(n), loop);
     };
     return recur;
-  })(list(), list, n);
+  })(list(), sequence, n);
 };
 
 var reduce = function reduce(f, initial, sequence) {
