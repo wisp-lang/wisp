@@ -400,20 +400,25 @@
 
 
 (defn desugar-fn-name [form]
-  (if (symbol? (first form)) form (cons nil form)))
+  (if (or (symbol? (first form))
+          (nil? (first form)))
+    form
+    (cons nil form)))
 
 (defn desugar-fn-doc [form]
-  (if (string? (second form))
+  (if (or (string? (second form))
+          (nil? (second form)))
     form
     (cons (first form) ;; (name nil ... )
           (cons nil (rest form)))))
 
 (defn desugar-fn-attrs [form]
-  (if (dictionary? (third form))
+  (if (or (dictionary? (third form))
+          (nil? (third form)))
     form
     (cons (first form) ;; (name nil ... )
           (cons (second form)
-            (cons nil (rest (rest form)))))))
+                (cons nil (rest (rest form)))))))
 
 (defn compile-fn-params
   ;"compiles function params"
