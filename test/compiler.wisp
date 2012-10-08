@@ -65,6 +65,7 @@
                     "function isFoo(x) {\n  return true;\n}")
         "metadata is supported")
 
+
 (assert (identical? (transpile '(fn [a & b] a))
 "function(a) {
   var b = Array.prototype.slice.call(arguments, 1);
@@ -77,7 +78,46 @@
   return a;
 }") "function with all variadic arguments")
 
+(assert (identical? (transpile '(fn
+                                  ([] 0)
+                                  ([x] x)))
+"function(x) {
+  switch (arguments.length) {
+    case 0:
+      return 0;
+    case 1:
+      return x;
+    
+    default:
+      (function() { throw Error(\"Invalid arity\"); })()
+  };
+  return void(0);
+}") "function with overloads")
 
+(assert (identical? (transpile
+'(fn sum
+  "doc"
+  {:version "1.0"}
+  ([] 0)
+  ([x] x)
+  ([x y] (+ x y))
+  ([x & rest] (reduce rest sum x))))
+
+"function sum(x, y) {
+  switch (arguments.length) {
+    case 0:
+      return 0;
+    case 1:
+      return x;
+    case 2:
+      return x + y;
+    
+    default:
+      var rest = Array.prototype.slice.call(arguments, 1);
+      return reduce(rest, sum, x);
+  };
+  return void(0);
+}") "function with overloads docs & metadata")
 
 (.log console "compile if special form")
 
