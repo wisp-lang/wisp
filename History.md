@@ -16,3 +16,7 @@ Initial release
 - Implement function overload on arity.
 - Implement generic sequence functions in a sequence module.
 - Write wisp introduction guide.
+
+## 0.0.3
+
+- Fix typos in introduction code.
