@@ -9,6 +9,11 @@ you would have written anyway. Think of Wisp as [markdown] for JS programing!
 
 ![meta](http://upload.wikimedia.org/wikipedia/en/b/ba/DrawingHands.jpg)
 
+# Try
+
+You can try it before you buy it:
+http://jeditoolkit.com/wisp/
+
 # Install
 
     npm install -g wisp
