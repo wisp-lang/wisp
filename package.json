@@ -21,7 +21,9 @@
     "type": "BSD New",
     "url": "http://opensource.org/licenses/BSD-3-Clause"
   }],
-
+  "devDependencies": {
+    "browserify": "1.14.2"
+  },
   "engines": {
     "node": ">=0.4.0"
   },

@@ -1,4 +1,5 @@
 MAKE = node ./bin/wisp.js
+BROWSERIFY = node ./node_modules/browserify/bin/cmd.js
 
 core: runtime list sequence ast reader compiler
 node: core wisp node-engine repl
@@ -39,4 +40,4 @@ embed:
 	cat ./support/embed.wisp | $(MAKE) > ./embed.js && mv ./embed.js ./support/embed.js
 
 browserify:
-	browserify ./support/embed.js > ./support/app.js
+	$(BROWSERIFY) ./support/embed.js > ./support/app.js
