@@ -1,6 +1,6 @@
 MAKE = node ./bin/wisp.js
 
-core: runtime list ast reader compiler
+core: runtime list sequence ast reader compiler
 node: core wisp node-engine repl
 browser: core embed browser-engine browserify
 all: node browser
@@ -19,6 +19,9 @@ runtime:
 
 list:
 	cat ./src/list.wisp | $(MAKE) > ./list.js && mv ./list.js ./lib/list.js
+
+sequence:
+	cat ./src/sequence.wisp | $(MAKE) > ./sequence.js && mv ./sequence.js ./lib/sequence.js
 
 ast:
 	cat ./src/ast.wisp | $(MAKE) > ./ast.js && mv ./ast.js ./lib/ast.js

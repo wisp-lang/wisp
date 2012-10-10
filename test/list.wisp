@@ -1,5 +1,5 @@
 (import [empty? first rest cons list? list reverse
-         reduce-list sort-list] "../src/list")
+         reduce-list sort-list concat-list] "../src/list")
 (import [equivalent?] "./utils")
 
 
@@ -104,3 +104,10 @@
 (assert (equivalent? (sort-list '("hello" "my" "dear" "frient"))
                      '("dear" "frient" "hello" "my"))
         "sorts list strings")
+
+(.log console "test concat")
+
+(assert (equivalent? (concat-list '(1 2) '(3 4))
+                     '(1 2 3 4)))
+(assert (equivalent? (concat-list '(1 2) '() '() '(3 4) '(5))
+                     '(1 2 3 4 5)))

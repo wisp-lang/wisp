@@ -1,5 +1,7 @@
 (import [dictionary? vector?] "../src/runtime")
-(import [list] "../src/list")
+(import [list concat-list] "../src/list")
+(import [equivalent?] "./utils")
+
 
 (.log console "test dictionary?")
 
@@ -14,3 +16,7 @@
 (assert (not (vector? {})) "{} is not vector")
 (assert (not (vector? '())) "() is not vector")
 (assert (vector? []) "[] is vector")
+
+(assert (equivalent?
+          '(1 2 3 4 5)
+          `(1 ~@'(2 3) 4 ~@'(5))))

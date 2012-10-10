@@ -1,5 +1,5 @@
 (import [symbol quote deref name keyword
-         unquote unquote-splicing meta dictionary] "../src/ast")
+         unquote meta dictionary] "../src/ast")
 (import [dictionary nil? str] "../src/runtime")
 (import [read-from-string] "../src/reader")
 (import [list] "../src/list")
@@ -164,15 +164,15 @@
            (reader/read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\"")))
 
 ;; queue literals
-(assert (equivalent? '(new PersistentQueue [])
+(assert (equivalent? '(PersistentQueue. [])
                      (reader/read-string "#queue []")))
-(assert (equivalent? '(new PersistentQueue [1])
+(assert (equivalent? '(PersistentQueue. [1])
                      (reader/read-string "#queue [1]")))
-(assert (equivalent? '(new PersistentQueue [1 2])
+(assert (equivalent? '(PersistentQueue. [1 2])
                      (reader/read-string "#queue [1 2]")))
 
 ;; uuid literals
-(assert (equivalent? '(new UUID "550e8400-e29b-41d4-a716-446655440000")
+(assert (equivalent? '(UUID. "550e8400-e29b-41d4-a716-446655440000")
                      (reader/read-string "#uuid \"550e8400-e29b-41d4-a716-446655440000\"")))
 
 (let [assets

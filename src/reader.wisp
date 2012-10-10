@@ -1,9 +1,7 @@
-(import [list list? count empty? first second third rest
-         cons rest] "./list")
+(import [list list? count empty? first second third rest cons rest] "./list")
 (import [odd? dictionary merge keys nil? inc dec vector? string? object?
          re-pattern re-matches re-find str] "./runtime")
-(import [symbol? symbol keyword? keyword quote syntax-quote
-         unquote unquote-splicing meta with-meta name deref] "./ast")
+(import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
 
 (defn PushbackReader
   "StringPushbackReader"
@@ -159,11 +157,11 @@
       0
       (let [negate (if (identical? "-" (aget groups 1)) -1 1)
             a (cond
-               (aget groups 3) (array (aget groups 3) 10)
-               (aget groups 4) (array (aget groups 4) 16)
-               (aget groups 5) (array (aget groups 5) 8)
-               (aget groups 7) (array (aget groups 7) (parse-int (aget groups 7)))
-               :default (array nil nil))
+               (aget groups 3) [(aget groups 3) 10]
+               (aget groups 4) [(aget groups 4) 16]
+               (aget groups 5) [(aget groups 5) 8]
+               (aget groups 7) [(aget groups 7) (parse-int (aget groups 7))]
+               :default [nil nil])
             n (aget a 0)
             radix (aget a 1)]
         (if (nil? n)
@@ -274,7 +272,7 @@
 (defn read-delimited-list
   "Reads out delimited list"
   [delim reader recursive?]
-  (loop [a (array)]
+  (loop [a []]
     (let [ch (read-past whitespace? reader)]
       (if (not ch) (reader-error reader "EOF"))
       (if (identical? delim ch)
@@ -284,13 +282,13 @@
             (let [mret (macrofn reader ch)]
               (recur (if (identical? mret reader)
                        a
-                       (.concat a (array mret)))))
+                       (.concat a [mret]))))
             (do
               (unread-char reader ch)
               (let [o (read reader true nil recursive?)]
                 (recur (if (identical? o reader)
                          a
-                         (.concat a (array o))))))))))))
+                         (.concat a [o])))))))))))
 
 ;; data structure readers
 
@@ -376,10 +374,10 @@
     (if (not ch)
       (reader-error reader "EOF while reading character")
       (if (identical? ch "@")
-        (list unquote-splicing (read reader true nil true))
+        (list 'unquote-splicing (read reader true nil true))
         (do
           (unread-char reader ch)
-          (list unquote (read reader true nil true)))))))
+          (list 'unquote (read reader true nil true)))))))
 
 
 (defn special-symbols [text not-found]
@@ -455,7 +453,7 @@
 
 (defn read-set
   [reader _]
-  (apply list (.concat (array (symbol "set"))
+  (apply list (.concat ['set]
                        (read-delimited-list "}" reader true))))
 
 (defn read-regex
@@ -481,10 +479,10 @@
    (identical? c "\"") read-string
    (identical? c \:) read-keyword
    (identical? c ";") read-comment
-   (identical? c "'") (wrapping-reader quote)
-   (identical? c \@) (wrapping-reader deref)
+   (identical? c "'") (wrapping-reader 'quote)
+   (identical? c \@) (wrapping-reader 'deref)
    (identical? c \^) read-meta
-   (identical? c "`") (wrapping-reader syntax-quote)
+   (identical? c "`") (wrapping-reader 'syntax-quote)
    (identical? c "~") read-unquote
    (identical? c "(") read-list
    (identical? c ")") read-unmatched-delimiter
@@ -542,14 +540,14 @@
 (defn ^:private read-uuid
   [uuid]
   (if (string? uuid)
-    (list (symbol "new") (symbol "UUID") uuid)
+    `(UUID. ~uuid)
     (reader-error
      nil "UUID literal expects a string as its representation.")))
 
 (defn ^:private read-queue
   [items]
   (if (vector? items)
-    (list (symbol "new") (symbol  "PersistentQueue") items)
+    `(PersistentQueue. ~items)
     (reader-error
      nil "Queue literal expects a vector for its elements.")))
 

@@ -78,7 +78,7 @@
   [head tail]
   (if (list? tail)
     (new List head tail)
-    (.concat (Array head) tail)))
+    (apply list (.concat [head] tail))))
 
 (defn list
   "Creates list of the given items"
@@ -93,11 +93,11 @@
   "Reverse order of items in the list"
   [sequence]
   (if (list? sequence)
-    (loop [items (array)
+    (loop [items []
            source sequence]
       (if (empty? source)
-        (.apply list list items)
-        (recur (.concat (array (first source)) items)
+        (apply list items)
+        (recur (.concat [(first source)] items)
                (rest source))))
     (.reverse sequence)))
 
@@ -120,16 +120,17 @@
 (defn concat-list
   "Returns list representing the concatenation of the elements in the
   supplied lists."
-  [left right]
-  (loop [result (if (list? right) right (apply list right))
-         prefix (reverse left)]
-    (if (empty? prefix)
-      result
-      (recur (cons (first prefix) result)
-             (rest prefix)))))
+  [& sequences]
+  (reverse
+    (.reduce sequences
+             (fn [result sequence]
+              (reduce-list sequence
+                           (fn [result item] (cons item result))
+                           result))
+           '())))
 
 (defn list-to-vector [source]
-  (loop [result (Array)
+  (loop [result []
          list source]
     (if (empty? list)
       result

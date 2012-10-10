@@ -1,10 +1,9 @@
 (import [read-from-string] "./reader")
 (import [meta with-meta symbol? symbol keyword? keyword
-         unquote? unquote unquote-splicing? unquote-splicing
-         quote? quote syntax-quote? syntax-quote
-         name gensym deref set atom? symbol-identical?] "./ast")
+         unquote? unquote-splicing? quote? syntax-quote? name gensym] "./ast")
 (import [empty? count list? list first second third rest cons
          reverse map-list concat-list reduce-list list-to-vector] "./list")
+(import [map filter take] "./sequence")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
          map-dictionary string? number? vector? boolean?
          true? false? nil? re-pattern? inc dec str] "./runtime")
@@ -21,7 +20,6 @@
       (re-pattern? form)))
 
 
-
 ;; Macros
 
 (def __macros__ {})
@@ -29,12 +27,13 @@
 (defn execute-macro
   "Applies macro registered with given `name` to a given `form`"
   [name form]
-  ((get __macros__ name) form))
+  (apply (get __macros__ name)
+         (list-to-vector form)))
 
 (defn install-macro
   "Registers given `macro` with a given `name`"
-  [name macro]
-  (set! (get __macros__ name) macro))
+  [name macro-fn]
+  (set! (get __macros__ name) macro-fn))
 
 (defn macro?
   "Returns true if macro with a given name is registered"
@@ -47,34 +46,20 @@
 (defn make-macro
   "Makes macro"
   [pattern body]
-  (let [x (gensym)
-        program (compile
-                  (macroexpand
-                    ; `(fn [~x] (apply (fn ~pattern ~@body) (rest ~x)))
-                    (cons (symbol "fn")
-                      (cons pattern body))))
+  (let [macro-fn `(fn ~pattern ~@body)]
         ;; compile the macro into native code and use the host's native
         ;; eval to eval it into a function.
-        macro (eval (str "(" program ")"))
-        ]
-    (fn [form]
-      (try
-        (apply macro (list-to-vector (rest form)))
-        (catch error
-          (throw (compiler-error form error.message)))))))
+        (eval (str "(" (compile (macroexpand macro-fn)) ")"))))
 
 
-;; system macros
 (install-macro
- (symbol "defmacro")
- (fn [form]
-   (let [signature (rest form)]
-     (let [name (first signature)
-           pattern (second signature)
-           body (rest (rest signature))]
-
-       ;; install it during expand-time
-       (install-macro name (make-macro pattern body))))))
+ 'defmacro
+ (fn
+  "Like defn, but the resulting function name is declared as a
+  macro and will be used as a macro by the compiler when it is
+  called."
+  [name signature & body]
+  (install-macro name (make-macro signature body))))
 
 
 ;; special forms
@@ -108,8 +93,6 @@
   ((get __specials__ name) form))
 
 
-
-
 (defn opt [argument fallback]
   (if (or (nil? argument) (empty? argument)) fallback (first argument)))
 
@@ -119,7 +102,7 @@
   [fn-name form quoted?]
   (cons fn-name
         (if quoted?
-            (map-list form (fn [e] (list quote e))) form)
+            (map-list form (fn [e] (list 'quote e))) form)
             form))
 
 (defn apply-unquoted-form
@@ -133,8 +116,8 @@
                   (second e)
                   (if (and (list? e)
                            (keyword? (first e)))
-                      (list syntax-quote (second e))
-                      (list syntax-quote e)))))))
+                      (list 'syntax-quote (second e))
+                      (list 'syntax-quote e)))))))
 
 (defn split-splices
   ""
@@ -149,8 +132,8 @@
         (apply-unquoted-form fn-name form)))
 
   (loop [nodes form
-         slices (list)
-         acc (list)]
+         slices '()
+         acc '()]
    (if (empty? nodes)
        (reverse
         (if (empty? acc)
@@ -163,7 +146,7 @@
                          (if (empty? acc)
                              slices
                              (cons (make-splice (reverse acc)) slices)))
-                   (list))
+                   '())
             (recur (rest nodes)
                    slices
                    (cons node acc)))))))
@@ -185,22 +168,22 @@
   [form quoted?]
   ;; TODO: Add regexp to the list.
   (cond
-    (keyword? form) (compile (list (symbol "::compile:keyword") form))
-    (symbol? form) (compile (list (symbol "::compile:symbol") form))
-    (number? form) (compile (list (symbol "::compile:number") form))
-    (string? form) (compile (list (symbol "::compile:string") form))
-    (boolean? form) (compile (list (symbol "::compile:boolean") form))
-    (nil? form) (compile (list (symbol "::compile:nil") form))
+    (keyword? form) (compile-keyword form)
+    (symbol? form) (compile-symbol form)
+    (number? form) (compile-number form)
+    (string? form) (compile-string form)
+    (boolean? form) (compile-boolean form)
+    (nil? form) (compile-nil form)
     (re-pattern? form) (compile-re-pattern form)
-    (vector? form) (compile (apply-form (symbol "vector")
+    (vector? form) (compile (apply-form 'vector
                                         (apply list form)
                                         quoted?))
-    (list? form) (compile (apply-form (symbol "list")
+    (list? form) (compile (apply-form 'list
                                       form
                                       quoted?))
     (dictionary? form) (compile-dictionary
                         (if quoted?
-                          (map-dictionary form (fn [x] (list quote x)))
+                          (map-dictionary form (fn [x] (list 'quote x)))
                           form))))
 
 (defn compile-reference
@@ -209,7 +192,6 @@
   **macros**      __macros__
   list->vector    listToVector
   set!            set
-  raw%            raw$
   foo_bar         foo_bar
   number?         isNumber
   create-server   createServer"
@@ -221,7 +203,6 @@
   (set! id (.join (.split id "->") "-to-"))
   ;; set! ->  set
   (set! id (.join (.split id "!") ""))
-  ;; raw% -> raw$
   (set! id (.join (.split id "%") "$"))
   ;; number? -> isNumber
   (set! id (if (identical? (.substr id -1) "?")
@@ -247,26 +228,11 @@
   ""
   [form]
   (cond
-   (list? form)
-    (compile
-      (syntax-quote-split
-        (symbol "concat-list")
-        (symbol "list")
-        form))
+   (list? form) (compile (syntax-quote-split 'concat-list 'list form))
    (vector? form)
-    (compile
-      (syntax-quote-split
-        (symbol "concat-vector")
-        (symbol "vector")
-        (apply list form)))
-   (dictionary? form)
-    (compile
-      (syntax-quote-split
-        (symbol "merge")
-        (symbol "dictionary")
-        form))
-   :else
-    (compile-object form)))
+    (compile (syntax-quote-split 'concat-vector 'vector (apply list form)))
+   (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
+   :else (compile-object form)))
 
 (defn compile
   "compiles given form"
@@ -283,13 +249,14 @@
        (quote? form) (compile-object (second form) true)
        (syntax-quote? form) (compile-syntax-quoted (second form))
        (special? head) (execute-special head form)
+       ;; Compile keyword invoke as a property access.
+       (keyword? head) (compile (list 'get (second form) head))
        :else (do
               (if (not (or (symbol? head) (list? head)))
                 (throw (compiler-error
                         form
                         (str "operator is not a procedure: " head)))
-              (compile
-                (list (symbol "::compile:invoke") head (rest form)))))))))
+              (compile-invoke form)))))))
 
 (defn compile-program
   "compiles all expansions"
@@ -313,7 +280,7 @@
           id (name op)]
       (cond
         (special? op) form
-        (macro? op) (execute-macro op form)
+        (macro? op) (execute-macro op (rest form))
         (and (symbol? op)
              (not (identical? id ".")))
           ;; (.substring s 2 5) => (. s substring 2 5)
@@ -321,14 +288,14 @@
             (if (< (count form) 2)
               (throw (Error
                 "Malformed member expression, expecting (.member target ...)"))
-              (cons (symbol ".")
+              (cons '.
                     (cons (second form)
                           (cons (symbol (.substr id 1))
                                 (rest (rest form))))))
 
             ;; (StringBuilder. "foo") => (new StringBuilder "foo")
             (if (identical? (.char-at id (- (.-length id) 1)) ".")
-              (cons (symbol "new")
+              (cons 'new
                     (cons (symbol (.substr id 0 (- (.-length id) 1)))
                           (rest form)))
               form))
@@ -384,7 +351,7 @@
   [form]
   (compile-template
    (list "var ~{}"
-         (compile (cons (symbol "set!") form)))))
+         (compile (cons 'set! form)))))
 
 (defn compile-if-else
   "Evaluates test. If not the singular values nil or false,
@@ -400,7 +367,7 @@
     (compile-template
       (list
         (if (and (list? else-expression)
-                 (identical? (first else-expression) (symbol "if")))
+                 (identical? (first else-expression) 'if))
           "~{} ?\n  ~{} :\n~{}"
           "~{} ?\n  ~{} :\n  ~{}")
         (compile condition)
@@ -428,41 +395,40 @@
         ]
       (if (nil? body) "{}" (compile-template (list "{\n  ~{}\n}" body)))))
 
+
+;; Function parser / compiler
+
+
 (defn desugar-fn-name [form]
-  (if (symbol? (first form)) form (cons nil form)))
+  (if (or (symbol? (first form))
+          (nil? (first form)))
+    form
+    (cons nil form)))
 
 (defn desugar-fn-doc [form]
-  (if (string? (second form))
+  (if (or (string? (second form))
+          (nil? (second form)))
     form
     (cons (first form) ;; (name nil ... )
           (cons nil (rest form)))))
 
 (defn desugar-fn-attrs [form]
-  (if (dictionary? (third form))
+  (if (or (dictionary? (third form))
+          (nil? (third form)))
     form
     (cons (first form) ;; (name nil ... )
           (cons (second form)
-            (cons nil (rest (rest form)))))))
-
-(defn desugar-body [form]
-  (if (list? (third form))
-    form
-    (with-meta
-     (cons (first form)
-           (cons (second form)
-                 (list (rest (rest form)))))
-     (meta (third form)))))
+                (cons nil (rest (rest form)))))))
 
 (defn compile-fn-params
   ;"compiles function params"
   [params]
-  (if (contains-vector? params (symbol "&"))
-    (.join (.map (.slice params 0 (.index-of params (symbol "&"))) compile) ", ")
+  (if (contains-vector? params '&)
+    (.join (.map (.slice params 0 (.index-of params '&)) compile) ", ")
     (.join (.map params compile) ", ")))
 
 (defn compile-desugared-fn
   ;"(fn name? [params* ] exprs*)
-
   ;Defines a function (fn)"
   [name doc attrs params body]
   (compile-template
@@ -492,17 +458,131 @@
 
 (defn compile-fn-body
   [form params]
-  (if (and (vector? params) (contains-vector? params (symbol "&")))
+  (if (and (vector? params) (contains-vector? params '&))
     (compile-statements
-      (cons (list (symbol "def")
-                  (get params (inc (.index-of params (symbol "&"))))
+      (cons (list 'def
+                  (get params (inc (.index-of params '&)))
                   (list
-                    (symbol "Array.prototype.slice.call")
-                    (symbol "arguments")
-                    (.index-of params (symbol "&"))))
+                    'Array.prototype.slice.call
+                    'arguments
+                    (.index-of params '&)))
       form)
       "return ")
     (compile-statements form "return ")))
+
+(defn variadic?
+  "Returns true if function signature is variadic"
+  [params]
+  (>= (.index-of params '&) 0))
+
+(defn overload-arity
+  "Returns aritiy of the expected arguments for the
+  overleads signature"
+  [params]
+  (if (variadic?)
+    (.index-of params '&)
+    (.-length params)))
+
+
+(defn analyze-overloaded-fn
+  "Compiles function that has overloads defined"
+  [name doc attrs overloads]
+  (map (fn [overload]
+         (let [params (first overload)
+               variadic (variadic? params)
+               fixed-arity (if variadic
+                              (- (count params) 2)
+                              (count params))]
+           {:variadic variadic
+            :rest (if variadic? (get params (dec (count params))) nil)
+            :fixed-arity fixed-arity
+            :params (take fixed-arity params)
+            :body (rest overload)}))
+       overloads))
+
+(defn compile-overloaded-fn
+  [name doc attrs overloads]
+  (let [methods (analyze-overloaded-fn name doc attrs overloads)
+        fixed-methods (filter (fn [method] (not (:variadic method))) methods)
+        variadic (first (filter (fn [method] (:variadic method)) methods))
+        names (reduce-list methods
+                           (fn [a b]
+                            (if (> (count a) (count (get b :params)))
+                              a
+                              (get b :params))) [])]
+    (list 'fn name doc attrs names
+          (list 'raw*
+                (compile-switch
+                  'arguments.length
+                  (map (fn [method]
+                    (cons (:fixed-arity method)
+                          (list 'raw*
+                                (compile-fn-body
+                                  (concat-list
+                                    (compile-rebind names (:params method))
+                                    (:body method))))))
+                    fixed-methods)
+                  (if (nil? variadic)
+                    '(throw (Error "Invalid arity"))
+                    (list 'raw*
+                          (compile-fn-body
+                            (concat-list
+                              (compile-rebind
+                                (cons `(Array.prototype.slice.call
+                                        arguments
+                                        ~(:fixed-arity variadic))
+                                      names)
+                                (cons (:rest variadic)
+                                      (:params variadic)))
+                              (:body variadic)))))))
+          nil)))
+
+
+(defn compile-rebind
+  "Takes vector of bindings and a vector of names this binding needs to
+  get bound to and returns list of def expressions that bind bindings to
+  a new names. If names matches associated binding it will be ignored."
+  [bindings names]
+  ;; Loop through the given names and bindings and assembling a `form`
+  ;; list containing set expressions.
+  (loop [form '()
+         bindings bindings
+         names names]
+    ;; If all the names have bing iterated return reversed form. Form is
+    ;; reversed since later bindings will be cons-ed later, appearing in
+    ;; inverse order.
+    (if (empty? names)
+      (reverse form)
+      (recur
+       ;; If name and binding are identical then rebind is unnecessary
+       ;; and it's skipped. Also not skipping such rebinds could be
+       ;; problematic as definitions may shadow bindings.
+       (if (identical? (first names) (first bindings))
+         form
+         (cons (list 'def (first names) (first bindings)) form))
+       (rest bindings)
+       (rest names)))))
+
+(defn compile-switch-cases
+  [cases]
+  (reduce-list
+   cases
+   (fn [form case-expression]
+     (str form
+          (compile-template
+           (list "case ~{}:\n  ~{}\n"
+                 (compile (macroexpand (first case-expression)))
+                 (compile (macroexpand (rest case-expression)))))))
+   ""))
+
+
+(defn compile-switch
+  [value cases default-case]
+  (compile-template
+   (list "switch (~{}) {\n  ~{}\n  default:\n    ~{}\n}"
+         (compile (macroexpand value))
+         (compile-switch-cases cases)
+         (compile (macroexpand default-case)))))
 
 (defn compile-fn
   "(fn name? [params* ] exprs*)
@@ -512,18 +592,21 @@
   (let [signature (desugar-fn-attrs (desugar-fn-doc (desugar-fn-name form)))
         name (first signature)
         doc (second signature)
-        attrs (third signature)
-        params (third (rest signature))
-        body (rest (rest (rest (rest signature))))]
-    (compile-desugared-fn name doc attrs params body)))
+        attrs (third signature)]
+    (if (vector? (third (rest signature)))
+      (compile-desugared-fn name doc attrs
+                            (third (rest signature))
+                            (rest (rest (rest (rest signature)))))
+      (compile
+        (compile-overloaded-fn name doc attrs (rest (rest (rest signature))))))))
 
-(defn compile-fn-invoke
+(defn compile-invoke
   [form]
   (compile-template
    ;; Wrap functions returned by expressions into parenthesis.
    (list (if (list? (first form)) "(~{})(~{})" "~{}(~{})")
          (compile (first form))
-         (compile-group (second form)))))
+         (compile-group (rest form)))))
 
 (defn compile-group
   [form wrap]
@@ -536,19 +619,19 @@
   "Evaluates the expressions in order and returns the value of the last.
   If no expressions are supplied, returns nil."
   [form]
-  (compile (list (cons (symbol "fn") (cons (Array) form)))))
+  (compile (list (cons 'fn (cons [] form)))))
 
 
 (defn define-bindings
   "Returns list of binding definitions"
   [form]
-  (loop [defs (list)
+  (loop [defs '()
          bindings form]
     (if (= (count bindings) 0)
       (reverse defs)
       (recur
         (cons
-          (list (symbol "def")      ; '(def (get bindings 0) (get bindings 1))
+          (list 'def                ; '(def (get bindings 0) (get bindings 1))
                 (get bindings 0)    ; binding name
                 (get bindings 1))   ; binding value
            defs)
@@ -565,7 +648,7 @@
   ;; Consider making let a macro:
   ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3999
   (compile
-    (cons (symbol "do")
+    (cons 'do
           (concat-list
             (define-bindings (first form))
             (rest form)))))
@@ -604,9 +687,9 @@
   propagates out of the function. Before returning, normally or abnormally,
   any finally exprs will be evaluated for their side effects."
   [form]
-  (loop [try-exprs (list)
-         catch-exprs (list)
-         finally-exprs (list)
+  (loop [try-exprs '()
+         catch-exprs '()
+         finally-exprs '()
          exprs (reverse form)]
     (if (empty? exprs)
       (if (empty? catch-exprs)
@@ -629,14 +712,12 @@
               (compile (first catch-exprs))
               (compile-fn-body (rest catch-exprs))
               (compile-fn-body finally-exprs)))))
-        (if (symbol-identical? (first (first exprs))
-                               (symbol "catch"))
+        (if (identical? (first (first exprs)) 'catch)
           (recur try-exprs
                  (rest (first exprs))
                  finally-exprs
                  (rest exprs))
-          (if (symbol-identical? (first (first exprs))
-                                 (symbol "finally"))
+          (if (identical? (first (first exprs)) 'finally)
             (recur try-exprs
                    catch-exprs
                    (rest (first exprs))
@@ -668,9 +749,9 @@
 (defn compile-apply
   [form]
   (compile
-    (list (symbol ".")
+    (list '.
           (first form)
-          (symbol "apply")
+          'apply
           (first form)
           (second form))))
 
@@ -719,8 +800,8 @@
     ;;    ~@(define-bindings bindings)
     ;;    ~@(compile-recur body names)))
     (compile
-      (cons (cons (symbol "fn")
-              (cons (symbol "loop")
+      (cons (cons 'fn
+              (cons 'loop
                 (cons names
                   (compile-recur names body))))
             (apply list values)))))
@@ -729,13 +810,13 @@
   "Rebinds given bindings to a given names in a form of
   (set! foo bar) expressions"
   [names values]
-  (loop [result (list)
+  (loop [result '()
          names names
          values values]
     (if (empty? names)
       (reverse result)
       (recur
-       (cons (list (symbol "set!") (first names) (first values)) result)
+       (cons (list 'set! (first names) (first values)) result)
        (rest names)
        (rest values)))))
 
@@ -745,12 +826,12 @@
   (map-list body
        (fn [form]
          (if (list? form)
-           (if (identical? (first form) (symbol "recur"))
-             (list (symbol "::raw")
+           (if (identical? (first form) 'recur)
+             (list 'raw*
                    (compile-group
                     (concat-list
                       (rebind-bindings names (rest form))
-                      (list (symbol "loop")))
+                      (list 'loop))
                     true))
              (expand-recur names form))
            form))))
@@ -760,69 +841,51 @@
   of the recursion point to the parameters of the recur"
   [names body]
   (list
-    (list (symbol "::raw")
+    (list 'raw*
           (compile-template
           (list "var recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}"
                 (compile-statements (expand-recur names body)))))
-    (symbol "recur")))
+    'recur))
 
 (defn compile-raw
   "returns form back since it's already compiled"
   [form]
   (first form))
 
-(install-special (symbol "set!") compile-set)
-(install-special (symbol "get") compile-compound-accessor)
-(install-special (symbol "aget") compile-compound-accessor)
-(install-special (symbol "def") compile-def)
-(install-special (symbol "if") compile-if-else)
-(install-special (symbol "do") compile-do)
-(install-special (symbol "do*") compile-statements)
-(install-special (symbol "fn") compile-fn)
-(install-special (symbol "let") compile-let)
-(install-special (symbol "throw") compile-throw)
-(install-special (symbol "vector") compile-vector)
-(install-special (symbol "array") compile-vector)
-(install-special (symbol "try") compile-try)
-(install-special (symbol ".") compile-property)
-(install-special (symbol "apply") compile-apply)
-(install-special (symbol "new") compile-new)
-(install-special (symbol "instance?") compile-instance)
-(install-special (symbol "not") compile-not)
-(install-special (symbol "loop") compile-loop)
-(install-special (symbol "::raw") compile-raw)
-(install-special (symbol "::compile:invoke") compile-fn-invoke)
+(install-special 'set! compile-set)
+(install-special 'get compile-compound-accessor)
+(install-special 'aget compile-compound-accessor)
+(install-special 'def compile-def)
+(install-special 'if compile-if-else)
+(install-special 'do compile-do)
+(install-special 'do* compile-statements)
+(install-special 'fn compile-fn)
+(install-special 'let compile-let)
+(install-special 'throw compile-throw)
+(install-special 'vector compile-vector)
+(install-special 'try compile-try)
+(install-special '. compile-property)
+(install-special 'apply compile-apply)
+(install-special 'new compile-new)
+(install-special 'instance? compile-instance)
+(install-special 'not compile-not)
+(install-special 'loop compile-loop)
+(install-special 'raw* compile-raw)
 
 
-
-
-(install-special (symbol "::compile:keyword")
-  ;; Note: Intentionally do not prefix keywords (unlike clojurescript)
-  ;; so that they can be used with regular JS code:
-  ;; (.add-event-listener window :load handler)
-  (fn [form] (str "\"" "\uA789" (name (first form)) "\"")))
-
-(install-special (symbol "::compile:symbol")
-  (fn [form] (str "\"" "\uFEFF" (name (first form)) "\"")))
-
-(install-special (symbol "::compile:nil")
-  (fn [form] "void(0)"))
-
-(install-special (symbol "::compile:number")
-  (fn [form] (first form)))
-
-(install-special (symbol "::compile:boolean")
-  (fn [form] (if (true? (first form)) "true" "false")))
-
-(install-special (symbol "::compile:string")
-  (fn [form]
-    (def string (first form))
-    (set! string (.replace string (RegExp "\\\\" "g") "\\\\"))
-    (set! string (.replace string (RegExp "\n" "g") "\\n"))
-    (set! string (.replace string (RegExp "\r" "g") "\\r"))
-    (set! string (.replace string (RegExp "\t" "g") "\\t"))
-    (set! string (.replace string (RegExp "\"" "g") "\\\""))
-    (str "\"" string "\"")))
+(defn compile-keyword [form] (str "\"" "\uA789" (name form) "\""))
+(defn compile-symbol [form] (str "\"" "\uFEFF" (name form) "\""))
+(defn compile-nil [form] "void(0)")
+(defn compile-number [form] form)
+(defn compile-boolean [form] (if (true? form) "true" "false"))
+(defn compile-string
+  [form]
+  (set! form (.replace form (RegExp "\\\\" "g") "\\\\"))
+  (set! form (.replace form (RegExp "\n" "g") "\\n"))
+  (set! form (.replace form (RegExp "\r" "g") "\\r"))
+  (set! form (.replace form (RegExp "\t" "g") "\\t"))
+  (set! form (.replace form (RegExp "\"" "g") "\\\""))
+  (str "\"" form "\""))
 
 (defn compile-re-pattern
   [form]
@@ -895,115 +958,112 @@
         (str (first form) " form requires at least two operands")))))
 
 ;; Arithmetic Operators
-(install-native (symbol "+") (symbol "+") nil 0)
-(install-native (symbol "-") (symbol "-") nil "NaN")
-(install-native (symbol "*") (symbol "*") nil 1)
-(install-native (symbol "/") (symbol "/") verify-two)
-(install-native (symbol "mod") (symbol "%") verify-two)
+(install-native '+ '+ nil 0)
+(install-native '- '- nil "NaN")
+(install-native '* '* nil 1)
+(install-native '/ '/ verify-two)
+(install-native 'mod (symbol "%") verify-two)
 
 ;; Logical Operators
-(install-native (symbol "and") (symbol "&&"))
-(install-native (symbol "or") (symbol "||"))
+(install-native 'and '&&)
+(install-native 'or '||)
 
 ;; Comparison Operators
 
-(install-operator (symbol "=") (symbol "=="))
-(install-operator (symbol "not=") (symbol "!="))
-(install-operator (symbol "==") (symbol "=="))
-(install-operator (symbol "identical?") (symbol "==="))
-(install-operator (symbol ">") (symbol ">"))
-(install-operator (symbol ">=") (symbol ">="))
-(install-operator (symbol "<") (symbol "<"))
-(install-operator (symbol "<=") (symbol "<="))
+(install-operator '= '==)
+(install-operator 'not= '!=)
+(install-operator '== '==)
+(install-operator 'identical? '===)
+(install-operator '> '>)
+(install-operator '>= '>=)
+(install-operator '< '<)
+(install-operator '<= '<=)
 
 ;; Bitwise Operators
 
-(install-native (symbol "bit-and") (symbol "&") verify-two)
-(install-native (symbol "bit-or") (symbol "|") verify-two)
-(install-native (symbol "bit-xor") (symbol "^"))
-(install-native (symbol "bit-not ") (symbol "~") verify-two)
-(install-native (symbol "bit-shift-left") (symbol "<<") verify-two)
-(install-native (symbol "bit-shift-right") (symbol ">>") verify-two)
-(install-native (symbol "bit-shift-right-zero-fil") (symbol ">>>") verify-two)
+(install-native 'bit-and '& verify-two)
+(install-native 'bit-or '| verify-two)
+(install-native 'bit-xor (symbol "^"))
+(install-native 'bit-not (symbol "~") verify-two)
+(install-native 'bit-shift-left '<< verify-two)
+(install-native 'bit-shift-right '>> verify-two)
+(install-native 'bit-shift-right-zero-fil '>>> verify-two)
 
-(defn defmacro-from-string
-  "Installs macro by from string, by using new reader and compiler.
-  This is temporary workaround until we switch to new compiler"
-  [macro-source]
-  (compile-program
-    (macroexpand
-      (read-from-string (str "(do " macro-source ")")))))
+(install-macro
+ 'cond
+ (fn cond
+   "Takes a set of test/expr pairs. It evaluates each test one at a
+   time.  If a test returns logical true, cond evaluates and returns
+   the value of the corresponding expr and doesn't evaluate any of the
+   other tests or exprs. (cond) returns nil."
+   {:added "1.0"}
+   [& clauses]
+   (if (not (empty? clauses))
+     (list 'if (first clauses)
+           (if (empty? (rest clauses))
+             (throw (Error "cond requires an even number of forms"))
+             (second clauses))
+           (cons 'cond (rest (rest clauses)))))))
 
-(defmacro-from-string
-"
-(defmacro cond
-  \"Takes a set of test/expr pairs. It evaluates each test one at a
-  time.  If a test returns logical true, cond evaluates and returns
-  the value of the corresponding expr and doesn't evaluate any of the
-  other tests or exprs. (cond) returns nil.\"
-  ;{:added \"1.0\"}
-  [clauses]
-  (set! clauses (apply list arguments))
-  (if (not (empty? clauses))
-    (list 'if (first clauses)
-          (if (empty? (rest clauses))
-            (throw (Error \"cond requires an even number of forms\"))
-            (second clauses))
-          (cons 'cond (rest (rest clauses))))))
-
-(defmacro defn
-   \"Same as (def name (fn [params* ] exprs*)) or
+(install-macro
+ 'defn
+ (fn defn
+   "Same as (def name (fn [params* ] exprs*)) or
    (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
-   to the var metadata\"
-  ;{:added \"1.0\", :special-form true ]}
-  [name]
-  (def body (apply list (Array.prototype.slice.call arguments 1)))
-  `(def ~name (fn ~name ~@body)))
+   to the var metadata"
+   {:added "1.0" :special-form true }
+   [name & body]
+   `(def ~name (fn ~name ~@body))))
 
-(defmacro import
-  \"Helper macro for importing node modules\"
-  [imports path]
-  (if (nil? path)
-    `(require ~imports)
-    (if (symbol? imports)
-      `(def ~imports (require ~path))
-      (loop [form '() names imports]
-        (if (empty? names)
-          `(do* ~@form)
-          (let [alias (first names)
-                id (symbol (str \".-\" (name alias)))]
-            (recur (cons `(def ~alias
-                            (~id (require ~path))) form)
-                   (rest names))))))))
 
-(defmacro export
-  \"Helper macro for exporting multiple / single value\"
-  [& names]
-  (if (empty? names)
-    nil
-    (if (empty? (rest names))
-      `(set! module.exports ~(first names))
-      (loop [form '() exports names]
-        (if (empty? exports)
-          `(do* ~@form)
-          (recur (cons `(set!
-                         (~(symbol (str \".-\" (name (first exports))))
-                           exports)
-                         ~(first exports))
-                       form)
-               (rest exports)))))))
+(install-macro
+ 'assert
+ (fn assert
+   "Evaluates expr and throws an exception if it does not evaluate to
+   logical true."
+   {:added "1.0"}
+   [x message]
+   (if (nil? message)
+     `(assert ~x "")
+     `(if (not ~x)
+        (throw (Error. (.concat "Assert failed: " ~message "\n" '~x)))))))
 
-(defmacro assert
-  \"Evaluates expr and throws an exception if it does not evaluate to
-  logical true.\"
-  {:added \"1.0\"}
-  [x message]
-  (if (nil? message)
-    `(assert ~x \"\")
-    `(if (not ~x)
-       (throw (Error. (.concat \"Assert failed: \" ~message \"\n\" '~x))))))
-")
+(install-macro
+ 'export
+ (fn
+   "Helper macro for exporting multiple / single value"
+   [& names]
+   (if (empty? names)
+     nil
+     (if (empty? (rest names))
+       `(set! module.exports ~(first names))
+       (loop [form '() exports names]
+         (if (empty? exports)
+           `(do* ~@form)
+           (recur (cons `(set!
+                          (~(symbol (str ".-" (name (first exports))))
+                            exports)
+                          ~(first exports))
+                        form)
+                  (rest exports))))))))
 
+(install-macro
+ 'import
+ (fn
+   "Helper macro for importing node modules"
+   [imports path]
+   (if (nil? path)
+     `(require ~imports)
+     (if (symbol? imports)
+       `(def ~imports (require ~path))
+       (loop [form '() names imports]
+         (if (empty? names)
+           `(do* ~@form)
+           (let [alias (first names)
+                 id (symbol (str ".-" (name alias)))]
+             (recur (cons `(def ~alias
+                             (~id (require ~path))) form)
+                    (rest names)))))))))
 ;; TODO:
 ;; - alength
 ;; - defn with metadata in front of name
