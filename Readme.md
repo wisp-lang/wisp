@@ -569,7 +569,7 @@ in JS but usually expressed via method chaining. For example following
 API is pioneered by jQuery is very common in JS:
 
 ```javascript
-open(target, "keypress).
+open(target, "keypress").
   filter(isEnterKey).
   map(getInputText).
   reduce(render)
