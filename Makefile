@@ -1,43 +1,39 @@
-MAKE = node ./bin/wisp.js
-BROWSERIFY = node ./node_modules/browserify/bin/cmd.js
+MAKEFLAGS=s
+NODE=node
+WISP=$(NODE) ./bin/wisp.js
+BROWSERIFY=$(NODE) ./node_modules/browserify/bin/cmd.js
 
-core: runtime list sequence ast reader compiler
-node: core wisp node-engine repl
-browser: core embed browser-engine browserify
+FILES=repl reader compiler runtime list sequence ast wisp
+FILES+=engine/node engine/browser
+SUPPORT=embed browserify
+
 all: node browser
+core: runtime list sequence ast reader compiler
+node: core wisp engine/node repl
+browser: core embed engine/browser browserify
 
-repl:
-	cat ./src/repl.wisp | $(MAKE) > ./repl.js && mv ./repl.js ./lib/repl.js
+clean:
+	touch src/* src/engine/*
 
-reader:
-	cat ./src/reader.wisp | $(MAKE) > ./reader.js && mv ./reader.js ./lib/reader.js
+src/engine:
+	mkdir -p src/engine
 
-compiler:
-	cat ./src/compiler.wisp | $(MAKE) > ./compiler.js && mv ./compiler.js ./lib/compiler.js
+embed: support/embed.wisp
+support/embed.wisp:
+	cat ./support/embed.wisp | $(WISP) > ./embed.js && mv ./embed.js ./support/embed.js
 
-runtime:
-	cat ./src/runtime.wisp | $(MAKE) > ./runtime.js && mv ./runtime.js ./lib/runtime.js
+browserify: support/app.js
 
-list:
-	cat ./src/list.wisp | $(MAKE) > ./list.js && mv ./list.js ./lib/list.js
-
-sequence:
-	cat ./src/sequence.wisp | $(MAKE) > ./sequence.js && mv ./sequence.js ./lib/sequence.js
-
-ast:
-	cat ./src/ast.wisp | $(MAKE) > ./ast.js && mv ./ast.js ./lib/ast.js
-
-wisp:
-	cat ./src/wisp.wisp | $(MAKE) > ./wisp.js && mv ./wisp.js ./lib/wisp.js
-
-node-engine:
-	cat ./src/engine/node.wisp | $(MAKE) > ./node.js && mv ./node.js ./lib/engine/node.js
-
-browser-engine:
-	cat ./src/engine/browser.wisp | $(MAKE) > ./browser.js && mv ./browser.js ./lib/engine/browser.js
-
-embed:
-	cat ./support/embed.wisp | $(MAKE) > ./embed.js && mv ./embed.js ./support/embed.js
-
-browserify:
+support/app.js: support/embed.js
 	$(BROWSERIFY) ./support/embed.js > ./support/app.js
+
+define Compile
+$(1): lib/$(1).js
+lib/$(1).js: src/$(1).wisp
+ifeq ($(MAKEFLAGS),s)
+	echo " WISP $(1)"
+endif
+	$(WISP) < src/$(1).wisp > $(1).js && mv $(1).js lib/$(1).js
+endef
+$(foreach file,$(FILES),$(eval $(call Compile,$(file))))
+
