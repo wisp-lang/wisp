@@ -1925,8 +1925,8 @@ var compileFnParams = function compileFnParams(params) {
 
 var compileDesugaredFn = function compileDesugaredFn(name, doc, attrs, params, body) {
   return compileTemplate(isNil(name) ?
-    list("function(~{}) {\n  ~{}\n}", compileFnParams(params), compileFnBody(body, params)) :
-    list("function ~{}(~{}) {\n  ~{}\n}", compile(name), compileFnParams(params), compileFnBody(body, params)));
+    list("function(~{}) {\n  ~{}\n}", compileFnParams(params), compileFnBody(map(macroexpand, body), params)) :
+    list("function ~{}(~{}) {\n  ~{}\n}", compile(name), compileFnParams(params), compileFnBody(map(macroexpand, body), params)));
 };
 
 var compileStatements = function compileStatements(form, prefix) {
@@ -1946,7 +1946,11 @@ var compileStatements = function compileStatements(form, prefix) {
 var compileFnBody = function compileFnBody(form, params) {
   return (isVector(params)) && (isContainsVector(params, "﻿&")) ?
     compileStatements(cons(list("﻿def", params[inc(params.indexOf("﻿&"))], list("﻿Array.prototype.slice.call", "﻿arguments", params.indexOf("﻿&"))), form), "return ") :
-    compileStatements(form, "return ");
+    (function() {
+      return (count(form) == 1) && (isList(first(form))) && (first(first(form)) == "﻿do") ?
+        compileFnBody(rest(first(form)), params) :
+        compileStatements(form, "return ");
+    })();
 };
 
 var isVariadic = function isVariadic(params) {
@@ -2066,10 +2070,6 @@ var defineBindings = function defineBindings(form) {
   })(list(), form);
 };
 
-var compileLet = function compileLet(form) {
-  return compile(cons("﻿do", concatList(defineBindings(first(form)), rest(form))));
-};
-
 var compileThrow = function compileThrow(form) {
   return compileTemplate(list("(function() { throw ~{}; })()", compile(macroexpand(first(form)))));
 };
@@ -2185,8 +2185,6 @@ installSpecial("﻿do", compileDo);
 installSpecial("﻿do*", compileStatements);
 
 installSpecial("﻿fn", compileFn);
-
-installSpecial("﻿let", compileLet);
 
 installSpecial("﻿throw", compileThrow);
 
@@ -2328,6 +2326,11 @@ installNative("﻿bit-shift-left", "﻿<<", verifyTwo);
 installNative("﻿bit-shift-right", "﻿>>", verifyTwo);
 
 installNative("﻿bit-shift-right-zero-fil", "﻿>>>", verifyTwo);
+
+installMacro("﻿let", function letMacro(bindings) {
+  var body = Array.prototype.slice.call(arguments, 1);
+  return cons("﻿do", concatList(defineBindings(bindings), body));
+});
 
 installMacro("﻿cond", function cond() {
   var clauses = Array.prototype.slice.call(arguments, 0);
@@ -2575,15 +2578,11 @@ var updatePreview = function updatePreview(editor) {
     return updatePreview.id = setTimeout(function() {
       return (function() {
       try {
-        return (function() {
-          editor.clearMarker(updatePreview.line || 1);
-          return output.setValue(transpile(code));
-        })();
+        editor.clearMarker(updatePreview.line || 1);
+        return output.setValue(transpile(code));
       } catch (error) {
-        return (function() {
-          updatePreview.line = error.line;
-          return editor.setMarker(error.line || 0, str("<span title='", error.message, "'>●</span> %N%"));
-        })();
+        updatePreview.line = error.line;
+        return editor.setMarker(error.line || 0, str("<span title='", error.message, "'>●</span> %N%"));
       }})();
     }, 200);
   })();
@@ -2607,14 +2606,12 @@ var input = CodeMirror(document.getElementById("input"), {
     return hlLine = input.setLineClass((input.getCursor()).line, null, "activeline");
   },
   "onGutterClick": function() {
-    return (function() {
-      var output = document.getElementById("output");
-      var input = document.getElementById("input");
-      output.hidden = !(output.hidden);
-      return input.style.width = output.hidden ?
-        "100%" :
-        "50%";
-    })();
+    var output = document.getElementById("output");
+    var input = document.getElementById("input");
+    output.hidden = !(output.hidden);
+    return input.style.width = output.hidden ?
+      "100%" :
+      "50%";
   }
 });
 

@@ -16,15 +16,11 @@ var updatePreview = function updatePreview(editor) {
     return updatePreview.id = setTimeout(function() {
       return (function() {
       try {
-        return (function() {
-          editor.clearMarker(updatePreview.line || 1);
-          return output.setValue(transpile(code));
-        })();
+        editor.clearMarker(updatePreview.line || 1);
+        return output.setValue(transpile(code));
       } catch (error) {
-        return (function() {
-          updatePreview.line = error.line;
-          return editor.setMarker(error.line || 0, str("<span title='", error.message, "'>●</span> %N%"));
-        })();
+        updatePreview.line = error.line;
+        return editor.setMarker(error.line || 0, str("<span title='", error.message, "'>●</span> %N%"));
       }})();
     }, 200);
   })();
@@ -48,14 +44,12 @@ var input = CodeMirror(document.getElementById("input"), {
     return hlLine = input.setLineClass((input.getCursor()).line, null, "activeline");
   },
   "onGutterClick": function() {
-    return (function() {
-      var output = document.getElementById("output");
-      var input = document.getElementById("input");
-      output.hidden = !(output.hidden);
-      return input.style.width = output.hidden ?
-        "100%" :
-        "50%";
-    })();
+    var output = document.getElementById("output");
+    var input = document.getElementById("input");
+    output.hidden = !(output.hidden);
+    return input.style.width = output.hidden ?
+      "100%" :
+      "50%";
   }
 });
 
