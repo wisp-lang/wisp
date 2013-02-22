@@ -104,7 +104,7 @@
 
 (defn reader-error
   [reader message]
-  (let [error (Error (str message
+  (let [error (SyntaxError (str message
                "\n" "line:" (line reader)
                "\n" "column:" (column reader)))]
     (set! error.line (line reader))
@@ -513,23 +513,20 @@
   (loop []
     (let [ch (read-char reader)]
       (cond
-       (nil? ch) (if eof-is-error
-                   (reader-error reader "EOF")
-                   sentinel)
+       (nil? ch) (if eof-is-error (reader-error reader "EOF") sentinel)
        (whitespace? ch) (recur)
        (comment-prefix? ch) (read (read-comment reader ch)
                                   eof-is-error
                                   sentinel
                                   is-recursive)
        :else (let [f (macros ch)
-                   res (cond
+                   form (cond
                         f (f reader ch)
-                        (number-literal? reader ch) (read-number
-                                                     reader ch)
+                        (number-literal? reader ch) (read-number reader ch)
                         :else (read-symbol reader ch))]
-               (if (identical? res reader)
+               (if (identical? form reader)
                  (recur)
-                 res))))))
+                 form))))))
 
 (defn read-from-string
   "Reads one object from the string s"

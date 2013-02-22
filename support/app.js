@@ -897,7 +897,7 @@ var isNumberLiteral = function isNumberLiteral(reader, initch) {
 
 var readerError = function readerError(reader, message) {
   return (function() {
-    var error = Error(str(message, "\n", "line:", line(reader), "\n", "column:", column(reader)));
+    var error = SyntaxError(str(message, "\n", "line:", line(reader), "\n", "column:", column(reader)));
     error.line = line(reader);
     error.column = column(reader);
     error.uri = reader["uri"];
@@ -1383,16 +1383,16 @@ var read = function read(reader, eofIsError, sentinel, isRecursive) {
       "else" ?
         (function() {
           var f = macros(ch);
-          var res = f ?
+          var form = f ?
             f(reader, ch) :
           isNumberLiteral(reader, ch) ?
             readNumber(reader, ch) :
           "else" ?
             readSymbol(reader, ch) :
             void(0);
-          return res === reader ?
+          return form === reader ?
             (loop) :
-            res;
+            form;
         })() :
         void(0);
     })();
