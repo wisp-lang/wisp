@@ -637,22 +637,6 @@
            defs)
         (rest (rest bindings))))))
 
-(defn compile-let
-  "Evaluates the exprs in a lexical context in which the symbols in
-  the binding-forms are bound to their respective init-exprs or parts
-  therein."
-  ; {:added "1.0", :special-form true, :forms '[(let [bindings*] exprs*)]}
-  [form]
-  ;; TODO: Implement destructure for bindings:
-  ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3937
-  ;; Consider making let a macro:
-  ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3999
-  (compile
-    (cons 'do
-          (concat-list
-            (define-bindings (first form))
-            (rest form)))))
-
 (defn compile-throw
   "The expression is evaluated and thrown, therefore it should yield an error."
   [form]
@@ -860,7 +844,6 @@
 (install-special 'do compile-do)
 (install-special 'do* compile-statements)
 (install-special 'fn compile-fn)
-(install-special 'let compile-let)
 (install-special 'throw compile-throw)
 (install-special 'vector compile-vector)
 (install-special 'try compile-try)
@@ -988,6 +971,21 @@
 (install-native 'bit-shift-left '<< verify-two)
 (install-native 'bit-shift-right '>> verify-two)
 (install-native 'bit-shift-right-zero-fil '>>> verify-two)
+
+(install-macro
+  'let
+  (fn let-macro
+    "Evaluates the exprs in a lexical context in which the symbols in
+    the binding-forms are bound to their respective init-exprs or parts
+    therein."
+    {:added "1.0" :special-form true :forms '[(let [bindings*] exprs*)]}
+    [bindings & body]
+    ;; TODO: Implement destructure for bindings:
+    ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3937
+    ;; Consider making let a macro:
+    ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3999
+    (cons 'do
+      (concat-list (define-bindings bindings) body))))
 
 (install-macro
  'cond
