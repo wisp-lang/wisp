@@ -435,11 +435,11 @@
     (if (nil? name)
       (list "function(~{}) {\n  ~{}\n}"
             (compile-fn-params params)
-            (compile-fn-body body params))
+            (compile-fn-body (map macroexpand body) params))
       (list "function ~{}(~{}) {\n  ~{}\n}"
             (compile name)
             (compile-fn-params params)
-            (compile-fn-body body params)))))
+            (compile-fn-body (map macroexpand body) params)))))
 
 (defn compile-statements
   [form prefix]
@@ -468,7 +468,14 @@
                     (.index-of params '&)))
       form)
       "return ")
-    (compile-statements form "return ")))
+
+    ;; Optimize functions who's body only contains `let` form to avoid
+    ;; function call overhead.
+    (if (and (= (count form) 1)
+             (list? (first form))
+             (= (first (first form)) 'do))
+      (compile-fn-body (rest (first form)) params)
+      (compile-statements form "return "))))
 
 (defn variadic?
   "Returns true if function signature is variadic"
