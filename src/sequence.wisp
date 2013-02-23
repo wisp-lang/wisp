@@ -151,18 +151,24 @@
     (.-tail sequence)
     (.slice sequence 1)))
 
-(export map filter reduce take reverse
-        empty? count first second third rest)
 (defn drop
   [n sequence]
   (cond (string? sequence) (.substr sequence n)
 
         (vector? sequence) (.slice sequence n)
         (list? sequence) (drop-list n sequence)))
+
+(defn concat
+  [& sequences]
+  (apply concat-list (map seq sequences)))
+
 (defn seq [sequence]
   (cond (nil? sequence) nil
         (or (vector? sequence) (list? sequence)) sequence
         (string? sequence) (.call Array.prototype.slice sequence)
         (dictionary? sequence) (key-values sequence)
         :default (throw TypeError (str "Can not seq " sequence))))
+
+(export map filter reduce take reverse drop concat
+        empty? count first second third rest seq)
 
