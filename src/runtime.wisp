@@ -37,6 +37,11 @@
   (.map (keys dictionary)
         (fn [key] (get dictionary key))))
 
+(defn key-values
+  [dictionary]
+  (.map (keys dictionary)
+        (fn [key] [key (get dictionary key)])))
+
 (defn merge
   "Returns a dictionary that consists of the rest of the maps conj-ed onto
   the first. If a key occurs in more than one map, the mapping from
@@ -170,5 +175,5 @@
 
 (export dictionary? dictionary merge odd? vector? string? number? fn? object?
         nil? boolean? true? false? map-dictionary contains-vector? keys vals
-        re-pattern re-find re-matches re-pattern? inc dec str)
+        re-pattern re-find re-matches re-pattern? inc dec str key-values)
 
