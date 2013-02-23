@@ -1,4 +1,4 @@
-(import [nil? vector? number? string? str] "./runtime")
+(import [nil? vector? number? string? str dec] "./runtime")
 
 (defn List
   "List type"
@@ -127,6 +127,13 @@
                            result))
            '())))
 
+(defn drop-list [n sequence]
+  (loop [left n
+         items sequence]
+    (if (or (< left 1) (empty? items))
+      items
+      (recur (dec left) (rest items)))))
+
 (defn list-to-vector [source]
   (loop [result []
          list source]
@@ -150,4 +157,4 @@
 (export empty? count list? first second third
         rest cons list reverse reduce-list
         map-list list-to-vector concat-list
-        sort-list)
+        sort-list drop-list)
