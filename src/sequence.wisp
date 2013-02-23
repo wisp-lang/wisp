@@ -159,3 +159,10 @@
 
         (vector? sequence) (.slice sequence n)
         (list? sequence) (drop-list n sequence)))
+(defn seq [sequence]
+  (cond (nil? sequence) nil
+        (or (vector? sequence) (list? sequence)) sequence
+        (string? sequence) (.call Array.prototype.slice sequence)
+        (dictionary? sequence) (key-values sequence)
+        :default (throw TypeError (str "Can not seq " sequence))))
+
