@@ -1,5 +1,5 @@
-(import [vector? dec] "./runtime")
-(import [list? list cons] "./list")
+(import [nil? vector? dec string? dictionary? key-values] "./runtime")
+(import [list? list cons drop-list concat-list] "./list")
 
 (defn reverse
   "Reverse order of items in the sequence"
@@ -153,3 +153,9 @@
 
 (export map filter reduce take reverse
         empty? count first second third rest)
+(defn drop
+  [n sequence]
+  (cond (string? sequence) (.substr sequence n)
+
+        (vector? sequence) (.slice sequence n)
+        (list? sequence) (drop-list n sequence)))
