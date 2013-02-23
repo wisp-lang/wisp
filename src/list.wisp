@@ -76,9 +76,7 @@
 (defn cons
   "Creates list with `head` as first item and `tail` as rest"
   [head tail]
-  (if (list? tail)
-    (new List head tail)
-    (apply list (.concat [head] tail))))
+  (new List head tail))
 
 (defn list
   "Creates list of the given items"
