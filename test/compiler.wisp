@@ -272,9 +272,18 @@
 (assert (identical? (transpile '`(1 ~@'(2 3)))
                     "concatList(list(1), list(2, 3))")
         "list unquote-splicing compiles")
+(assert (identical? (transpile '`())
+                    "list()")
+         "syntax-quoted empty list compiles to empty list")
+
 (assert (identical? (transpile '`[1 ~@[2 3]])
                     "concatVector([1], [2, 3])")
         "vector unquote-splicing compiles")
+
+(assert (identical? (transpile '`[])
+                    "[]")
+        "syntax-quoted empty vector compiles to empty vector")
+
 
 
 (.log console "compile references")

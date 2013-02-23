@@ -119,18 +119,12 @@
                       (list 'syntax-quote (second e))
                       (list 'syntax-quote e)))))))
 
-(defn split-splices
-  ""
-  [form fn-name]
-
-  (defn make-splice
-    ""
-    [form]
+(defn split-splices "" [form fn-name]
+  (defn make-splice "" [form]
     (if (or (self-evaluating? form)
             (symbol? form))
         (apply-unquoted-form fn-name (list form))
         (apply-unquoted-form fn-name form)))
-
   (loop [nodes form
          slices '()
          acc '()]
@@ -154,10 +148,11 @@
 
 (defn syntax-quote-split
   [append-name fn-name form]
-  (let [slices (split-splices form fn-name)]
-    (if (= (count slices) 1)
-      (first slices)
-      (apply-form append-name slices))))
+  (let [slices (split-splices form fn-name)
+        n (count slices)]
+    (cond (= n 0) (list fn-name)
+          (= n 1) (first slices)
+          :default (apply-form append-name slices))))
 
 
 ;; compiler
@@ -231,7 +226,9 @@
    (list? form) (compile (syntax-quote-split 'concat-list 'list form))
    (vector? form)
     (compile (syntax-quote-split 'concat-vector 'vector (apply list form)))
-   (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
+
+   ; Disable dictionary form as we can't fully support it yet.
+   ; (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
    :else (compile-object form)))
 
 (defn compile
