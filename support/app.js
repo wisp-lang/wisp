@@ -378,29 +378,6 @@ process.binding = function (name) {
 })();
 });
 
-require.define("/lib/list.js",function(require,module,exports,__dirname,__filename,process){var reverse = (require("./sequence")).reverse;
-var list = (require("./sequence")).list;
-var cons = (require("./sequence")).cons;
-var rest = (require("./sequence")).rest;
-var third = (require("./sequence")).third;
-var second = (require("./sequence")).second;
-var first = (require("./sequence")).first;
-var isList = (require("./sequence")).isList;
-var count = (require("./sequence")).count;
-var isEmpty = (require("./sequence")).isEmpty;;
-
-exports.reverse = reverse;
-exports.list = list;
-exports.cons = cons;
-exports.rest = rest;
-exports.third = third;
-exports.second = second;
-exports.first = first;
-exports.isList = isList;
-exports.count = count;
-exports.isEmpty = isEmpty;
-});
-
 require.define("/lib/sequence.js",function(require,module,exports,__dirname,__filename,process){var merge = (require("./runtime")).merge;
 var inc = (require("./runtime")).inc;
 var dec = (require("./runtime")).dec;
@@ -2642,7 +2619,7 @@ exports.compile = compile;
 exports.isSelfEvaluating = isSelfEvaluating;
 });
 
-require.define("/support/embed.js",function(require,module,exports,__dirname,__filename,process){var rest = (require("../lib/list")).rest;;
+require.define("/support/embed.js",function(require,module,exports,__dirname,__filename,process){var rest = (require("../lib/sequence")).rest;;
 
 var str = (require("../lib/runtime")).str;;
 

@@ -1,4 +1,4 @@
-var rest = (require("../lib/list")).rest;;
+var rest = (require("../lib/sequence")).rest;;
 
 var str = (require("../lib/runtime")).str;;
 
