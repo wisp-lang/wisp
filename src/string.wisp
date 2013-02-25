@@ -1,4 +1,4 @@
-(import [str re-matches nil? string?] "./runtime")
+(import [str subs re-matches nil? string?] "./runtime")
 (import [vec empty?] "./sequence")
 
 (defn split
