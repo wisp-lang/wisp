@@ -142,7 +142,7 @@
   (let [matches (.exec re s)]
     (if (not (nil? matches))
       (if (= (.-length matches) 1)
-        (first matches)
+        (get matches 0)
         matches))))
 
 (defn re-matches
