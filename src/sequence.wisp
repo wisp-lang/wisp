@@ -261,8 +261,18 @@
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
 
 (defn concat
+  "Returns list representing the concatenation of the elements in the
+  supplied lists."
   [& sequences]
-  (apply concat-list (map seq sequences)))
+  (reverse
+    (reduce
+      (fn [result sequence]
+        (reduce
+          (fn [result item] (cons item result))
+          result
+          (seq sequence)))
+      '()
+      sequences)))
 
 (defn seq [sequence]
   (cond (nil? sequence) nil
