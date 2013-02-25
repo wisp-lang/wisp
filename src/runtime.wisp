@@ -82,35 +82,49 @@
 
 (def to-string Object.prototype.to-string)
 
+(def fn?
+  (if (identical? (typeof #".") "function")
+    (fn ^boolean fn?
+      "Returns true if x is a function"
+      [x]
+      (identical? (.call to-string x) "[object Function]"))
+    (fn ^boolean fn?
+      "Returns true if x is a function"
+      [x]
+      (identical? (typeof x) "function"))))
+
 (defn ^boolean string?
   "Return true if x is a string"
   [x]
-  (identical? (.call to-string x) "[object String]"))
+  (or (identical? (typeof x) "string")
+      (identical? (.call to-string x) "[object String]")))
 
 (defn ^boolean number?
   "Return true if x is a number"
   [x]
-  (identical? (.call to-string x) "[object Number]"))
+  (or (identical? (typeof x) "number")
+      (identical? (.call to-string x) "[object Number]")))
 
-(defn ^boolean vector?
-  "Returns true if x is a vector"
-  [x]
-  (identical? (.call to-string x) "[object Array]"))
+(def vector?
+  (if (fn? Array.isArray)
+    Array.isArray
+    (fn ^boolean vector?
+      "Returns true if x is a vector"
+      [x]
+      (identical? (.call to-string x) "[object Array]"))))
 
 (defn ^boolean boolean?
   "Returns true if x is a boolean"
   [x]
-  (identical? (.call to-string x) "[object Boolean]"))
+  (or (identical? x true)
+      (identical? x false)
+      (identical? (.call to-string x) "[object Boolean]")))
 
 (defn ^boolean re-pattern?
   "Returns true if x is a regular expression"
   [x]
   (identical? (.call to-string x) "[object RegExp]"))
 
-(defn ^boolean fn?
-  "Returns true if x is a function"
-  [x]
-  (identical? (typeof x) "function"))
 
 (defn ^boolean object?
   "Returns true if x is an object"
