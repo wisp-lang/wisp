@@ -1,5 +1,5 @@
 (import [dictionary? vector?] "../src/runtime")
-(import [list concat-list] "../src/list")
+(import [list concat] "../src/sequence")
 (import [equivalent?] "./utils")
 
 

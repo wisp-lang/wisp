@@ -1,4 +1,4 @@
-(import "./list")
+(import "./sequence")
 (import "./ast")
 (import "./runtime")
 (import "./reader")

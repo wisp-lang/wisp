@@ -2,7 +2,7 @@
          unquote meta dictionary] "../src/ast")
 (import [dictionary nil? str] "../src/runtime")
 (import [read-from-string] "../src/reader")
-(import [list] "../src/list")
+(import [list] "../src/sequence")
 (import [equivalent?] "./utils")
 
 (def read-string read-from-string)

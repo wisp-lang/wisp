@@ -1,5 +1,5 @@
 (import [symbol] "../src/ast")
-(import [list] "../src/list")
+(import [list] "../src/sequence")
 (import [self-evaluating? compile macroexpand] "../src/compiler")
 
 (defn transpile
@@ -270,14 +270,14 @@
 (.log console "compile unquote-splicing forms")
 
 (assert (identical? (transpile '`(1 ~@'(2 3)))
-                    "concatList(list(1), list(2, 3))")
+                    "concat(list(1), list(2, 3))")
         "list unquote-splicing compiles")
 (assert (identical? (transpile '`())
                     "list()")
-         "syntax-quoted empty list compiles to empty list")
+         "empty list unquotes to empty list")
 
 (assert (identical? (transpile '`[1 ~@[2 3]])
-                    "concatVector([1], [2, 3])")
+                    "vec(concat([1], [2, 3]))")
         "vector unquote-splicing compiles")
 
 (assert (identical? (transpile '`[])
