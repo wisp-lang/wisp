@@ -180,6 +180,15 @@
   [code]
   (.fromCharCode String code))
 
+(defn subs
+  "Returns the substring of s beginning at start inclusive, and ending
+  at end (defaults to length of string), exclusive."
+  {:added "1.0"
+   :static true}
+   [string start end]
+   (.substring string start end))
+
 (export dictionary? dictionary merge odd? even? vector? string? number? fn?
         object? nil? boolean? true? false? map-dictionary contains-vector? keys
-        vals re-pattern re-find re-matches re-pattern? inc dec str key-values)
+        vals re-pattern re-find re-matches re-pattern? inc dec str char
+        key-values subs)
