@@ -441,7 +441,7 @@
 "(function loop(x, y) {
   var recur = loop;
   while (recur === loop) {
-    recur = (x > y) ?
+    recur = x > y ?
     x :
     (x = x + 1, y = y - 1, loop);
   };
