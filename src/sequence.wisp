@@ -228,7 +228,7 @@
         (or (vector? sequence) (list? sequence)) sequence
         (string? sequence) (.call Array.prototype.slice sequence)
         (dictionary? sequence) (key-values sequence)
-        :default (throw TypeError (str "Can not seq " sequence))))
+        :default (throw (TypeError (str "Can not seq " sequence)))))
 
 (export map filter reduce take reverse drop concat
         empty? count first second third rest seq)
