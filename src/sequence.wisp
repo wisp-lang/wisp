@@ -183,23 +183,26 @@
 (defn first
   "Return first item in a list"
   [sequence]
-  (if (list? sequence)
-    (.-head sequence)
-    (get sequence 0)))
+  (cond (nil? sequence) nil
+        (list? sequence) (.-head sequence)
+        (or (vector? sequence) (string? sequence)) (get sequence 0)
+        :else (first (seq sequence))))
 
 (defn second
   "Returns second item of the list"
   [sequence]
-  (if (list? sequence)
-    (first (rest sequence))
-    (get sequence 1)))
+  (cond (nil? sequence) nil
+        (list? sequence) (first (rest sequence))
+        (or (vector? sequence) (string? sequence)) (get sequence 1)
+        :else (first (rest (seq sequence)))))
 
 (defn third
   "Returns third item of the list"
   [sequence]
-  (if (list? sequence)
-    (first (rest (rest sequence)))
-    (get sequence 2)))
+  (cond (nil? sequence) nil
+        (list? sequence) (first (rest (rest sequence)))
+        (or (vector? sequence) (string? sequence)) (get sequence 2)
+        :else (second (rest (seq sequence)))))
 
 (defn rest
   "Returns list of all items except first one"
