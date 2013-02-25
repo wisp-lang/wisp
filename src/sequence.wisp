@@ -301,6 +301,11 @@
           (list? items) (apply list (.sort (vec items) compare))
           (dictionary? items) (.sort (seq items) compare)
           :else (sort f (seq items)))))
-(export map filter reduce take reverse drop concat
-        empty? count first second third rest seq)
 
+(export cons conj list list? seq vec
+        empty? count
+        first second third rest last
+        take drop
+        concat reverse
+        sort
+        map filter reduce)
