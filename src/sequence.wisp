@@ -96,14 +96,10 @@
   "Returns a sequence of the items in coll for which (f? item) returns true.
   f? must be free of side-effects."
   [f? sequence]
-  (if (vector? sequence)
-    (filter-vector f? sequence)
-    (filter-list f? sequence)))
-
-(defn filter-vector
-  "Like filter but optimized for vectors"
-  [f? vector]
-  (.filter vector f?))
+  (cond (vector? sequence) (.filter sequence f?)
+        (list? sequence) (filter-list f? sequence)
+        (nil? sequence) '()
+        :else (filter f? (seq sequence))))
 
 (defn filter-list
   "Like filter but for lists"
