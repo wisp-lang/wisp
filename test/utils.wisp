@@ -29,9 +29,9 @@
                 false))))
      (and (object? actual)
           (object? expected)
-          (equivalent? (keys actual)
-                       (keys expected))
-          (equivalent? (vals actual)
-                       (vals expected))))))
+          (equivalent? (.sort (keys actual))
+                       (.sort (keys expected)))
+          (equivalent? (.sort (vals actual))
+                       (.sort (vals expected)))))))
 
 (export equivalent? date?)
