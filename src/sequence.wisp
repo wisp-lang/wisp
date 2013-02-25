@@ -73,15 +73,10 @@
   first item, followed by applying f to the second items, until sequence is
   exhausted."
   [f sequence]
-  (if (vector? sequence)
-    (map-vector f sequence)
-    (map-list f sequence)))
-
-(defn map-vector
-  "Like map but optimized for vectors"
-  [f sequence]
-  (.map sequence f))
-
+  (cond (vector? sequence) (.map sequence f)
+        (list? sequence) (map-list f sequence)
+        (nil? sequence) '()
+        :else (map f (seq sequence))))
 
 (defn map-list
   "Like map but optimized for lists"
