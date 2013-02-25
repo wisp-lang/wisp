@@ -1,5 +1,5 @@
 (import fs "fs")
-(import [rest] "../list")
+(import [rest] "../sequence")
 (import [str] "../runtime")
 (import [read-from-string] "../reader")
 (import [compile-program] "../compiler")

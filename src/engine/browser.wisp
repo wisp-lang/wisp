@@ -1,5 +1,5 @@
 (import [str] "../runtime")
-(import [rest] "../list")
+(import [rest] "../sequence")
 (import [read-from-string] "../reader")
 (import [compile-program] "../compiler")
 
