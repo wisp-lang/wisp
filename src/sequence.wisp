@@ -272,6 +272,22 @@
         (dictionary? sequence) (key-values sequence)
         :default (throw (TypeError (str "Can not seq " sequence)))))
 
+(defn list->vector [source]
+  (loop [result []
+         list source]
+    (if (empty? list)
+      result
+      (recur
+        (do (.push result (first list)) result)
+        (rest list)))))
+
+(defn vec
+  "Creates a new vector containing the contents of sequence"
+  [sequence]
+  (cond (nil? sequence) []
+        (vector? sequence) sequence
+        (list? sequence) (list->vector sequence)
+        :else (vec (seq sequence))))
 (export map filter reduce take reverse drop concat
         empty? count first second third rest seq)
 
