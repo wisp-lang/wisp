@@ -367,7 +367,9 @@
                  (identical? (first else-expression) 'if))
           "~{} ?\n  ~{} :\n~{}"
           "~{} ?\n  ~{} :\n  ~{}")
-        (compile condition)
+        (if (and (list? condition) (special? (first condition)))
+          (str "(" (compile condition) ")")
+          (compile condition))
         (compile then-expression)
         (compile else-expression)))))
 
