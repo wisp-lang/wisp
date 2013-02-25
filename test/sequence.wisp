@@ -1,6 +1,6 @@
 (import [cons conj list list? seq vec
          empty? count
-         first second third rest last
+         first second third rest last butlast
          take drop
          concat reverse sort
          map filter reduce] "../src/sequence")
@@ -72,7 +72,7 @@
 (assert (= nil (third {:a 1})))
 (assert (equivalent? [:c 3] (third {:a 1, :b 2, :c 3})))
 
-(.log console "last")
+(.log console "test last")
 
 (assert (= nil (last nil)))
 (assert (= nil (last [])))
@@ -85,7 +85,33 @@
 (assert (equivalent? [:b 2] (last {:a 1, :b 2})))
 (assert (= nil (last {})))
 
-(.log console "rest")
+(.log console "test butlast")
+
+(assert (= nil (butlast nil)))
+
+(assert (= nil (butlast '())))
+(assert (= nil (butlast '(1))))
+(assert (equivalent? '(1 2) (butlast '(1 2 3))))
+
+(assert (= nil (butlast [])))
+(assert (= nil (butlast [1])))
+(assert (equivalent? [1 2] (butlast [1 2 3])))
+
+(assert (= nil (butlast {})))
+(assert (= nil (butlast {:a 1})))
+(assert (equivalent? [[:a 1]] (butlast {:a 1, :b 2})))
+
+
+(.log console "test rest")
+
+(assert (equivalent? [] (rest {:a 1})))
+(assert (= "" (rest "a")))
+(assert (equivalent? '(2 3 4) (rest '(1 2 3 4))))
+(assert (equivalent? [2 3] (rest [1 2 3])))
+(assert (equivalent? [[:b 2]] (rest {:a 1 :b 2})))
+(assert (= "ello" (rest "hello")))
+
+
 
 (assert (equivalent? '() (rest nil)))
 (assert (equivalent? '() (rest '())))
