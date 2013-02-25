@@ -1,6 +1,5 @@
-(import [nil? vector? dec string? dictionary? key-values] "./runtime")
-(import [list? list cons drop-list concat-list] "./list")
-
+(import [nil? vector? fn? number? string? dictionary?
+         key-values str dec inc merge] "./runtime")
 
 (defn List
   "List type"
