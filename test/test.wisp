@@ -1,5 +1,6 @@
 (import "./sequence")
 (import "./ast")
 (import "./runtime")
+(import "./string")
 (import "./reader")
 (import "./compiler")
