@@ -2,11 +2,12 @@
 (import [meta with-meta symbol? symbol keyword? keyword
          unquote? unquote-splicing? quote? syntax-quote? name gensym] "./ast")
 (import [empty? count list? list first second third rest cons
-         reverse reduce vec
+         reverse reduce vec last
          map filter take concat] "./sequence")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
-         map-dictionary string? number? vector? boolean?
-         true? false? nil? re-pattern? inc dec str] "./runtime")
+         map-dictionary string? number? vector? boolean? subs
+         true? false? nil? re-pattern? inc dec str char int] "./runtime")
+(import [split join upper-case replace] "./string")
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
@@ -193,26 +194,26 @@
   [form]
   (def id (name form))
   ;; **macros** ->  __macros__
-  (set! id (.join (.split id "*") "_"))
+  (set! id (join "_" (split id "*")))
   ;; list->vector ->  listToVector
-  (set! id (.join (.split id "->") "-to-"))
+  (set! id (join "-to-" (split id "->")))
   ;; set! ->  set
-  (set! id (.join (.split id "!") ""))
-  (set! id (.join (.split id "%") "$"))
+  (set! id (join (split id "!")))
+  (set! id (join "$" (split id "%")))
   ;; number? -> isNumber
-  (set! id (if (identical? (.substr id -1) "?")
-             (str "is-" (.substr id 0 (- (.-length id) 1)))
+  (set! id (if (identical? (last id) "?")
+             (str "is-" (subs id 0 (dec (count id))))
              id))
   ;; create-server -> createServer
-  (set! id (.reduce
-            (.split id "-")
+  (set! id (reduce
             (fn [result key]
               (str result
                    (if (and (not (empty? result))
                             (not (empty? key)))
-                     (str (.to-upper-case (get key 0)) (.substr key 1))
+                     (str (upper-case (get key 0)) (subs key 1))
                      key)))
-            ""))
+            ""
+            (split id "-")))
   id)
 
 (defn compile-keyword-reference
@@ -279,26 +280,26 @@
   [form]
   (if (list? form)
     (let [op (first form)
-          id (name op)]
+          id (if (not (list? op)) (name op))]
       (cond
         (special? op) form
         (macro? op) (execute-macro op (rest form))
         (and (symbol? op)
              (not (identical? id ".")))
           ;; (.substring s 2 5) => (. s substring 2 5)
-          (if (identical? (.char-at id 0) ".")
+          (if (identical? (first id) ".")
             (if (< (count form) 2)
               (throw (Error
                 "Malformed member expression, expecting (.member target ...)"))
               (cons '.
                     (cons (second form)
-                          (cons (symbol (.substr id 1))
+                          (cons (symbol (subs id 1))
                                 (rest (rest form))))))
 
             ;; (StringBuilder. "foo") => (new StringBuilder "foo")
-            (if (identical? (.char-at id (- (.-length id) 1)) ".")
+            (if (identical? (last id) ".")
               (cons 'new
-                    (cons (symbol (.substr id 0 (- (.-length id) 1)))
+                    (cons (symbol (subs id 0 (dec (count id))))
                           (rest form)))
               form))
         :else form))
@@ -328,19 +329,19 @@
       (or (and match (get match 0)) "\n")))
 
   (loop [code ""
-         parts (.split (first form) "~{}")
+         parts (split (first form) "~{}")
          values (rest form)]
-    (if (> (.-length parts) 1)
+    (if (> (count parts) 1)
       (recur
        (str
         code
-        (get parts 0)
-        (.replace (str "" (first values))
+        (first parts)
+        (replace (str "" (first values))
                   line-break-patter
-                  (get-indentation (get parts 0))))
-       (.slice parts 1)
+                  (get-indentation (first parts))))
+       (rest parts)
        (rest values))
-       (.concat code (get parts 0)))))
+       (str code (first parts)))))
 
 (defn compile-def
   "Creates and interns or locates a global var with the name of symbol
@@ -426,8 +427,8 @@
   ;"compiles function params"
   [params]
   (if (contains-vector? params '&)
-    (.join (.map (.slice params 0 (.index-of params '&)) compile) ", ")
-    (.join (.map params compile) ", ")))
+    (join ", " (map compile (.slice params 0 (.index-of params '&))))
+    (join ", " (map compile params) )))
 
 (defn compile-desugared-fn
   ;"(fn name? [params* ] exprs*)
@@ -483,15 +484,6 @@
   "Returns true if function signature is variadic"
   [params]
   (>= (.index-of params '&) 0))
-
-(defn overload-arity
-  "Returns aritiy of the expected arguments for the
-  overleads signature"
-  [params]
-  (if (variadic?)
-    (.index-of params '&)
-    (.-length params)))
-
 
 (defn analyze-overloaded-fn
   "Compiles function that has overloads defined"
@@ -621,7 +613,7 @@
   [form wrap]
   (if wrap
     (str "(" (compile-group form) ")")
-    (.join (vec (map compile (map  macroexpand form))) ", ")))
+    (join ", " (vec (map compile (map  macroexpand form))))))
 
 (defn compile-do
   "Evaluates the expressions in order and returns the value of the last.
@@ -731,7 +723,7 @@
     (compile-template
       (list (if (list? (first form)) "(~{}).~{}" "~{}.~{}")
             (compile (macroexpand (first form)))
-            (compile (macroexpand (symbol (.substr (name (second form)) 1))))))
+            (compile (macroexpand (symbol (subs (name (second form)) 1))))))
     (compile-template
       (list "~{}.~{}(~{})"
             (compile (macroexpand (first form)))    ;; object name
@@ -871,11 +863,11 @@
 (defn compile-boolean [form] (if (true? form) "true" "false"))
 (defn compile-string
   [form]
-  (set! form (.replace form (RegExp "\\\\" "g") "\\\\"))
-  (set! form (.replace form (RegExp "\n" "g") "\\n"))
-  (set! form (.replace form (RegExp "\r" "g") "\\r"))
-  (set! form (.replace form (RegExp "\t" "g") "\\t"))
-  (set! form (.replace form (RegExp "\"" "g") "\\\""))
+  (set! form (replace form (RegExp "\\\\" "g") "\\\\"))
+  (set! form (replace form (RegExp "\n" "g") "\\n"))
+  (set! form (replace form (RegExp "\r" "g") "\\r"))
+  (set! form (replace form (RegExp "\t" "g") "\\t"))
+  (set! form (replace form (RegExp "\"" "g") "\\\""))
   (str "\"" form "\""))
 
 (defn compile-re-pattern
@@ -1033,7 +1025,7 @@
    (if (nil? message)
      `(assert ~x "")
      `(if (not ~x)
-        (throw (Error. (.concat "Assert failed: " ~message "\n" '~x)))))))
+        (throw (Error. (str "Assert failed: " ~message "\n" '~x)))))))
 
 (install-macro
  'export
