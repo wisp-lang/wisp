@@ -194,6 +194,16 @@
   [code]
   (.fromCharCode String code))
 
+
+(defn int
+  "Coerce to int by stripping decimal places."
+  [x]
+  (if (number? x)
+    (if (>= x 0)
+      (.floor Math x)
+      (.floor Math x))
+    (.charCodeAt x 0)))
+
 (defn subs
   "Returns the substring of s beginning at start inclusive, and ending
   at end (defaults to length of string), exclusive."
@@ -205,4 +215,4 @@
 (export dictionary? dictionary merge odd? even? vector? string? number? fn?
         object? nil? boolean? true? false? map-dictionary contains-vector? keys
         vals re-pattern re-find re-matches re-pattern? inc dec str char
-        key-values subs)
+        key-values subs int)
