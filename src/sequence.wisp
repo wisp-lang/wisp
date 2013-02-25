@@ -247,6 +247,19 @@
           :else (drop n (seq sequence)))))
 
 
+(defn conj-list
+  [sequence items]
+  (reduce (fn [result item] (cons item result)) sequence items))
+
+(defn conj
+  [sequence & items]
+  (cond (vector? sequence) (.concat sequence items)
+        (string? sequence) (str sequence (apply str items))
+        (nil? sequence) (apply list (reverse items))
+        (list? sequence) (conj-list sequence items)
+        (dictionary? sequence) (merge sequence (apply merge items))
+        :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
+
 (defn concat
   [& sequences]
   (apply concat-list (map seq sequences)))
