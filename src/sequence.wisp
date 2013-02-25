@@ -13,7 +13,55 @@
                (rest source))))
     (.reverse sequence)))
 
+(defn List
+  "List type"
+  [head tail]
+  (set! this.head head)
+  (set! this.tail (or tail (list)))
+  (set! this.length (inc (count this.tail)))
+  this)
 
+(set! List.prototype.length 0)
+(set! List.prototype.tail (Object.create List.prototype))
+(set! List.prototype.to-string
+      (fn []
+        (loop [result ""
+               list this]
+          (if (empty? list)
+            (str "(" (.substr result 1) ")")
+            (recur
+             (str result
+                  " "
+                  (if (vector? (first list))
+                    (str "[" (.join (first list) " ") "]")
+                    (if (nil? (first list))
+                      "nil"
+                      (if (string? (first list))
+                        (.stringify JSON (first list))
+                        (if (number? (first list))
+                          (.stringify JSON (first list))
+                          (first list))))))
+             (rest list))))))
+
+
+(defn list?
+  "Returns true if list"
+  [value]
+  (.prototype-of? List.prototype value))
+
+(defn list
+  "Creates list of the given items"
+  []
+  (if (= (.-length arguments) 0)
+    (Object.create List.prototype)
+    (.reduce-right (.call Array.prototype.slice arguments)
+                   (fn [tail head] (cons head tail))
+                   (list))))
+
+(defn cons
+  "Creates list with `head` as first item and `tail` as rest"
+  [head tail]
+  (new List head tail))
 (defn map
   "Returns a sequence consisting of the result of applying `f` to the
   first item, followed by applying f to the second items, until sequence is
