@@ -1,5 +1,5 @@
-(import [list list? count empty? first second third rest cons rest] "./list")
-(import [odd? dictionary merge keys nil? inc dec vector? string? object?
+(import [list list? count empty? first second third rest cons conj rest] "./sequence")
+(import [odd? dictionary keys nil? inc dec vector? string? object?
          re-pattern re-matches re-find str] "./runtime")
 (import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
 
@@ -443,7 +443,7 @@
        reader "Metadata must be Symbol, Keyword, String or Map"))
     (let [o (read reader true nil true)]
       (if (object? o)
-        (with-meta o (merge (meta o) m))
+        (with-meta o (conj m (meta o)))
         ;(reader-error
         ; reader "Metadata can only be applied to IWithMetas")
 
