@@ -567,4 +567,4 @@
 
 
 
-(export read read-from-string)
+(export read read-from-string push-back-reader)
