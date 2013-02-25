@@ -1,7 +1,9 @@
-(import [list list? count empty? first second third rest cons conj rest] "./sequence")
+(import [list list? count empty? first second third rest
+         cons conj rest concat last butlast] "./sequence")
 (import [odd? dictionary keys nil? inc dec vector? string? object?
-         re-pattern re-matches re-find str] "./runtime")
+         re-pattern re-matches re-find str subs char] "./runtime")
 (import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
+(import [split join] "./string")
 
 (defn PushbackReader
   "StringPushbackReader"
@@ -72,7 +74,10 @@
 (defn ^boolean breaking-whitespace?
  "Checks if a string is all breaking whitespace."
  [ch]
- (>= (.index-of "\t\n\r " ch) 0))
+ (or (identical? ch " ")
+     (identical? ch "\t")
+     (identical? ch "\n")
+     (identical? ch "\r")))
 
 (defn ^boolean whitespace?
   "Checks whether a given character is whitespace"
@@ -82,7 +87,16 @@
 (defn ^boolean numeric?
  "Checks whether a given character is numeric"
  [ch]
- (>= (.index-of "01234567890" ch) 0))
+ (or (identical? ch \0)
+     (identical? ch \1)
+     (identical? ch \2)
+     (identical? ch \3)
+     (identical? ch \4)
+     (identical? ch \5)
+     (identical? ch \6)
+     (identical? ch \7)
+     (identical? ch \8)
+     (identical? ch \9)))
 
 (defn ^boolean comment-prefix?
   "Checks whether the character begins a comment."
@@ -129,7 +143,7 @@
             (whitespace? ch)
             (macro-terminating? ch))
       (do (unread-char reader ch) buffer)
-      (recur (.concat buffer ch)
+      (recur (str buffer ch)
              (read-char reader)))))
 
 (defn skip-line
@@ -226,7 +240,7 @@
 
 (defn make-unicode-char [code-str]
   (let [code (parseInt code-str 16)]
-    (.from-char-code String code)))
+    (char code)))
 
 (defn escape-char
   "escape char"
@@ -251,7 +265,7 @@
            ch
            (read-4-chars reader)))
         (numeric? ch)
-        (.fromCharCode String ch)
+        (char ch)
 
         :else
         (reader-error
@@ -328,7 +342,7 @@
 (defn read-map
   [reader]
   (let [items (read-delimited-list "}" reader true)]
-    (if (odd? (.-length items))
+    (if (odd? (count items))
       (reader-error
        reader
        "Map literal must contain an even number of forms"))
@@ -390,32 +404,30 @@
 
 (defn read-symbol
   [reader initch]
-  (let [token (read-token reader initch)]
-    (if (>= (.index-of token "/") 0)
-      (symbol (.substr token 0 (.index-of token "/"))
-              (.substr token (inc (.index-of token "/"))
-                       (.-length token)))
+  (let [token (read-token reader initch)
+        parts (split token "/")
+        has-ns (> (count parts) 1)]
+    (if has-ns
+      (symbol (first parts) (join "/" (rest parts)))
       (special-symbols token (symbol token)))))
 
 (defn read-keyword
   [reader initch]
   (let [token (read-token reader (read-char reader))
-        a (re-matches symbol-pattern token)
-        token (aget a 0)
-        ns (aget a 1)
-        name (aget a 2)]
-    (if (or
-         (and (not (nil? ns))
-              (identical? (.substring ns
-                                      (- (.-length ns) 2)
-                                      (.-length ns)) ":/"))
-
-         (identical? (aget name (dec (.-length name))) ":")
-         (not (== (.index-of token "::" 1) -1)))
-      (reader-error reader "Invalid token: " token)
-      (if (and (not (nil? ns)) (> (.-length ns) 0))
-        (keyword (.substring ns 0 (.index-of ns "/")) name)
-        (keyword token)))))
+        parts (split token "/")
+        name (last parts)
+        ns (if (> (count parts) 1) (join "/" (butlast parts)))
+        issue (cond
+               (identical? (last ns) \:) "namespace can't ends with \":\""
+               (identical? (last name) \:) "name can't end with \":\""
+               (identical? (last name) \/) "name can't end with \"/\""
+               (> (count (split token "::")) 1) "name can't contain \"::\"")]
+    (if issue
+      (reader-error reader "Invalid token (" issue "): " token)
+      (if (and (not ns) (identical? (first name) \:))
+        (keyword ;*ns-sym*
+          (rest name)) ;; namespaced keyword using default
+        (keyword ns name)))))
 
 (defn desugar-meta
   [f]
@@ -453,8 +465,7 @@
 
 (defn read-set
   [reader _]
-  (apply list (.concat ['set]
-                       (read-delimited-list "}" reader true))))
+  (concat ['set] (read-delimited-list "}" reader true)))
 
 (defn read-regex
   [reader]
@@ -465,7 +476,7 @@
      (nil? ch) (reader-error reader "EOF while reading string")
      (identical? \\ ch) (recur (str buffer ch (read-char reader))
                                (read-char reader))
-     (identical? "\"" ch) (re-pattern (.join (.split buffer "/") "\\/"))
+     (identical? "\"" ch) (re-pattern (join "\\/" (split buffer "/")))
      :default (recur (str buffer ch) (read-char reader)))))
 
 (defn read-discard
