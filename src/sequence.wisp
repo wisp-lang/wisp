@@ -171,7 +171,9 @@
 (defn count
   "Returns number of elements in list"
   [sequence]
-  (.-length sequence))
+  (if (nil? sequence)
+    0
+    (.-length (seq sequence))))
 
 (defn empty?
   "Returns true if list is empty"
