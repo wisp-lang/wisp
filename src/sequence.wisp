@@ -225,12 +225,27 @@
       (recur (cons (first items) taken)
              (rest items)
              (dec n)))))
+
+
+
+
+(defn drop-from-list [n sequence]
+  (loop [left n
+         items sequence]
+    (if (or (< left 1) (empty? items))
+      items
+      (recur (dec left) (rest items)))))
+
 (defn drop
   [n sequence]
-  (cond (string? sequence) (.substr sequence n)
+  (if (<= n 0)
+    sequence
+    (cond (string? sequence) (.substr sequence n)
+          (vector? sequence) (.slice sequence n)
+          (list? sequence) (drop-from-list n sequence)
+          (nil? sequence) '()
+          :else (drop n (seq sequence)))))
 
-        (vector? sequence) (.slice sequence n)
-        (list? sequence) (drop-list n sequence)))
 
 (defn concat
   [& sequences]
