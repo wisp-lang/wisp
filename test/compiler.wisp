@@ -344,6 +344,9 @@
         "(and a b c) => a && b && c")
 (assert (identical? (transpile '(and a (or b c))) "a && (b || c)")
         "(and a (or b c)) => a && (b || c)")
+(assert (identical?
+        "(a > b) && (c > d) ?\n  x :\n  y"
+        (transpile '(if (and (> a b) (> c d)) x y))))
 
 (assert (identical?
          (transpile '(and a (or b (or c d)))) "a && (b || (c || d))")
