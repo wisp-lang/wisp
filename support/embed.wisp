@@ -1,4 +1,4 @@
-(import [rest] "../lib/list")
+(import [rest] "../lib/sequence")
 (import [str] "../lib/runtime")
 (import [transpile] "../lib/engine/browser")
 (import [read-from-string] "../lib/reader")

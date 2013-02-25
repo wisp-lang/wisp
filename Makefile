@@ -6,7 +6,7 @@ else
   WISP = node ./bin/wisp.js
 endif
 
-core: runtime list sequence ast reader compiler
+core: runtime sequence ast reader compiler
 node: core wisp node-engine repl
 browser: core embed browser-engine browserify
 all: node browser
@@ -22,9 +22,6 @@ compiler:
 
 runtime:
 	cat ./src/runtime.wisp | $(WISP) > ./runtime.js && mv ./runtime.js ./lib/runtime.js
-
-list:
-	cat ./src/list.wisp | $(WISP) > ./list.js && mv ./list.js ./lib/list.js
 
 sequence:
 	cat ./src/sequence.wisp | $(WISP) > ./sequence.js && mv ./sequence.js ./lib/sequence.js
