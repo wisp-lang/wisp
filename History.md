@@ -1,5 +1,9 @@
 # History
 
+## 0.1.0 - 2012/02/24
+
+  - Implement type agnostic sequence module.
+
 ## 0.0.3 - 2012/10/10
 
   - Fix typos in introduction code.
