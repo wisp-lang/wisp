@@ -8,6 +8,8 @@
          map-dictionary string? number? vector? boolean?
          true? false? nil? re-pattern? inc dec str] "./runtime")
 
+(def concat-list concat)
+
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
   [form]
