@@ -1,6 +1,12 @@
 # History
 
-## 0.1.0 - 2012/02/24
+## 0.1.1 - 2013/02/25
+
+  - Implement string module.
+  - Minor enhancements to runtime type check functions.
+  - Cleanup modules from JS specific calls.
+
+## 0.1.0 - 2013/02/24
 
   - Implement type agnostic sequence module.
 

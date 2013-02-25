@@ -631,6 +631,23 @@ var last = function last(sequence) {
     void(0);
 };
 
+var butlast = function butlast(sequence) {
+  var items = isNil(sequence) ?
+    void(0) :
+  isString(sequence) ?
+    subs(sequence, 0, dec(count(sequence))) :
+  isVector(sequence) ?
+    sequence.slice(0, dec(count(sequence))) :
+  isList(sequence) ?
+    list.apply(list, butlast(vec(sequence))) :
+  "else" ?
+    butlast(seq(sequence)) :
+    void(0);
+  return !((isNil(items)) || (isEmpty(items))) ?
+    items :
+    void(0);
+};
+
 var take = function take(n, sequence) {
   return isNil(sequence) ?
     list() :
@@ -793,6 +810,7 @@ exports.reverse = reverse;
 exports.concat = concat;
 exports.drop = drop;
 exports.take = take;
+exports.butlast = butlast;
 exports.last = last;
 exports.rest = rest;
 exports.third = third;
@@ -875,28 +893,34 @@ var mapDictionary = function mapDictionary(source, f) {
 
 var toString = Object.prototype.toString;
 
+var isFn = typeof(/./) === "function" ?
+  function isFn(x) {
+    return toString.call(x) === "[object Function]";
+  } :
+  function isFn(x) {
+    return typeof(x) === "function";
+  };
+
 var isString = function isString(x) {
-  return toString.call(x) === "[object String]";
+  return (typeof(x) === "string") || (toString.call(x) === "[object String]");
 };
 
 var isNumber = function isNumber(x) {
-  return toString.call(x) === "[object Number]";
+  return (typeof(x) === "number") || (toString.call(x) === "[object Number]");
 };
 
-var isVector = function isVector(x) {
-  return toString.call(x) === "[object Array]";
-};
+var isVector = isFn(Array.isArray) ?
+  Array.isArray :
+  function isVector(x) {
+    return toString.call(x) === "[object Array]";
+  };
 
 var isBoolean = function isBoolean(x) {
-  return toString.call(x) === "[object Boolean]";
+  return (x === true) || (x === false) || (toString.call(x) === "[object Boolean]");
 };
 
 var isRePattern = function isRePattern(x) {
   return toString.call(x) === "[object RegExp]";
-};
-
-var isFn = function isFn(x) {
-  return typeof(x) === "function";
 };
 
 var isObject = function isObject(x) {
@@ -950,7 +974,26 @@ var str = function str() {
   return String.prototype.concat.apply("", arguments);
 };
 
+var char = function char(code) {
+  return String.fromCharCode(code);
+};
+
+var int = function int(x) {
+  return isNumber(x) ?
+    x >= 0 ?
+      Math.floor(x) :
+      Math.floor(x) :
+    x.charCodeAt(0);
+};
+
+var subs = function subs(string, start, end) {
+  return string.substring(start, end);
+};
+
+exports.int = int;
+exports.subs = subs;
 exports.keyValues = keyValues;
+exports.char = char;
 exports.str = str;
 exports.dec = dec;
 exports.inc = inc;
@@ -1044,7 +1087,10 @@ exports.evaluate = evaluate;
 exports.transpile = transpile;
 });
 
-require.define("/lib/reader.js",function(require,module,exports,__dirname,__filename,process){var rest = (require("./sequence")).rest;
+require.define("/lib/reader.js",function(require,module,exports,__dirname,__filename,process){var butlast = (require("./sequence")).butlast;
+var last = (require("./sequence")).last;
+var concat = (require("./sequence")).concat;
+var rest = (require("./sequence")).rest;
 var conj = (require("./sequence")).conj;
 var cons = (require("./sequence")).cons;
 var rest = (require("./sequence")).rest;
@@ -1056,6 +1102,8 @@ var count = (require("./sequence")).count;
 var isList = (require("./sequence")).isList;
 var list = (require("./sequence")).list;;
 
+var char = (require("./runtime")).char;
+var subs = (require("./runtime")).subs;
 var str = (require("./runtime")).str;
 var reFind = (require("./runtime")).reFind;
 var reMatches = (require("./runtime")).reMatches;
@@ -1077,6 +1125,9 @@ var keyword = (require("./ast")).keyword;
 var isKeyword = (require("./ast")).isKeyword;
 var symbol = (require("./ast")).symbol;
 var isSymbol = (require("./ast")).isSymbol;;
+
+var join = (require("./string")).join;
+var split = (require("./string")).split;;
 
 var PushbackReader = function PushbackReader(source, uri, index, buffer) {
   this.source = source;
@@ -1138,7 +1189,7 @@ var unreadChar = function unreadChar(reader, ch) {
 };
 
 var isBreakingWhitespace = function isBreakingWhitespace(ch) {
-  return "\t\n\r ".indexOf(ch) >= 0;
+  return (ch === " ") || (ch === "\t") || (ch === "\n") || (ch === "\r");
 };
 
 var isWhitespace = function isWhitespace(ch) {
@@ -1146,7 +1197,7 @@ var isWhitespace = function isWhitespace(ch) {
 };
 
 var isNumeric = function isNumeric(ch) {
-  return "01234567890".indexOf(ch) >= 0;
+  return (ch === "0") || (ch === "1") || (ch === "2") || (ch === "3") || (ch === "4") || (ch === "5") || (ch === "6") || (ch === "7") || (ch === "8") || (ch === "9");
 };
 
 var isCommentPrefix = function isCommentPrefix(ch) {
@@ -1178,7 +1229,7 @@ var readToken = function readToken(reader, initch) {
         unreadChar(reader, ch);
         return buffer;
       })() :
-      (buffer = buffer.concat(ch), ch = readChar(reader), loop);
+      (buffer = str(buffer, ch), ch = readChar(reader), loop);
     };
     return recur;
   })(initch, readChar(reader));
@@ -1296,7 +1347,7 @@ var validateUnicodeEscape = function validateUnicodeEscape(unicodePattern, reade
 
 var makeUnicodeChar = function makeUnicodeChar(codeStr) {
   var code = parseInt(codeStr, 16);
-  return String.fromCharCode(code);
+  return char(code);
 };
 
 var escapeChar = function escapeChar(buffer, reader) {
@@ -1309,7 +1360,7 @@ var escapeChar = function escapeChar(buffer, reader) {
   ch === "u" ?
     makeUnicodeChar(validateUnicodeEscape(unicode4Pattern, reader, ch, read4Chars(reader))) :
   isNumeric(ch) ?
-    String.fromCharCode(ch) :
+    char(ch) :
   "else" ?
     readerError(reader, str("Unexpected unicode escape ", "\\", ch)) :
     void(0);
@@ -1396,7 +1447,7 @@ var readVector = function readVector(reader) {
 
 var readMap = function readMap(reader) {
   var items = readDelimitedList("}", reader, true);
-  isOdd(items.length) ?
+  isOdd(count(items)) ?
     readerError(reader, "Map literal must contain an even number of forms") :
     void(0);
   return dictionary.apply(dictionary, items);
@@ -1464,22 +1515,34 @@ var specialSymbols = function specialSymbols(text, notFound) {
 
 var readSymbol = function readSymbol(reader, initch) {
   var token = readToken(reader, initch);
-  return token.indexOf("/") >= 0 ?
-    symbol(token.substr(0, token.indexOf("/")), token.substr(inc(token.indexOf("/")), token.length)) :
+  var parts = split(token, "/");
+  var hasNs = count(parts) > 1;
+  return hasNs ?
+    symbol(first(parts), join("/", rest(parts))) :
     specialSymbols(token, symbol(token));
 };
 
 var readKeyword = function readKeyword(reader, initch) {
   var token = readToken(reader, readChar(reader));
-  var a = reMatches(symbolPattern, token);
-  var token = a[0];
-  var ns = a[1];
-  var name = a[2];
-  return ((!(isNil(ns))) && (ns.substring((ns.length) - 2, ns.length) === ":/")) || (name[dec(name.length)] === ":") || (!(token.indexOf("::", 1) == -1)) ?
-    readerError(reader, "Invalid token: ", token) :
-  (!(isNil(ns))) && (ns.length > 0) ?
-    keyword(ns.substring(0, ns.indexOf("/")), name) :
-    keyword(token);
+  var parts = split(token, "/");
+  var name = last(parts);
+  var ns = count(parts) > 1 ?
+    join("/", butlast(parts)) :
+    void(0);
+  var issue = last(ns) === ":" ?
+    "namespace can't ends with \":\"" :
+  last(name) === ":" ?
+    "name can't end with \":\"" :
+  last(name) === "/" ?
+    "name can't end with \"/\"" :
+  count(split(token, "::")) > 1 ?
+    "name can't contain \"::\"" :
+    void(0);
+  return issue ?
+    readerError(reader, "Invalid token (", issue, "): ", token) :
+  (!(ns)) && (first(name) === ":") ?
+    keyword(rest(name)) :
+    keyword(ns, name);
 };
 
 var desugarMeta = function desugarMeta(f) {
@@ -1524,7 +1587,7 @@ var readMeta = function readMeta(reader, _) {
 };
 
 var readSet = function readSet(reader, _) {
-  return list.apply(list, ["﻿set"].concat(readDelimitedList("}", reader, true)));
+  return concat(["﻿set"], readDelimitedList("}", reader, true));
 };
 
 var readRegex = function readRegex(reader) {
@@ -1536,7 +1599,7 @@ var readRegex = function readRegex(reader) {
     "\\" === ch ?
       (buffer = str(buffer, ch, readChar(reader)), ch = readChar(reader), loop) :
     "\"" === ch ?
-      rePattern(buffer.split("/").join("\\/")) :
+      rePattern(join("\\/", split(buffer, "/"))) :
     "default" ?
       (buffer = str(buffer, ch), ch = readChar(reader), loop) :
       void(0);
@@ -1677,6 +1740,7 @@ require.define("/lib/ast.js",function(require,module,exports,__dirname,__filenam
 var first = (require("./sequence")).first;
 var isList = (require("./sequence")).isList;;
 
+var subs = (require("./runtime")).subs;
 var str = (require("./runtime")).str;
 var isObject = (require("./runtime")).isObject;
 var isBoolean = (require("./runtime")).isBoolean;
@@ -1700,41 +1764,45 @@ var symbol = function symbol(ns, id) {
   return isSymbol(ns) ?
     ns :
   isKeyword(ns) ?
-    "﻿".concat(name(ns)) :
+    str("﻿", name(ns)) :
   "else" ?
     isNil(id) ?
-      "﻿".concat(ns) :
-      "﻿".concat(ns, "/", id) :
+      str("﻿", ns) :
+      str("﻿", ns, "/", id) :
     void(0);
 };
 
 var isSymbol = function isSymbol(x) {
-  return (isString(x)) && (count(x) > 1) && (x.charAt(0) === "﻿");
+  return (isString(x)) && (count(x) > 1) && (first(x) === "﻿");
 };
 
 var isKeyword = function isKeyword(x) {
-  return (isString(x)) && (count(x) > 1) && (x.charAt(0) === "꞉");
+  return (isString(x)) && (count(x) > 1) && (first(x) === "꞉");
 };
 
 var keyword = function keyword(ns, id) {
   return isKeyword(ns) ?
     ns :
   isSymbol(ns) ?
-    "꞉".concat(name(ns)) :
+    str("꞉", name(ns)) :
+  isNil(id) ?
+    str("꞉", ns) :
+  isNil(ns) ?
+    str("꞉", id) :
   "else" ?
-    isNil(id) ?
-      "꞉".concat(ns) :
-      "꞉".concat(ns, "/", id) :
+    str("꞉", ns, "/", id) :
     void(0);
 };
 
 var name = function name(value) {
   return (isKeyword(value)) || (isSymbol(value)) ?
-    (value.length > 2) && (value.indexOf("/") >= 0) ?
+    (count(value) > 2) && (value.indexOf("/") >= 0) ?
       value.substr((value.indexOf("/")) + 1) :
-      value.substr(1) :
+      subs(value, 1) :
   isString(value) ?
     value :
+  "else" ?
+    (function() { throw new TypeError(str("Doesn't support name: ", value)); })() :
     void(0);
 };
 
@@ -1776,6 +1844,101 @@ exports.withMeta = withMeta;
 exports.meta = meta;
 });
 
+require.define("/lib/string.js",function(require,module,exports,__dirname,__filename,process){var isString = (require("./runtime")).isString;
+var isNil = (require("./runtime")).isNil;
+var reMatches = (require("./runtime")).reMatches;
+var subs = (require("./runtime")).subs;
+var str = (require("./runtime")).str;;
+
+var isEmpty = (require("./sequence")).isEmpty;
+var vec = (require("./sequence")).vec;;
+
+var split = function split(string, pattern, limit) {
+  return string.split(pattern, limit);
+};
+
+var join = function join(separator, coll) {
+  switch (arguments.length) {
+    case 1:
+      var coll = separator;
+      return str.apply(str, vec(coll));
+    case 2:
+      return vec(coll).join(separator);
+    
+    default:
+      (function() { throw Error("Invalid arity"); })()
+  };
+  return void(0);
+};
+
+var upperCase = function upperCase(string) {
+  return string.toUpperCase();
+};
+
+var upperCase = function upperCase(string) {
+  return string.toUpperCase();
+};
+
+var lowerCase = function lowerCase(string) {
+  return string.toLowerCase();
+};
+
+var capitalize = function capitalize(string) {
+  return count(string) < 2 ?
+    upperCase(string) :
+    str(upperCase(subs(s, 0, 1)), lowerCase(subs(s, 1)));
+};
+
+var replace = function replace(string, match, replacement) {
+  return string.replace(match, replacement);
+};
+
+var __LEFTSPACES__ = /^\s\s*/;
+
+var __RIGHTSPACES__ = /\s\s*$/;
+
+var __SPACES__ = /^\s\s*$/;
+
+var triml = isNil("".trimLeft) ?
+  function(string) {
+    return string.replace(__LEFTSPACES__, "");
+  } :
+  function triml(string) {
+    return string.trimLeft();
+  };
+
+var trimr = isNil("".trimRight) ?
+  function(string) {
+    return string.replace(__RIGHTSPACES__, "");
+  } :
+  function trimr(string) {
+    return string.trimRight();
+  };
+
+var trim = isNil("".trim) ?
+  function(string) {
+    return string.replace(__LEFTSPACES__).replace(__RIGHTSPACES__);
+  } :
+  function trim(string) {
+    return string.trim();
+  };
+
+var isBlank = function isBlank(string) {
+  return (isNil(string)) || (isEmpty(string)) || (reMatches(__SPACES__, string));
+};
+
+exports.isBlank = isBlank;
+exports.trimr = trimr;
+exports.triml = triml;
+exports.trim = trim;
+exports.replace = replace;
+exports.capitalize = capitalize;
+exports.upperCase = upperCase;
+exports.lowerCase = lowerCase;
+exports.join = join;
+exports.split = split;
+});
+
 require.define("/lib/compiler.js",function(require,module,exports,__dirname,__filename,process){var readFromString = (require("./reader")).readFromString;;
 
 var gensym = (require("./ast")).gensym;
@@ -1795,6 +1958,7 @@ var concat = (require("./sequence")).concat;
 var take = (require("./sequence")).take;
 var filter = (require("./sequence")).filter;
 var map = (require("./sequence")).map;
+var last = (require("./sequence")).last;
 var vec = (require("./sequence")).vec;
 var reduce = (require("./sequence")).reduce;
 var reverse = (require("./sequence")).reverse;
@@ -1808,6 +1972,8 @@ var isList = (require("./sequence")).isList;
 var count = (require("./sequence")).count;
 var isEmpty = (require("./sequence")).isEmpty;;
 
+var int = (require("./runtime")).int;
+var char = (require("./runtime")).char;
 var str = (require("./runtime")).str;
 var dec = (require("./runtime")).dec;
 var inc = (require("./runtime")).inc;
@@ -1815,6 +1981,7 @@ var isRePattern = (require("./runtime")).isRePattern;
 var isNil = (require("./runtime")).isNil;
 var isFalse = (require("./runtime")).isFalse;
 var isTrue = (require("./runtime")).isTrue;
+var subs = (require("./runtime")).subs;
 var isBoolean = (require("./runtime")).isBoolean;
 var isVector = (require("./runtime")).isVector;
 var isNumber = (require("./runtime")).isNumber;
@@ -1827,6 +1994,11 @@ var merge = (require("./runtime")).merge;
 var dictionary = (require("./runtime")).dictionary;
 var isDictionary = (require("./runtime")).isDictionary;
 var isOdd = (require("./runtime")).isOdd;;
+
+var replace = (require("./string")).replace;
+var upperCase = (require("./string")).upperCase;
+var join = (require("./string")).join;
+var split = (require("./string")).split;;
 
 var isSelfEvaluating = function isSelfEvaluating(form) {
   return (isNumber(form)) || ((isString(form)) && (!(isSymbol(form))) && (!(isKeyword(form)))) || (isBoolean(form)) || (isNil(form)) || (isRePattern(form));
@@ -1967,18 +2139,18 @@ var compileObject = function compileObject(form, isQuoted) {
 
 var compileReference = function compileReference(form) {
   var id = name(form);
-  id = id.split("*").join("_");
-  id = id.split("->").join("-to-");
-  id = id.split("!").join("");
-  id = id.split("%").join("$");
-  id = id.substr(-1) === "?" ?
-    str("is-", id.substr(0, (id.length) - 1)) :
+  id = join("_", split(id, "*"));
+  id = join("-to-", split(id, "->"));
+  id = join(split(id, "!"));
+  id = join("$", split(id, "%"));
+  id = last(id) === "?" ?
+    str("is-", subs(id, 0, dec(count(id)))) :
     id;
-  id = id.split("-").reduce(function(result, key) {
+  id = reduce(function(result, key) {
     return str(result, (!(isEmpty(result))) && (!(isEmpty(key))) ?
-      str(key[0].toUpperCase(), key.substr(1)) :
+      str(upperCase(key[0]), subs(key, 1)) :
       key);
-  }, "");
+  }, "", split(id, "-"));
   return id;
 };
 
@@ -2054,18 +2226,20 @@ var macroexpand1 = function macroexpand1(form) {
   return isList(form) ?
     (function() {
       var op = first(form);
-      var id = name(op);
+      var id = !(isList(op)) ?
+        name(op) :
+        void(0);
       return isSpecial(op) ?
         form :
       isMacro(op) ?
         executeMacro(op, rest(form)) :
       (isSymbol(op)) && (!(id === ".")) ?
-        id.charAt(0) === "." ?
+        first(id) === "." ?
           count(form) < 2 ?
             (function() { throw Error("Malformed member expression, expecting (.member target ...)"); })() :
-            cons("﻿.", cons(second(form), cons(symbol(id.substr(1)), rest(rest(form))))) :
-        id.charAt((id.length) - 1) === "." ?
-          cons("﻿new", cons(symbol(id.substr(0, (id.length) - 1)), rest(form))) :
+            cons("﻿.", cons(second(form), cons(symbol(subs(id, 1)), rest(rest(form))))) :
+        last(id) === "." ?
+          cons("﻿new", cons(symbol(subs(id, 0, dec(count(id)))), rest(form))) :
           form :
       "else" ?
         form :
@@ -2096,12 +2270,12 @@ var compileTemplate = function compileTemplate(form) {
   return (function loop(code, parts, values) {
     var recur = loop;
     while (recur === loop) {
-      recur = parts.length > 1 ?
-      (code = str(code, parts[0], str("", first(values)).replace(lineBreakPatter, getIndentation(parts[0]))), parts = parts.slice(1), values = rest(values), loop) :
-      code.concat(parts[0]);
+      recur = count(parts) > 1 ?
+      (code = str(code, first(parts), replace(str("", first(values)), lineBreakPatter, getIndentation(first(parts)))), parts = rest(parts), values = rest(values), loop) :
+      str(code, first(parts));
     };
     return recur;
-  })("", first(form).split("~{}"), rest(form));
+  })("", split(first(form), "~{}"), rest(form));
 };
 
 var compileDef = function compileDef(form) {
@@ -2154,8 +2328,8 @@ var desugarFnAttrs = function desugarFnAttrs(form) {
 
 var compileFnParams = function compileFnParams(params) {
   return isContainsVector(params, "﻿&") ?
-    params.slice(0, params.indexOf("﻿&")).map(compile).join(", ") :
-    params.map(compile).join(", ");
+    join(", ", map(compile, params.slice(0, params.indexOf("﻿&")))) :
+    join(", ", map(compile, params));
 };
 
 var compileDesugaredFn = function compileDesugaredFn(name, doc, attrs, params, body) {
@@ -2188,12 +2362,6 @@ var compileFnBody = function compileFnBody(form, params) {
 
 var isVariadic = function isVariadic(params) {
   return params.indexOf("﻿&") >= 0;
-};
-
-var overloadArity = function overloadArity(params) {
-  return isVariadic() ?
-    params.indexOf("﻿&") :
-    params.length;
 };
 
 var analyzeOverloadedFn = function analyzeOverloadedFn(name, doc, attrs, overloads) {
@@ -2278,7 +2446,7 @@ var compileInvoke = function compileInvoke(form) {
 var compileGroup = function compileGroup(form, wrap) {
   return wrap ?
     str("(", compileGroup(form), ")") :
-    vec(map(compile, map(macroexpand, form))).join(", ");
+    join(", ", vec(map(compile, map(macroexpand, form))));
 };
 
 var compileDo = function compileDo(form) {
@@ -2333,7 +2501,7 @@ var compileProperty = function compileProperty(form) {
   return name(second(form))[0] === "-" ?
     compileTemplate(list(isList(first(form)) ?
       "(~{}).~{}" :
-      "~{}.~{}", compile(macroexpand(first(form))), compile(macroexpand(symbol(name(second(form)).substr(1)))))) :
+      "~{}.~{}", compile(macroexpand(first(form))), compile(macroexpand(symbol(subs(name(second(form)), 1)))))) :
     compileTemplate(list("~{}.~{}(~{})", compile(macroexpand(first(form))), compile(macroexpand(second(form))), compileGroup(rest(rest(form)))));
 };
 
@@ -2454,11 +2622,11 @@ var compileBoolean = function compileBoolean(form) {
 };
 
 var compileString = function compileString(form) {
-  form = form.replace(RegExp("\\\\", "g"), "\\\\");
-  form = form.replace(RegExp("\n", "g"), "\\n");
-  form = form.replace(RegExp("\r", "g"), "\\r");
-  form = form.replace(RegExp("\t", "g"), "\\t");
-  form = form.replace(RegExp("\"", "g"), "\\\"");
+  form = replace(form, RegExp("\\\\", "g"), "\\\\");
+  form = replace(form, RegExp("\n", "g"), "\\n");
+  form = replace(form, RegExp("\r", "g"), "\\r");
+  form = replace(form, RegExp("\t", "g"), "\\t");
+  form = replace(form, RegExp("\"", "g"), "\\\"");
   return str("\"", form, "\"");
 };
 
@@ -2572,7 +2740,7 @@ installMacro("﻿defn", function defn(name) {
 installMacro("﻿assert", function assert(x, message) {
   return isNil(message) ?
     list("﻿assert", x, "") :
-    list("﻿if", list("﻿not", x), list("﻿throw", list("﻿Error.", list("﻿.concat", "Assert failed: ", message, "\n", list("﻿quote", x)))));
+    list("﻿if", list("﻿not", x), list("﻿throw", list("﻿Error.", list("﻿str", "Assert failed: ", message, "\n", list("﻿quote", x)))));
 });
 
 installMacro("﻿export", function() {
