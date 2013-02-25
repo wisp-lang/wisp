@@ -183,6 +183,23 @@
         (or (vector? sequence) (string? sequence)) (.slice sequence 1)
         :else (rest (seq sequence))))
 
+(defn last-of-list
+  [list]
+  (loop [item (first list)
+         items (rest list)]
+    (if (empty? items)
+      item
+      (recur (first items) (rest items)))))
+
+(defn last
+  "Return the last item in coll, in linear time"
+  [sequence]
+  (cond (or (vector? sequence)
+            (string? sequence)) (get sequence (dec (count sequence)))
+        (list? sequence) (last-of-list sequence)
+        (nil? sequence) nil
+        :else (last (seq sequence))))
+
 (defn take
   "Returns a sequence of the first `n` items, or all items if
   there are fewer than `n`."
