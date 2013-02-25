@@ -3,6 +3,9 @@
 (defn ^boolean odd? [n]
   (identical? (mod n 2) 1))
 
+(defn ^boolean even? [n]
+  (identical? (mod n 2) 0))
+
 (defn ^boolean dictionary?
   "Returns true if dictionary"
   [form]
@@ -172,8 +175,6 @@
   []
   (.apply String.prototype.concat "" arguments))
 
-
-(export dictionary? dictionary merge odd? vector? string? number? fn? object?
-        nil? boolean? true? false? map-dictionary contains-vector? keys vals
-        re-pattern re-find re-matches re-pattern? inc dec str key-values)
-
+(export dictionary? dictionary merge odd? even? vector? string? number? fn?
+        object? nil? boolean? true? false? map-dictionary contains-vector? keys
+        vals re-pattern re-find re-matches re-pattern? inc dec str key-values)
