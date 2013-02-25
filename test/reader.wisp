@@ -19,11 +19,6 @@
         "name of foo/bar is bar")
 (assert (identical? (name (read-string "\"foo\"")) "foo")
         "name of \"foo\" is foo")
-(assert (nil? (name (read-string "()"))) "name of list is nil")
-(assert (nil? (name (read-string "[]"))) "name of vector is nil")
-(assert (nil? (name (read-string "{}"))) "name of dictionary is nil")
-(assert (nil? (name (read-string "nil"))) "name of nil is nil")
-(assert (nil? (name (read-string "7"))) "name of number is nil")
 
 (.log console "read simple list")
 
