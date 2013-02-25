@@ -204,9 +204,10 @@
 (defn rest
   "Returns list of all items except first one"
   [sequence]
-  (if (list? sequence)
-    (.-tail sequence)
-    (.slice sequence 1)))
+  (cond (nil? sequence) '()
+        (list? sequence) (.-tail sequence)
+        (or (vector? sequence) (string? sequence)) (.slice sequence 1)
+        :else (rest (seq sequence))))
 
 (defn drop
   [n sequence]
