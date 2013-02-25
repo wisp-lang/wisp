@@ -118,23 +118,23 @@
               (rest items)))))
 
 (defn reduce
-  [f initial sequence]
-  (if (nil? sequence)
-    (reduce f nil sequence)
-    (if (vector? sequence)
-      (reduce-vector f initial sequence)
-      (reduce-list f initial sequence))))
-
-(defn reduce-vector
-  [f initial sequence]
-  (if (nil? initial)
-    (.reduce sequence f)
-    (.reduce sequence f initial)))
+  [f & params]
+  (let [has-initial (>= (count params) 2)
+        initial (if has-initial (first params))
+        sequence (if has-initial (second params) (first params))]
+    (cond (nil? sequence) initial
+          (vector? sequence) (if has-initial
+                              (.reduce sequence f initial)
+                              (.reduce sequence f))
+          (list? sequence) (if has-initial
+                            (reduce-list f initial sequence)
+                            (reduce-list f (first sequence) (rest sequence)))
+          :else (reduce f initial (seq sequence)))))
 
 (defn reduce-list
   [f initial sequence]
-  (loop [result (if (nil? initial) (first form) initial)
-         items (if (nil? initial) (rest form) form)]
+  (loop [result initial
+         items sequence]
     (if (empty? items)
       result
       (recur (f result (first items)) (rest items)))))
