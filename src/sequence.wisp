@@ -191,6 +191,17 @@
         (nil? sequence) nil
         :else (last (seq sequence))))
 
+(defn butlast
+  "Return a seq of all but the last item in coll, in linear time"
+  [sequence]
+  (let [items (cond (nil? sequence) nil
+                    (string? sequence) (subs sequence 0 (dec (count sequence)))
+                    (vector? sequence) (.slice sequence 0 (dec (count sequence)))
+                    (list? sequence) (apply list (butlast (vec sequence)))
+                    :else (butlast (seq sequence)))]
+    (if (not (or (nil? items) (empty? items)))
+        items)))
+
 (defn take
   "Returns a sequence of the first `n` items, or all items if
   there are fewer than `n`."
@@ -304,7 +315,7 @@
 
 (export cons conj list list? seq vec
         empty? count
-        first second third rest last
+        first second third rest last butlast
         take drop
         concat reverse
         sort
