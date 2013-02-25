@@ -1,4 +1,4 @@
-(import [dictionary? vector?] "../src/runtime")
+(import [dictionary? vector? subs] "../src/runtime")
 (import [list concat] "../src/sequence")
 (import [equivalent?] "./utils")
 
@@ -20,3 +20,8 @@
 (assert (equivalent?
           '(1 2 3 4 5)
           `(1 ~@'(2 3) 4 ~@'(5))))
+
+(.log console "subs")
+
+(assert (= "lojure" (subs "Clojure" 1)))
+(assert (= "lo" (subs "Clojure" 1 3)))
