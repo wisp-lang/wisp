@@ -288,6 +288,19 @@
         (vector? sequence) sequence
         (list? sequence) (list->vector sequence)
         :else (vec (seq sequence))))
+
+(defn sort
+  "Returns a sorted sequence of the items in coll.
+  If no comparator is supplied, uses compare."
+  [f items]
+  (let [has-comparator (fn? f)
+        items (if (and (not has-comparator) (nil? items)) f items)
+        compare (if has-comparator (fn [a b] (if (f a b) 0 1)))]
+    (cond (nil? items) '()
+          (vector? items) (.sort items compare)
+          (list? items) (apply list (.sort (vec items) compare))
+          (dictionary? items) (.sort (seq items) compare)
+          :else (sort f (seq items)))))
 (export map filter reduce take reverse drop concat
         empty? count first second third rest seq)
 
