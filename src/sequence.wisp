@@ -117,34 +117,6 @@
               result)
               (rest items)))))
 
-
-(defn take
-  "Returns a sequence of the first `n` items, or all items if
-  there are fewer than `n`."
-  [n sequence]
-  (if (vector? sequence)
-    (take-vector n sequence)
-    (take-list n sequence)))
-
-
-(defn take-vector
-  "Like take but optimized for vectors"
-  [n vector]
-  (.slice vector 0 n))
-
-(defn take-list
-  "Like take but for lists"
-  [n sequence]
-  (loop [taken '()
-         items sequence
-         n n]
-    (if (or (= n 0) (empty? items))
-      (reverse taken)
-      (recur (cons (first items) taken)
-             (rest items)
-             (dec n)))))
-
-
 (defn reduce
   [f initial sequence]
   (if (nil? sequence)
@@ -211,6 +183,31 @@
         (or (vector? sequence) (string? sequence)) (.slice sequence 1)
         :else (rest (seq sequence))))
 
+(defn take
+  "Returns a sequence of the first `n` items, or all items if
+  there are fewer than `n`."
+  [n sequence]
+  (cond (nil? sequence) '()
+        (vector? sequence) (take-from-vector n sequence)
+        (list? sequence) (take-from-list n sequence)
+        :else (take n (seq sequence))))
+
+(defn take-from-vector
+  "Like take but optimized for vectors"
+  [n vector]
+  (.slice vector 0 n))
+
+(defn take-from-list
+  "Like take but for lists"
+  [n sequence]
+  (loop [taken '()
+         items sequence
+         n n]
+    (if (or (= n 0) (empty? items))
+      (reverse taken)
+      (recur (cons (first items) taken)
+             (rest items)
+             (dec n)))))
 (defn drop
   [n sequence]
   (cond (string? sequence) (.substr sequence n)
