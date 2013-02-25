@@ -2,8 +2,8 @@
 (import [meta with-meta symbol? symbol keyword? keyword
          unquote? unquote-splicing? quote? syntax-quote? name gensym] "./ast")
 (import [empty? count list? list first second third rest cons
-         reverse map-list concat-list reduce-list list-to-vector] "./list")
-(import [map filter take] "./sequence")
+         reverse reduce vec
+         map filter take concat] "./sequence")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
          map-dictionary string? number? vector? boolean?
          true? false? nil? re-pattern? inc dec str] "./runtime")
@@ -28,7 +28,7 @@
   "Applies macro registered with given `name` to a given `form`"
   [name form]
   (apply (get __macros__ name)
-         (list-to-vector form)))
+         (vec form)))
 
 (defn install-macro
   "Registers given `macro` with a given `name`"
@@ -102,22 +102,22 @@
   [fn-name form quoted?]
   (cons fn-name
         (if quoted?
-            (map-list form (fn [e] (list 'quote e))) form)
+            (map (fn [e] (list 'quote e)) form) form)
             form))
 
 (defn apply-unquoted-form
   "Same as apply-form, but respect unquoting"
   [fn-name form]
   (cons fn-name ;; ast.prepend ???
-        (map-list
-          form
+        (map
           (fn [e]
               (if (unquote? e)
                   (second e)
                   (if (and (list? e)
                            (keyword? (first e)))
                       (list 'syntax-quote (second e))
-                      (list 'syntax-quote e)))))))
+                      (list 'syntax-quote e))))
+          form)))
 
 (defn split-splices "" [form fn-name]
   (defn make-splice "" [form]
@@ -219,14 +219,19 @@
   [form]
   (str "\"" (name form) "\""))
 
+(defn compile-syntax-quoted-vector
+  [form]
+  (let [concat-form (syntax-quote-split 'concat 'vector (apply list form))]
+    (compile (if (> (count concat-form) 1)
+              (list 'vec concat-form)
+              concat-form))))
+
 (defn compile-syntax-quoted
   ""
   [form]
   (cond
-   (list? form) (compile (syntax-quote-split 'concat-list 'list form))
-   (vector? form)
-    (compile (syntax-quote-split 'concat-vector 'vector (apply list form)))
-
+   (list? form) (compile (syntax-quote-split 'concat 'list form))
+   (vector? form) (compile-syntax-quoted-vector form)
    ; Disable dictionary form as we can't fully support it yet.
    ; (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
    :else (compile-object form)))
@@ -509,11 +514,11 @@
   (let [methods (analyze-overloaded-fn name doc attrs overloads)
         fixed-methods (filter (fn [method] (not (:variadic method))) methods)
         variadic (first (filter (fn [method] (:variadic method)) methods))
-        names (reduce-list methods
-                           (fn [a b]
-                            (if (> (count a) (count (get b :params)))
-                              a
-                              (get b :params))) [])]
+        names (reduce (fn [a b]
+                        (if (> (count a) (count (get b :params)))
+                          a
+                          (get b :params)))
+                      [] methods)]
     (list 'fn name doc attrs names
           (list 'raw*
                 (compile-switch
@@ -522,7 +527,7 @@
                     (cons (:fixed-arity method)
                           (list 'raw*
                                 (compile-fn-body
-                                  (concat-list
+                                  (concat
                                     (compile-rebind names (:params method))
                                     (:body method))))))
                     fixed-methods)
@@ -530,7 +535,7 @@
                     '(throw (Error "Invalid arity"))
                     (list 'raw*
                           (compile-fn-body
-                            (concat-list
+                            (concat
                               (compile-rebind
                                 (cons `(Array.prototype.slice.call
                                         arguments
@@ -569,15 +574,15 @@
 
 (defn compile-switch-cases
   [cases]
-  (reduce-list
-   cases
+  (reduce
    (fn [form case-expression]
      (str form
           (compile-template
            (list "case ~{}:\n  ~{}\n"
                  (compile (macroexpand (first case-expression)))
                  (compile (macroexpand (rest case-expression)))))))
-   ""))
+   ""
+   cases))
 
 
 (defn compile-switch
@@ -616,8 +621,7 @@
   [form wrap]
   (if wrap
     (str "(" (compile-group form) ")")
-    (.join (list-to-vector
-            (map-list (map-list form macroexpand) compile)) ", ")))
+    (.join (vec (map compile (map  macroexpand form))) ", ")))
 
 (defn compile-do
   "Evaluates the expressions in order and returns the value of the last.
@@ -811,18 +815,18 @@
 (defn expand-recur
   "Expands recur special form into params rebinding"
   [names body]
-  (map-list body
-       (fn [form]
+  (map (fn [form]
          (if (list? form)
            (if (identical? (first form) 'recur)
              (list 'raw*
                    (compile-group
-                    (concat-list
+                    (concat
                       (rebind-bindings names (rest form))
                       (list 'loop))
                     true))
              (expand-recur names form))
-           form))))
+           form))
+        body))
 
 (defn compile-recur
   "Eliminates tail calls in form of recur and rebinds the bindings
@@ -884,19 +888,20 @@
   (install-special
    alias
    (fn [form]
-    (reduce-list
-      (map-list form
-                (fn [operand]
-                  (compile-template
-                    (list (if (list? operand) "(~{})" "~{}")
-                      (compile (macroexpand operand))))))
-      (fn [left right]
-        (compile-template
-          (list "~{} ~{} ~{}"
-                left
-                (name operator)
-                right)))
-      (if (empty? form) fallback nil)))
+    (if (empty? form)
+      fallback
+      (reduce
+        (fn [left right]
+          (compile-template
+            (list "~{} ~{} ~{}"
+                  left
+                  (name operator)
+                  right)))
+        (map (fn [operand]
+              (compile-template
+                (list (if (list? operand) "(~{})" "~{}")
+                  (compile (macroexpand operand)))))
+             form))))
     validator))
 
 (defn install-operator
@@ -989,7 +994,7 @@
     ;; Consider making let a macro:
     ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3999
     (cons 'do
-      (concat-list (define-bindings bindings) body))))
+      (concat (define-bindings bindings) body))))
 
 (install-macro
  'cond
