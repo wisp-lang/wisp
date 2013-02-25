@@ -1,17 +1,6 @@
 (import [nil? vector? dec string? dictionary? key-values] "./runtime")
 (import [list? list cons drop-list concat-list] "./list")
 
-(defn reverse
-  "Reverse order of items in the sequence"
-  [sequence]
-  (if (list? sequence)
-    (loop [items []
-           source sequence]
-      (if (empty? source)
-        (apply list items)
-        (recur (.concat [(first source)] items)
-               (rest source))))
-    (.reverse sequence)))
 
 (defn List
   "List type"
@@ -62,6 +51,24 @@
   "Creates list with `head` as first item and `tail` as rest"
   [head tail]
   (new List head tail))
+
+(defn reverse-list
+  [sequence]
+  (loop [items []
+           source sequence]
+      (if (empty? source)
+        (apply list items)
+        (recur (.concat [(first source)] items)
+               (rest source)))))
+
+(defn reverse
+  "Reverse order of items in the sequence"
+  [sequence]
+  (cond (list? sequence) (reverse-list sequence)
+        (vector? sequence) (.reverse sequence)
+        (nil? sequence) '()
+        :else (reverse (seq sequence))))
+
 (defn map
   "Returns a sequence consisting of the result of applying `f` to the
   first item, followed by applying f to the second items, until sequence is
