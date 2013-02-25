@@ -1,5 +1,5 @@
 (import [list? first count] "./sequence")
-(import [nil? vector? number? string? boolean? object? str] "./runtime")
+(import [nil? vector? number? string? boolean? object? str subs] "./runtime")
 
 (defn with-meta
   "Returns identical value with given metadata associated to it."
@@ -18,21 +18,21 @@
   [ns id]
   (cond
    (symbol? ns) ns
-   (keyword? ns) (.concat "\uFEFF" (name ns))
+   (keyword? ns) (str "\uFEFF" (name ns))
    :else (if (nil? id)
-           (.concat "\uFEFF" ns)
-           (.concat "\uFEFF" ns "/" id))))
+           (str "\uFEFF" ns)
+           (str "\uFEFF" ns "/" id))))
 
 (defn ^boolean symbol? [x]
   (and (string? x)
        (> (count x) 1)
-       (identical? (.char-at x 0) "\uFEFF")))
+       (identical? (first x) "\uFEFF")))
 
 
 (defn ^boolean keyword? [x]
   (and (string? x)
        (> (count x) 1)
-       (identical? (.char-at x 0) "\uA789")))
+       (identical? (first x) "\uA789")))
 
 (defn keyword
   "Returns a Keyword with the given namespace and name. Do not use :
@@ -40,22 +40,26 @@
   [ns id]
   (cond
    (keyword? ns) ns
-   (symbol? ns) (.concat "\uA789" (name ns))
-   :else (if (nil? id)
-           (.concat "\uA789" ns)
-           (.concat "\uA789" ns "/" id))))
+   (symbol? ns) (str "\uA789" (name ns))
+   (nil? id) (str "\uA789" ns)
+   (nil? ns) (str "\uA789" id)
+   :else (str "\uA789" ns "/" id)))
 
 
 (defn name
   "Returns the name String of a string, symbol or keyword."
   [value]
   (cond
-    (or (keyword? value) (symbol? value))
-      (if (and (> (.-length value) 2)
-               (>= (.index-of value "/") 0))
-        (.substr value (+ (.index-of value "/") 1))
-        (.substr value 1))
-    (string? value) value))
+    (or (keyword? value)
+        (symbol? value)) (if (and (> (count value) 2)
+                                  (>= (.index-of value "/") 0))
+                          (.substr value (+ (.index-of value "/") 1))
+                          (subs value 1))
+
+    ;; Needs to be after keyword? and symbol? because keywords and
+    ;; symbols are strings.
+    (string? value) value
+    :else (throw (TypeError. (str "Doesn't support name: " value)))))
 
 
 (defn gensym
