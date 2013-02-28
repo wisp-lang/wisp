@@ -296,13 +296,13 @@
             (let [mret (macrofn reader ch)]
               (recur (if (identical? mret reader)
                        a
-                       (.concat a [mret]))))
+                       (conj a mret))))
             (do
               (unread-char reader ch)
               (let [o (read reader true nil recursive?)]
                 (recur (if (identical? o reader)
                          a
-                         (.concat a [o])))))))))))
+                         (conj a o)))))))))))
 
 ;; data structure readers
 
