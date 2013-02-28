@@ -423,9 +423,13 @@
 (defn compile-fn-params
   ;"compiles function params"
   [params]
-  (if (contains-vector? params '&)
-    (join ", " (map compile (.slice params 0 (.index-of params '&))))
-    (join ", " (map compile params) )))
+  (loop [non-variadic []
+         params params]
+    (if (or (empty? params)
+            (= (first params) '&))
+      (join ", " (map compile non-variadic))
+      (recur (concat non-variadic [(first params)])
+             (rest params)))))
 
 (defn compile-desugared-fn
   ;"(fn name? [params* ] exprs*)
@@ -480,7 +484,10 @@
 (defn variadic?
   "Returns true if function signature is variadic"
   [params]
-  (>= (.index-of params '&) 0))
+  (loop [params params]
+    (cond (empty? params) false
+          (= (first params) '&) true
+          :else (recur (rest params)))))
 
 (defn analyze-overloaded-fn
   "Compiles function that has overloads defined"
@@ -492,7 +499,7 @@
                               (- (count params) 2)
                               (count params))]
            {:variadic variadic
-            :rest (if variadic? (get params (dec (count params))) nil)
+            :rest (if variadic (get params (dec (count params))))
             :fixed-arity fixed-arity
             :params (take fixed-arity params)
             :body (rest overload)}))
