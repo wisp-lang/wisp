@@ -5,7 +5,7 @@
          reverse reduce vec last
          map filter take concat] "./sequence")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
-         map-dictionary string? number? vector? boolean? subs
+         map-dictionary string? number? vector? boolean? subs re-find
          true? false? nil? re-pattern? inc dec str char int] "./runtime")
 (import [split join upper-case replace] "./string")
 
@@ -322,26 +322,23 @@
 (defn compile-template
   "Compiles given template"
   [form]
-  (def indent-pattern #"\n *$")
-  (def line-break-patter (RegExp "\n" "g"))
-  (defn get-indentation [code]
-    (let [match (.match code indent-pattern)]
-      (or (and match (get match 0)) "\n")))
-
-  (loop [code ""
-         parts (split (first form) "~{}")
-         values (rest form)]
-    (if (> (count parts) 1)
-      (recur
-       (str
-        code
-        (first parts)
-        (replace (str "" (first values))
-                  line-break-patter
-                  (get-indentation (first parts))))
-       (rest parts)
-       (rest values))
-       (str code (first parts)))))
+  (let [indent-pattern #"\n *$"
+        line-break-patter (RegExp "\n" "g")
+        get-indentation (fn [code] (or (re-find indent-pattern code) "\n"))]
+    (loop [code ""
+           parts (split (first form) "~{}")
+           values (rest form)]
+      (if (> (count parts) 1)
+        (recur
+         (str
+          code
+          (first parts)
+          (replace (str "" (first values))
+                    line-break-patter
+                    (get-indentation (first parts))))
+         (rest parts)
+         (rest values))
+         (str code (first parts))))))
 
 (defn compile-def
   "Creates and interns or locates a global var with the name of symbol
