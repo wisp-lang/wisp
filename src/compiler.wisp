@@ -23,24 +23,24 @@
 
 ;; Macros
 
-(def __macros__ {})
+(def **macros** {})
 
 (defn execute-macro
   "Applies macro registered with given `name` to a given `form`"
   [name form]
-  (apply (get __macros__ name)
+  (apply (get **macros** name)
          (vec form)))
 
 (defn install-macro
   "Registers given `macro` with a given `name`"
   [name macro-fn]
-  (set! (get __macros__ name) macro-fn))
+  (set! (get **macros** name) macro-fn))
 
 (defn macro?
   "Returns true if macro with a given name is registered"
   [name]
   (and (symbol? name)
-       (get __macros__ name)
+       (get **macros** name)
        true))
 
 
@@ -71,12 +71,12 @@
 ;; want readable output. Special forms are responsible for integrity
 ;; checking of the form.
 
-(def __specials__ {})
+(def **specials** {})
 
 (defn install-special
   "Installs special function"
   [name f validator]
-  (set! (get __specials__ name)
+  (set! (get **specials** name)
         (fn [form]
           (if validator (validator form))
           (f (rest form)))))
@@ -85,13 +85,13 @@
   "Returns true if special form"
   [name]
   (and (symbol? name)
-       (get __specials__ name)
+       (get **specials** name)
        true))
 
 (defn execute-special
   "Expands special form"
   [name form]
-  ((get __specials__ name) form))
+  ((get **specials** name) form))
 
 
 (defn opt [argument fallback]

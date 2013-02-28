@@ -560,21 +560,21 @@
      nil "Queue literal expects a vector for its elements.")))
 
 
-(def __tag-table__
+(def **tag-table**
   (dictionary :uuid read-uuid
               :queue read-queue))
 
 (defn maybe-read-tagged-type
   [reader initch]
   (let [tag (read-symbol reader initch)
-        pfn (get __tag-table__ (name tag))]
+        pfn (get **tag-table** (name tag))]
     (if pfn
       (pfn (read reader true nil false))
       (reader-error reader
                     (str "Could not find tag parser for "
                          (name tag)
                          " in "
-                         (str (keys __tag-table__)))))))
+                         (str (keys **tag-table**)))))))
 
 
 
