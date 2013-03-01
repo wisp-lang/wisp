@@ -32,7 +32,7 @@
   [reader]
   (.-column-atom reader))
 
-(defn next-char
+(defn peek-char
   "Returns next char from the Reader without reading it.
   nil if the end of stream has being reached."
   [reader]
@@ -45,7 +45,7 @@
   of stream has been reached"
   [reader]
   ;; Update line column depending on what has being read.
-  (if (identical? (next-char reader) "\n")
+  (if (identical? (peek-char reader) "\n")
     (do (set! reader.line-atom (+ (line reader) 1))
         (set! reader.column-atom 1))
     (set! reader.column-atom (+ (column reader) 1)))
@@ -110,7 +110,7 @@
   (or (numeric? initch)
       (and (or (identical? \+ initch)
                (identical? \- initch))
-           (numeric? (next-char reader)))))
+           (numeric? (peek-char reader)))))
 
 
 
@@ -162,7 +162,6 @@
 (def int-pattern (re-pattern "^([-+]?)(?:(0)|([1-9][0-9]*)|0[xX]([0-9A-Fa-f]+)|0([0-7]+)|([1-9][0-9]?)[rR]([0-9A-Za-z]+)|0[0-9]+)(N)?$"))
 (def ratio-pattern (re-pattern "([-+]?[0-9]+)/([0-9]+)"))
 (def float-pattern (re-pattern "([-+]?[0-9]+(\\.[0-9]*)?([eE][-+]?[0-9]+)?)(M)?"))
-(def symbol-pattern (re-pattern "[:]?([^0-9/].*/)?([^0-9/][^/]*)"))
 
 (defn match-int
   [s]
@@ -254,27 +253,19 @@
     (if mapresult
       mapresult
       (cond
-        (identical? ch \x)
-        (make-unicode-char
-         (validate-unicode-escape
-          unicode-2-pattern
-          reader
-          ch
-          (read-2-chars reader)))
-        (identical? ch \u)
-        (make-unicode-char
-          (validate-unicode-escape
-           unicode-4-pattern
-           reader
-           ch
-           (read-4-chars reader)))
-        (numeric? ch)
-        (char ch)
-
-        :else
-        (reader-error
-         reader
-         (str "Unexpected unicode escape " \\ ch ))))))
+        (identical? ch \x) (make-unicode-char
+                            (validate-unicode-escape unicode-2-pattern
+                                                     reader
+                                                     ch
+                                                     (read-2-chars reader)))
+        (identical? ch \u) (make-unicode-char
+                            (validate-unicode-escape unicode-4-pattern
+                                                     reader
+                                                     ch
+                                                     (read-4-chars reader)))
+        (numeric? ch) (char ch)
+        :else (reader-error reader
+                            (str "Unexpected unicode escape " \\ ch ))))))
 
 (defn read-past
   "Read until first character that doesn't match pred, returning
@@ -312,10 +303,7 @@
 
 (defn not-implemented
   [reader ch]
-  (reader-error reader
-                (str "Reader for " ch " not implemented yet")))
-
-
+  (reader-error reader (str "Reader for " ch " not implemented yet")))
 
 
 (defn read-dispatch
@@ -390,15 +378,11 @@
          ch (read-char reader)]
 
     (cond
-     (nil? ch)
-      (reader-error reader "EOF while reading string")
-     (identical? \\ ch)
-      (recur (str buffer (escape-char buffer reader))
-             (read-char reader))
-     (identical? "\"" ch)
-      buffer
-     :default
-      (recur (str buffer ch) (read-char reader)))))
+     (nil? ch) (reader-error reader "EOF while reading string")
+     (identical? \\ ch) (recur (str buffer (escape-char buffer reader))
+                               (read-char reader))
+     (identical? "\"" ch) buffer
+     :default (recur (str buffer ch) (read-char reader)))))
 
 (defn read-unquote
   "Reads unquote form ~form or ~(foo bar)"
@@ -542,31 +526,31 @@
    (identical? c "\"") read-string
    (identical? c \:) read-keyword
    (identical? c ";") read-comment
-   (identical? c "'") (wrapping-reader 'quote)
+   (identical? c \') (wrapping-reader 'quote)
    (identical? c \@) (wrapping-reader 'deref)
    (identical? c \^) read-meta
-   (identical? c "`") (wrapping-reader 'syntax-quote)
-   (identical? c "~") read-unquote
-   (identical? c "(") read-list
-   (identical? c ")") read-unmatched-delimiter
-   (identical? c "[") read-vector
-   (identical? c "]") read-unmatched-delimiter
-   (identical? c "{") read-map
-   (identical? c "}") read-unmatched-delimiter
+   (identical? c \`) (wrapping-reader 'syntax-quote)
+   (identical? c \~) read-unquote
+   (identical? c \() read-list
+   (identical? c \)) read-unmatched-delimiter
+   (identical? c \[) read-vector
+   (identical? c \]) read-unmatched-delimiter
+   (identical? c \{) read-map
+   (identical? c \}) read-unmatched-delimiter
    (identical? c \\) read-char
-   (identical? c "#") read-dispatch
    (identical? c \%) read-param
+   (identical? c \#) read-dispatch
    :else nil))
 
 
 (defn dispatch-macros [s]
   (cond
-   (identical? s "{") read-set
-   (identical? s "<") (throwing-reader "Unreadable form")
+   (identical? s \{) read-set
    (identical? s \() read-lambda
+   (identical? s \<) (throwing-reader "Unreadable form")
    (identical? s "\"") read-regex
-   (identical? s "!") read-comment
-   (identical? s "_") read-discard
+   (identical? s \!) read-comment
+   (identical? s \_) read-discard
    :else nil))
 
 (defn read
