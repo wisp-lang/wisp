@@ -4,7 +4,7 @@
 (defn with-meta
   "Returns identical value with given metadata associated to it."
   [value metadata]
-  (set! value.metadata metadata)
+  (.defineProperty Object value "metadata" {:value metadata :configurable true})
   value)
 
 (defn meta

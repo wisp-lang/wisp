@@ -330,23 +330,38 @@
   (reader-error rdr "Unmached delimiter " ch))
 
 (defn read-list
-  [reader]
-  (apply list (read-delimited-list ")" reader true)))
+  [reader _]
+  (let [line-number (line reader)
+        column-number (column reader)
+        items (read-delimited-list ")" reader true)]
+    (with-meta (apply list items) {:line line-number :column column-number })))
 
 (def read-comment skip-line)
 
 (defn read-vector
   [reader]
-  (read-delimited-list "]" reader true))
+  (let [line-number (line reader)
+        column-number (column reader)
+        items (read-delimited-list "]" reader true)]
+    (with-meta items {:line line-number :column column-number })))
 
 (defn read-map
   [reader]
-  (let [items (read-delimited-list "}" reader true)]
+  (let [line-number (line reader)
+        column-number (column reader)
+        items (read-delimited-list "}" reader true)]
     (if (odd? (count items))
-      (reader-error
-       reader
-       "Map literal must contain an even number of forms"))
-    (apply dictionary items)))
+      (reader-error reader "Map literal must contain an even number of forms")
+      (with-meta (apply dictionary items)
+                 {:line line-number :column column-number}))))
+
+(defn read-set
+  [reader _]
+  (let [line-number (line reader)
+        column-number (column reader)
+        items (read-delimited-list "}" reader true)]
+    (with-meta (concat ['set] items)
+               {:line line-number :column column-number })))
 
 (defn read-number
   [reader initch]
@@ -449,23 +464,22 @@
 
 (defn read-meta
   [reader _]
-  (let [m (desugar-meta (read reader true nil true))]
-    (if (not (object? m))
-      (reader-error
-       reader "Metadata must be Symbol, Keyword, String or Map"))
-    (let [o (read reader true nil true)]
-      (if (object? o)
-        (with-meta o (conj m (meta o)))
+  (let [line-number (line reader)
+        column-number (line column)
+        metadata (desugar-meta (read reader true nil true))]
+    (if (not (object? metadata))
+      (reader-error reader "Metadata must be Symbol, Keyword, String or Map"))
+    (let [form (read reader true nil true)]
+      (if (object? form)
+        (with-meta form (conj metadata
+                              (meta form)
+                              {:line line-number :column column-number}))
         ;(reader-error
         ; reader "Metadata can only be applied to IWithMetas")
 
-        o ; For now we don't throw errors as we can't apply metadata to
-          ; symbols, so we just ignore it.
+        form ; For now we don't throw errors as we can't apply metadata to
+             ; symbols, so we just ignore it.
         ))))
-
-(defn read-set
-  [reader _]
-  (concat ['set] (read-delimited-list "}" reader true)))
 
 (defn read-regex
   [reader]

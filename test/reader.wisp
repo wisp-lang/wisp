@@ -160,8 +160,8 @@
 ;;(assert (= 'foo/bar (reader/read-string "foo/bar")))
 ;;(assert (= ':foo/bar (reader/read-string ":foo/bar")))
 (assert (= \a (reader/read-string "\\a")))
-(assert (equivalent? {:tag 'String}
-                     (meta (reader/read-string "^String {:a 1}"))))
+(assert (equivalent? 'String
+                     (:tag (meta (reader/read-string "^String {:a 1}")))))
 ;; TODO: In quoted sets both keys and values should remain quoted
 ;; (assert (equivalent? [:a 'b '#{c {:d [:e :f :g]}}]
 ;;                     (reader/read-string "[:a b #{c {:d [:e :f :g]}}]")))
