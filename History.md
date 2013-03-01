@@ -1,5 +1,10 @@
 # History
 
+## 0.1.2 - 2013/02/28
+
+  - Remove backend specific forms like `.concat`, `.indexOf`, etc form
+    reader and compiler.
+
 ## 0.1.1 - 2013/02/25
 
   - Implement string module.
