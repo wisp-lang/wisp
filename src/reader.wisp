@@ -494,7 +494,7 @@
      (nil? ch) (reader-error reader "EOF while reading string")
      (identical? \\ ch) (recur (str buffer ch (read-char reader))
                                (read-char reader))
-     (identical? "\"" ch) (re-pattern (join "\\/" (split buffer "/")))
+     (identical? "\"" ch) (re-pattern buffer)
      :default (recur (str buffer ch) (read-char reader)))))
 
 (defn read-param
