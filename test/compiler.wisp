@@ -2,10 +2,7 @@
 (import [list] "../src/sequence")
 (import [self-evaluating? compile macroexpand] "../src/compiler")
 
-(defn transpile
-  [form]
-  (compile (macroexpand form)))
-
+(defn transpile [form] (compile (macroexpand form)))
 
 (.log console "self evaluating forms")
 (assert (self-evaluating? 1) "number is self evaluating")
