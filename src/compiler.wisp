@@ -200,6 +200,7 @@
   ;; set! ->  set
   (set! id (join (split id "!")))
   (set! id (join "$" (split id "%")))
+  (set! id (join "$" (split id "&")))
   ;; number? -> isNumber
   (set! id (if (identical? (last id) "?")
              (str "is-" (subs id 0 (dec (count id))))

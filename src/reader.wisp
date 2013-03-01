@@ -1,7 +1,7 @@
-(import [list list? count empty? first second third rest
-         cons conj rest concat last butlast] "./sequence")
-(import [odd? dictionary keys nil? inc dec vector? string? object?
-         re-pattern re-matches re-find str subs char] "./runtime")
+(import [list list? count empty? first second third rest map vec
+         cons conj rest concat last butlast sort] "./sequence")
+(import [odd? dictionary keys nil? inc dec vector? string? object? dictionary?
+         re-pattern re-matches re-find str subs char vals] "./runtime")
 (import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
 (import [split join] "./string")
 
@@ -479,6 +479,40 @@
      (identical? "\"" ch) (re-pattern (join "\\/" (split buffer "/")))
      :default (recur (str buffer ch) (read-char reader)))))
 
+(defn read-param
+  [reader initch]
+  (let [form (read-symbol reader initch)]
+    (if (= form (symbol "%")) (symbol "%1") form)))
+
+(defn param? [form]
+  (and (symbol? form) (identical? \% (first (name form)))))
+
+(defn lambda-params-hash [form]
+  (cond (param? form) (dictionary form form)
+        (or (dictionary? form)
+            (vector? form)
+            (list? form)) (apply conj
+                                 (map lambda-params-hash (vec form)))
+        :else {}))
+
+(defn lambda-params [body]
+  (let [names (sort (vals (lambda-params-hash body)))
+        variadic (= (first names) (symbol "%&"))
+        n (if (and variadic (= (count names) 1))
+              0
+              (parseInt (rest (name (last names)))))
+        params (loop [names []
+                      i 1]
+                (if (<= i n)
+                  (recur (conj names (symbol (str "%" i))) (inc i))
+                  names))]
+    (if variadic (conj params '& '%&) names)))
+
+(defn read-lambda
+  [reader]
+   (let [body (read-list reader)]
+    (list 'fn (lambda-params body) body)))
+
 (defn read-discard
   "Discards next form"
   [reader _]
@@ -502,8 +536,8 @@
    (identical? c "{") read-map
    (identical? c "}") read-unmatched-delimiter
    (identical? c \\) read-char
-   (identical? c \%) not-implemented
    (identical? c "#") read-dispatch
+   (identical? c \%) read-param
    :else nil))
 
 
@@ -511,6 +545,7 @@
   (cond
    (identical? s "{") read-set
    (identical? s "<") (throwing-reader "Unreadable form")
+   (identical? s \() read-lambda
    (identical? s "\"") read-regex
    (identical? s "!") read-comment
    (identical? s "_") read-discard

@@ -117,6 +117,20 @@
              this))
         "function read correctly")
 
+(.log console "lambda syntax")
+
+(assert (equivalent?
+          (read-string "#(apply sum %&)")
+          '(fn [& %&] (apply sum %&))))
+
+(assert (equivalent?
+          (read-string "(map #(inc %) [1 2 3])")
+          '(map (fn [%1] (inc %1)) [1 2 3])))
+
+(assert (equivalent?
+          (read-string "#(+ %1 % %& %5 %2)")
+          '(fn [%1 %2 %3 %4 %5 & %&] (+ %1 %1 %& %5 %2))))
+
 (.log console "read comments")
 (assert (equivalent?
          (read-string "; comment
