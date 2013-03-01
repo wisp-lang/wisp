@@ -157,7 +157,9 @@
         reader
         (recur)))))
 
-(def int-pattern (re-pattern "([-+]?)(?:(0)|([1-9][0-9]*)|0[xX]([0-9A-Fa-f]+)|0([0-7]+)|([1-9][0-9]?)[rR]([0-9A-Za-z]+)|0[0-9]+)(N)?"))
+;; Note: Input begin and end matchers are used in a pattern since otherwise
+;; anything begininng with `0` will match just `0` cause it's listed first.
+(def int-pattern (re-pattern "^([-+]?)(?:(0)|([1-9][0-9]*)|0[xX]([0-9A-Fa-f]+)|0([0-7]+)|([1-9][0-9]?)[rR]([0-9A-Za-z]+)|0[0-9]+)(N)?$"))
 (def ratio-pattern (re-pattern "([-+]?[0-9]+)/([0-9]+)"))
 (def float-pattern (re-pattern "([-+]?[0-9]+(\\.[0-9]*)?([eE][-+]?[0-9]+)?)(M)?"))
 (def symbol-pattern (re-pattern "[:]?([^0-9/].*/)?([^0-9/][^/]*)"))
@@ -238,8 +240,10 @@
      (str "Unexpected unicode escape " \\ escape-char unicode-str))))
 
 
-(defn make-unicode-char [code-str]
-  (let [code (parseInt code-str 16)]
+(defn make-unicode-char
+  [code-str base]
+  (let [base (or base 16)
+        code (parseInt code-str base)]
     (char code)))
 
 (defn escape-char
