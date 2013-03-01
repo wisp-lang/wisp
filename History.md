@@ -1,5 +1,12 @@
 # History
 
+## 0.2.0 - 2013/02/29
+
+  - Add short anonymous function literal support.
+  - Fix regex with `/` chars.
+  - Add line and column information to the metadata.
+  - Reader code cleanup.
+
 ## 0.1.2 - 2013/02/28
 
   - Remove backend specific forms like `.concat`, `.indexOf`, etc form

@@ -1087,12 +1087,15 @@ exports.evaluate = evaluate;
 exports.transpile = transpile;
 });
 
-require.define("/lib/reader.js",function(require,module,exports,__dirname,__filename,process){var butlast = (require("./sequence")).butlast;
+require.define("/lib/reader.js",function(require,module,exports,__dirname,__filename,process){var sort = (require("./sequence")).sort;
+var butlast = (require("./sequence")).butlast;
 var last = (require("./sequence")).last;
 var concat = (require("./sequence")).concat;
 var rest = (require("./sequence")).rest;
 var conj = (require("./sequence")).conj;
 var cons = (require("./sequence")).cons;
+var vec = (require("./sequence")).vec;
+var map = (require("./sequence")).map;
 var rest = (require("./sequence")).rest;
 var third = (require("./sequence")).third;
 var second = (require("./sequence")).second;
@@ -1102,12 +1105,14 @@ var count = (require("./sequence")).count;
 var isList = (require("./sequence")).isList;
 var list = (require("./sequence")).list;;
 
+var vals = (require("./runtime")).vals;
 var char = (require("./runtime")).char;
 var subs = (require("./runtime")).subs;
 var str = (require("./runtime")).str;
 var reFind = (require("./runtime")).reFind;
 var reMatches = (require("./runtime")).reMatches;
 var rePattern = (require("./runtime")).rePattern;
+var isDictionary = (require("./runtime")).isDictionary;
 var isObject = (require("./runtime")).isObject;
 var isString = (require("./runtime")).isString;
 var isVector = (require("./runtime")).isVector;
@@ -1151,14 +1156,14 @@ var column = function column(reader) {
   return reader.columnAtom;
 };
 
-var nextChar = function nextChar(reader) {
+var peekChar = function peekChar(reader) {
   return isEmpty(reader.bufferAtom) ?
     reader.source[reader.indexAtom] :
     reader.bufferAtom[0];
 };
 
 var readChar = function readChar(reader) {
-  nextChar(reader) === "\n" ?
+  peekChar(reader) === "\n" ?
     (function() {
       reader.lineAtom = (line(reader)) + 1;
       return reader.columnAtom = 1;
@@ -1205,7 +1210,7 @@ var isCommentPrefix = function isCommentPrefix(ch) {
 };
 
 var isNumberLiteral = function isNumberLiteral(reader, initch) {
-  return (isNumeric(initch)) || ((("+" === initch) || ("-" === initch)) && (isNumeric(nextChar(reader))));
+  return (isNumeric(initch)) || ((("+" === initch) || ("-" === initch)) && (isNumeric(peekChar(reader))));
 };
 
 var readerError = function readerError(reader, message) {
@@ -1250,13 +1255,11 @@ var skipLine = function skipLine(reader, _) {
   })();
 };
 
-var intPattern = rePattern("([-+]?)(?:(0)|([1-9][0-9]*)|0[xX]([0-9A-Fa-f]+)|0([0-7]+)|([1-9][0-9]?)[rR]([0-9A-Za-z]+)|0[0-9]+)(N)?");
+var intPattern = rePattern("^([-+]?)(?:(0)|([1-9][0-9]*)|0[xX]([0-9A-Fa-f]+)|0([0-7]+)|([1-9][0-9]?)[rR]([0-9A-Za-z]+)|0[0-9]+)(N)?$");
 
 var ratioPattern = rePattern("([-+]?[0-9]+)/([0-9]+)");
 
 var floatPattern = rePattern("([-+]?[0-9]+(\\.[0-9]*)?([eE][-+]?[0-9]+)?)(M)?");
-
-var symbolPattern = rePattern("[:]?([^0-9/].*/)?([^0-9/][^/]*)");
 
 var matchInt = function matchInt(s) {
   var groups = reFind(intPattern, s);
@@ -1345,8 +1348,9 @@ var validateUnicodeEscape = function validateUnicodeEscape(unicodePattern, reade
     readerError(reader, str("Unexpected unicode escape ", "\\", escapeChar, unicodeStr));
 };
 
-var makeUnicodeChar = function makeUnicodeChar(codeStr) {
-  var code = parseInt(codeStr, 16);
+var makeUnicodeChar = function makeUnicodeChar(codeStr, base) {
+  var base = base || 16;
+  var code = parseInt(codeStr, base);
   return char(code);
 };
 
@@ -1396,7 +1400,7 @@ var readDelimitedList = function readDelimitedList(delim, reader, isRecursive) {
               var mret = macrofn(reader, ch);
               return (a = mret === reader ?
                 a :
-                a.concat([mret]), loop);
+                conj(a, mret), loop);
             })() :
             (function() {
               unreadChar(reader, ch);
@@ -1404,7 +1408,7 @@ var readDelimitedList = function readDelimitedList(delim, reader, isRecursive) {
                 var o = read(reader, true, void(0), isRecursive);
                 return (a = o === reader ?
                   a :
-                  a.concat([o]), loop);
+                  conj(a, o), loop);
               })();
             })();
         })();
@@ -1435,22 +1439,48 @@ var readUnmatchedDelimiter = function readUnmatchedDelimiter(rdr, ch) {
   return readerError(rdr, "Unmached delimiter ", ch);
 };
 
-var readList = function readList(reader) {
-  return list.apply(list, readDelimitedList(")", reader, true));
+var readList = function readList(reader, _) {
+  var lineNumber = line(reader);
+  var columnNumber = column(reader);
+  var items = readDelimitedList(")", reader, true);
+  return withMeta(list.apply(list, items), {
+    "line": lineNumber,
+    "column": columnNumber
+  });
 };
 
 var readComment = skipLine;
 
 var readVector = function readVector(reader) {
-  return readDelimitedList("]", reader, true);
+  var lineNumber = line(reader);
+  var columnNumber = column(reader);
+  var items = readDelimitedList("]", reader, true);
+  return withMeta(items, {
+    "line": lineNumber,
+    "column": columnNumber
+  });
 };
 
 var readMap = function readMap(reader) {
+  var lineNumber = line(reader);
+  var columnNumber = column(reader);
   var items = readDelimitedList("}", reader, true);
-  isOdd(count(items)) ?
+  return isOdd(count(items)) ?
     readerError(reader, "Map literal must contain an even number of forms") :
-    void(0);
-  return dictionary.apply(dictionary, items);
+    withMeta(dictionary.apply(dictionary, items), {
+      "line": lineNumber,
+      "column": columnNumber
+    });
+};
+
+var readSet = function readSet(reader, _) {
+  var lineNumber = line(reader);
+  var columnNumber = column(reader);
+  var items = readDelimitedList("}", reader, true);
+  return withMeta(concat(["﻿set"], items), {
+    "line": lineNumber,
+    "column": columnNumber
+  });
 };
 
 var readNumber = function readNumber(reader, initch) {
@@ -1574,20 +1604,21 @@ var throwingReader = function throwingReader(msg) {
 };
 
 var readMeta = function readMeta(reader, _) {
-  var m = desugarMeta(read(reader, true, void(0), true));
-  !(isObject(m)) ?
+  var lineNumber = line(reader);
+  var columnNumber = line(column);
+  var metadata = desugarMeta(read(reader, true, void(0), true));
+  !(isObject(metadata)) ?
     readerError(reader, "Metadata must be Symbol, Keyword, String or Map") :
     void(0);
   return (function() {
-    var o = read(reader, true, void(0), true);
-    return isObject(o) ?
-      withMeta(o, conj(m, meta(o))) :
-      o;
+    var form = read(reader, true, void(0), true);
+    return isObject(form) ?
+      withMeta(form, conj(metadata, meta(form), {
+        "line": lineNumber,
+        "column": columnNumber
+      })) :
+      form;
   })();
-};
-
-var readSet = function readSet(reader, _) {
-  return concat(["﻿set"], readDelimitedList("}", reader, true));
 };
 
 var readRegex = function readRegex(reader) {
@@ -1599,13 +1630,59 @@ var readRegex = function readRegex(reader) {
     "\\" === ch ?
       (buffer = str(buffer, ch, readChar(reader)), ch = readChar(reader), loop) :
     "\"" === ch ?
-      rePattern(join("\\/", split(buffer, "/"))) :
+      rePattern(buffer) :
     "default" ?
       (buffer = str(buffer, ch), ch = readChar(reader), loop) :
       void(0);
     };
     return recur;
   })("", readChar(reader));
+};
+
+var readParam = function readParam(reader, initch) {
+  var form = readSymbol(reader, initch);
+  return form == symbol("%") ?
+    symbol("%1") :
+    form;
+};
+
+var isParam = function isParam(form) {
+  return (isSymbol(form)) && ("%" === first(name(form)));
+};
+
+var lambdaParamsHash = function lambdaParamsHash(form) {
+  return isParam(form) ?
+    dictionary(form, form) :
+  (isDictionary(form)) || (isVector(form)) || (isList(form)) ?
+    conj.apply(conj, map(lambdaParamsHash, vec(form))) :
+  "else" ?
+    {} :
+    void(0);
+};
+
+var lambdaParams = function lambdaParams(body) {
+  var names = sort(vals(lambdaParamsHash(body)));
+  var variadic = first(names) == symbol("%&");
+  var n = variadic && (count(names) == 1) ?
+    0 :
+    parseInt(rest(name(last(names))));
+  var params = (function loop(names, i) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = i <= n ?
+      (names = conj(names, symbol(str("%", i))), i = inc(i), loop) :
+      names;
+    };
+    return recur;
+  })([], 1);
+  return variadic ?
+    conj(params, "﻿&", "﻿%&") :
+    names;
+};
+
+var readLambda = function readLambda(reader) {
+  var body = readList(reader);
+  return list("﻿fn", lambdaParams(body), body);
 };
 
 var readDiscard = function readDiscard(reader, _) {
@@ -1645,7 +1722,7 @@ var macros = function macros(c) {
   c === "\\" ?
     readChar :
   c === "%" ?
-    notImplemented :
+    readParam :
   c === "#" ?
     readDispatch :
   "else" ?
@@ -1656,6 +1733,8 @@ var macros = function macros(c) {
 var dispatchMacros = function dispatchMacros(s) {
   return s === "{" ?
     readSet :
+  s === "(" ?
+    readLambda :
   s === "<" ?
     throwingReader("Unreadable form") :
   s === "\"" ?
@@ -1750,7 +1829,10 @@ var isVector = (require("./runtime")).isVector;
 var isNil = (require("./runtime")).isNil;;
 
 var withMeta = function withMeta(value, metadata) {
-  value.metadata = metadata;
+  Object.defineProperty(value, "metadata", {
+    "value": metadata,
+    "configurable": true
+  });
   return value;
 };
 
@@ -1981,6 +2063,7 @@ var isRePattern = (require("./runtime")).isRePattern;
 var isNil = (require("./runtime")).isNil;
 var isFalse = (require("./runtime")).isFalse;
 var isTrue = (require("./runtime")).isTrue;
+var reFind = (require("./runtime")).reFind;
 var subs = (require("./runtime")).subs;
 var isBoolean = (require("./runtime")).isBoolean;
 var isVector = (require("./runtime")).isVector;
@@ -2143,6 +2226,7 @@ var compileReference = function compileReference(form) {
   id = join("-to-", split(id, "->"));
   id = join(split(id, "!"));
   id = join("$", split(id, "%"));
+  id = join("$", split(id, "&"));
   id = last(id) === "?" ?
     str("is-", subs(id, 0, dec(count(id)))) :
     id;
@@ -2263,9 +2347,8 @@ var macroexpand = function macroexpand(form) {
 var compileTemplate = function compileTemplate(form) {
   var indentPattern = /\n *$/;
   var lineBreakPatter = RegExp("\n", "g");
-  var getIndentation = function getIndentation(code) {
-    var match = code.match(indentPattern);
-    return (match && (match[0])) || "\n";
+  var getIndentation = function(code) {
+    return (reFind(indentPattern, code)) || "\n";
   };
   return (function loop(code, parts, values) {
     var recur = loop;
@@ -2327,9 +2410,15 @@ var desugarFnAttrs = function desugarFnAttrs(form) {
 };
 
 var compileFnParams = function compileFnParams(params) {
-  return isContainsVector(params, "﻿&") ?
-    join(", ", map(compile, params.slice(0, params.indexOf("﻿&")))) :
-    join(", ", map(compile, params));
+  return (function loop(nonVariadic, params) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = (isEmpty(params)) || (first(params) == "﻿&") ?
+      join(", ", map(compile, nonVariadic)) :
+      (nonVariadic = concat(nonVariadic, [first(params)]), params = rest(params), loop);
+    };
+    return recur;
+  })([], params);
 };
 
 var compileDesugaredFn = function compileDesugaredFn(name, doc, attrs, params, body) {
@@ -2361,7 +2450,19 @@ var compileFnBody = function compileFnBody(form, params) {
 };
 
 var isVariadic = function isVariadic(params) {
-  return params.indexOf("﻿&") >= 0;
+  return (function loop(params) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = isEmpty(params) ?
+      false :
+    first(params) == "﻿&" ?
+      true :
+    "else" ?
+      (params = rest(params), loop) :
+      void(0);
+    };
+    return recur;
+  })(params);
 };
 
 var analyzeOverloadedFn = function analyzeOverloadedFn(name, doc, attrs, overloads) {
@@ -2373,7 +2474,7 @@ var analyzeOverloadedFn = function analyzeOverloadedFn(name, doc, attrs, overloa
       count(params);
     return {
       "variadic": variadic,
-      "rest": isVariadic ?
+      "rest": variadic ?
         params[dec(count(params))] :
         void(0),
       "fixed-arity": fixedArity,
