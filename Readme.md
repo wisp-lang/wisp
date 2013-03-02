@@ -234,7 +234,7 @@ Variable definitions also happen through special forms.
 In wisp new values can be set to a variables via `set!`
 special form. Note that in functional programing binding changes are
 a bad practice, avoiding those would make your programs only better!
-Stil if you need it you have it.
+Still if you need it you have it.
 
 ```clojure
 (set! a 1)
@@ -262,10 +262,10 @@ Else expression is optional, if missing and conditional evaluates to
 
 
 
-#### Compbining expressions
+#### Combining expressions
 
 In wisp is everything is an expression, but sometimes one might
-want to compbine multiple expressions into one, usually for the
+want to combine multiple expressions into one, usually for the
 purpose of evaluating expressions that have side-effects
 
 ```clojure
@@ -410,7 +410,7 @@ Although catch form can be used to handle exceptions
   (catch error (.log console error)))
 ```
 
-Also finally clase can be used when necessary
+Also finally clause can be used when necessary
 
 ```clojure
 (try
@@ -445,7 +445,7 @@ evaluating the reference to the value of the corresponding variable.
 foo
 ```
 
-If you wish to refer to the literal symbol, rather then reference you
+If you wish to refer to the literal symbol, rather than reference you
 could use
 
 ```clojure
@@ -592,7 +592,7 @@ without such tradeoffs.
 
 
 (->
- (open tagret :keypress)
+ (open target :keypress)
  (filter enter-key?)
  (map get-input-text)
  (reduce render))
