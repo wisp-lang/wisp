@@ -156,6 +156,7 @@
 (assert (equivalent? '(7 8 9) (reader/read-string "(7 8 9)")))
 (assert (equivalent? '(deref foo) (reader/read-string "@foo")))
 (assert (equivalent? '(quote bar) (reader/read-string "'bar")))
+
 ;; TODO: Implement `namespace` fn and proper namespace support ?
 ;;(assert (= 'foo/bar (reader/read-string "foo/bar")))
 ;;(assert (= ':foo/bar (reader/read-string ":foo/bar")))
@@ -172,6 +173,9 @@
 (assert (= "escape chars \t \r \n \\ \" \b \f"
            (reader/read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\"")))
 
+(.log console "tagged literals")
+
+
 ;; queue literals
 (assert (equivalent? '(PersistentQueue. [])
                      (reader/read-string "#queue []")))
@@ -183,6 +187,8 @@
 ;; uuid literals
 (assert (equivalent? '(UUID. "550e8400-e29b-41d4-a716-446655440000")
                      (reader/read-string "#uuid \"550e8400-e29b-41d4-a716-446655440000\"")))
+
+(.log console "read unicode")
 
 (let [assets
       ["اختبار" ; arabic
@@ -236,4 +242,3 @@
            :failed-to-throw
            (catch e :threw)))
       (str "Failed to throw reader error for: " unicode-error)))))
-
