@@ -1,7 +1,7 @@
 {
   "name": "wisp",
   "id": "wisp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Homoiconic JS with clojure syntax, s-expressions & macros",
   "author": "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)",
   "homepage": "https://github.com/Gozala/wisp",
@@ -22,7 +22,8 @@
     "url": "http://opensource.org/licenses/BSD-3-Clause"
   }],
   "devDependencies": {
-    "browserify": "1.14.2"
+    "browserify": "1.14.2",
+    "wisp": "latest"
   },
   "engines": {
     "node": ">=0.4.0"
@@ -33,6 +34,7 @@
   },
   "scripts": {
     "prepublish": "make all",
+    "postpublish": "npm install",
     "test": "./bin/wisp.js ./test/test.wisp"
   }
 }

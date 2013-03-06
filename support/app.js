@@ -421,6 +421,28 @@ List.prototype.toString = function() {
   })("", this);
 };
 
+var lazySeqValue = function lazySeqValue(lazySeq) {
+  return !(lazySeq.realized) ?
+    (lazySeq.realized = true) && (lazySeq.x = lazySeq.x()) :
+    lazySeq.x;
+};
+
+var LazySeq = function LazySeq(realized, x) {
+  this.realized = realized || false;
+  this.x = x;
+  return this;
+};
+
+var lazySeq = function lazySeq(realized, body) {
+  return new LazySeq(realized, body);
+};
+
+var isLazySeq = function isLazySeq(value) {
+  return value instanceof LazySeq;
+};
+
+undefined;
+
 var isList = function isList(value) {
   return List.prototype.isPrototypeOf(value);
 };
@@ -566,6 +588,8 @@ var first = function first(sequence) {
     sequence.head :
   (isVector(sequence)) || (isString(sequence)) ?
     sequence[0] :
+  isLazySeq(sequence) ?
+    first(lazySeqValue(sequence)) :
   "else" ?
     first(seq(sequence)) :
     void(0);
@@ -578,6 +602,8 @@ var second = function second(sequence) {
     first(rest(sequence)) :
   (isVector(sequence)) || (isString(sequence)) ?
     sequence[1] :
+  isLazySeq(sequence) ?
+    second(lazySeqValue(sequence)) :
   "else" ?
     first(rest(seq(sequence))) :
     void(0);
@@ -590,6 +616,8 @@ var third = function third(sequence) {
     first(rest(rest(sequence))) :
   (isVector(sequence)) || (isString(sequence)) ?
     sequence[2] :
+  isLazySeq(sequence) ?
+    third(lazySeqValue(sequence)) :
   "else" ?
     second(rest(seq(sequence))) :
     void(0);
@@ -602,6 +630,8 @@ var rest = function rest(sequence) {
     sequence.tail :
   (isVector(sequence)) || (isString(sequence)) ?
     sequence.slice(1) :
+  isLazySeq(sequence) ?
+    rest(lazySeqValue(sequence)) :
   "else" ?
     rest(seq(sequence)) :
     void(0);
@@ -626,6 +656,8 @@ var last = function last(sequence) {
     lastOfList(sequence) :
   isNil(sequence) ?
     void(0) :
+  isLazySeq(sequence) ?
+    last(lazySeqValue(sequence)) :
   "else" ?
     last(seq(sequence)) :
     void(0);
@@ -640,6 +672,8 @@ var butlast = function butlast(sequence) {
     sequence.slice(0, dec(count(sequence))) :
   isList(sequence) ?
     list.apply(list, butlast(vec(sequence))) :
+  isLazySeq(sequence) ?
+    butlast(lazySeqValue(sequence)) :
   "else" ?
     butlast(seq(sequence)) :
     void(0);
@@ -655,6 +689,8 @@ var take = function take(n, sequence) {
     takeFromVector(n, sequence) :
   isList(sequence) ?
     takeFromList(n, sequence) :
+  isLazySeq(sequence) ?
+    take(n, lazySeqValue(sequence)) :
   "else" ?
     take(n, seq(sequence)) :
     void(0);
@@ -699,6 +735,8 @@ var drop = function drop(n, sequence) {
     dropFromList(n, sequence) :
   isNil(sequence) ?
     list() :
+  isLazySeq(sequence) ?
+    drop(n, lazySeqValue(sequence)) :
   "else" ?
     drop(n, seq(sequence)) :
     void(0);
@@ -718,7 +756,7 @@ var conj = function conj(sequence) {
     str(sequence, str.apply(str, items)) :
   isNil(sequence) ?
     list.apply(list, reverse(items)) :
-  isList(sequence) ?
+  (isList(sequence)) || (isLazySeq()) ?
     conjList(sequence, items) :
   isDictionary(sequence) ?
     merge(sequence, merge.apply(merge, items)) :
@@ -739,7 +777,7 @@ var concat = function concat() {
 var seq = function seq(sequence) {
   return isNil(sequence) ?
     void(0) :
-  (isVector(sequence)) || (isList(sequence)) ?
+  (isVector(sequence)) || (isList(sequence)) || (isLazySeq(sequence)) ?
     sequence :
   isString(sequence) ?
     Array.prototype.slice.call(sequence) :
@@ -818,6 +856,7 @@ exports.second = second;
 exports.first = first;
 exports.count = count;
 exports.isEmpty = isEmpty;
+exports.lazySeq = lazySeq;
 exports.vec = vec;
 exports.seq = seq;
 exports.isList = isList;
@@ -2044,6 +2083,7 @@ var last = (require("./sequence")).last;
 var vec = (require("./sequence")).vec;
 var reduce = (require("./sequence")).reduce;
 var reverse = (require("./sequence")).reverse;
+var conj = (require("./sequence")).conj;
 var cons = (require("./sequence")).cons;
 var rest = (require("./sequence")).rest;
 var third = (require("./sequence")).third;
@@ -2222,11 +2262,35 @@ var compileObject = function compileObject(form, isQuoted) {
 
 var compileReference = function compileReference(form) {
   var id = name(form);
+  id = id == "*" ?
+    "multiply" :
+  id == "/" ?
+    "divide" :
+  id == "+" ?
+    "sum" :
+  id == "-" ?
+    "subtract" :
+  id == "=" ?
+    "equal?" :
+  id == "==" ?
+    "strict-equal?" :
+  id == "<=" ?
+    "not-greater-than" :
+  id == ">=" ?
+    "not-less-than" :
+  id == ">" ?
+    "greater-than" :
+  id == "<" ?
+    "less-than" :
+  "else" ?
+    id :
+    void(0);
   id = join("_", split(id, "*"));
   id = join("-to-", split(id, "->"));
   id = join(split(id, "!"));
   id = join("$", split(id, "%"));
-  id = join("$", split(id, "&"));
+  id = join("-plus-", split(id, "+"));
+  id = join("-and-", split(id, "&"));
   id = last(id) === "?" ?
     str("is-", subs(id, 0, dec(count(id)))) :
     id;
@@ -2793,7 +2857,7 @@ installOperator("﻿=", "﻿==");
 
 installOperator("﻿not=", "﻿!=");
 
-installOperator("﻿==", "﻿==");
+installOperator("﻿==", "﻿===");
 
 installOperator("﻿identical?", "﻿===");
 

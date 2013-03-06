@@ -1,9 +1,9 @@
 BROWSERIFY = node ./node_modules/browserify/bin/cmd.js
 
 ifdef current
-	WISP = wisp
+	WISP = node ./bin/wisp.js
 else
-  WISP = node ./bin/wisp.js
+	WISP = ./node_modules/wisp/bin/wisp.js
 endif
 
 core: runtime sequence string ast reader compiler

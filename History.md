@@ -1,5 +1,11 @@
 # History
 
+## 0.3.0 - 2013/03/06
+
+  - Initial support for lazy sequences.
+  - Improve conventional name translation to handle `+ - / * > < >= <=` better.
+  - Minor bug fixes.
+
 ## 0.2.0 - 2013/02/29
 
   - Add short anonymous function literal support.
