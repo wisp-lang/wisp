@@ -1,6 +1,8 @@
 (import [nil? vector? fn? number? string? dictionary?
          key-values str dec inc merge] "./runtime")
 
+;; Implementation of list
+
 (defn List
   "List type"
   [head tail]
@@ -31,6 +33,33 @@
                           (first list))))))
              (rest list))))))
 
+(defn lazy-seq-value [lazy-seq]
+  (if (not (.-realized lazy-seq))
+    (and (set! (.-realized lazy-seq) true)
+         (set! (.-x lazy-seq) (.x lazy-seq)))
+    (.-x lazy-seq)))
+
+(defn LazySeq [realized x]
+  (set! (.-realized this) (or realized false))
+  (set! (.-x this) x)
+  this)
+
+(defn lazy-seq
+  [realized body]
+  (LazySeq. realized body))
+
+(defn lazy-seq?
+  [value]
+  (instance? LazySeq value))
+
+(defmacro lazy-seq
+  "Takes a body of expressions that returns an ISeq or nil, and yields
+  a Seqable object that will invoke the body only the first time seq
+  is called, and will cache the result and return it on all subsequent
+  seq calls. See also - realized?"
+  {:added "1.0"}
+  [& body]
+  `(.call lazy-seq nil false (fn [] ~@body)))
 
 (defn list?
   "Returns true if list"
@@ -148,6 +177,7 @@
   (cond (nil? sequence) nil
         (list? sequence) (.-head sequence)
         (or (vector? sequence) (string? sequence)) (get sequence 0)
+        (lazy-seq? sequence) (first (lazy-seq-value sequence))
         :else (first (seq sequence))))
 
 (defn second
@@ -156,6 +186,7 @@
   (cond (nil? sequence) nil
         (list? sequence) (first (rest sequence))
         (or (vector? sequence) (string? sequence)) (get sequence 1)
+        (lazy-seq? sequence) (second (lazy-seq-value sequence))
         :else (first (rest (seq sequence)))))
 
 (defn third
@@ -164,6 +195,7 @@
   (cond (nil? sequence) nil
         (list? sequence) (first (rest (rest sequence)))
         (or (vector? sequence) (string? sequence)) (get sequence 2)
+        (lazy-seq? sequence) (third (lazy-seq-value sequence))
         :else (second (rest (seq sequence)))))
 
 (defn rest
@@ -172,6 +204,7 @@
   (cond (nil? sequence) '()
         (list? sequence) (.-tail sequence)
         (or (vector? sequence) (string? sequence)) (.slice sequence 1)
+        (lazy-seq? sequence) (rest (lazy-seq-value sequence))
         :else (rest (seq sequence))))
 
 (defn last-of-list
@@ -189,6 +222,7 @@
             (string? sequence)) (get sequence (dec (count sequence)))
         (list? sequence) (last-of-list sequence)
         (nil? sequence) nil
+        (lazy-seq? sequence) (last (lazy-seq-value sequence))
         :else (last (seq sequence))))
 
 (defn butlast
@@ -198,6 +232,7 @@
                     (string? sequence) (subs sequence 0 (dec (count sequence)))
                     (vector? sequence) (.slice sequence 0 (dec (count sequence)))
                     (list? sequence) (apply list (butlast (vec sequence)))
+                    (lazy-seq? sequence) (butlast (lazy-seq-value sequence))
                     :else (butlast (seq sequence)))]
     (if (not (or (nil? items) (empty? items)))
         items)))
@@ -209,6 +244,7 @@
   (cond (nil? sequence) '()
         (vector? sequence) (take-from-vector n sequence)
         (list? sequence) (take-from-list n sequence)
+        (lazy-seq? sequence) (take n (lazy-seq-value sequence))
         :else (take n (seq sequence))))
 
 (defn take-from-vector
@@ -246,6 +282,7 @@
           (vector? sequence) (.slice sequence n)
           (list? sequence) (drop-from-list n sequence)
           (nil? sequence) '()
+          (lazy-seq? sequence) (drop n (lazy-seq-value sequence))
           :else (drop n (seq sequence)))))
 
 
@@ -258,7 +295,8 @@
   (cond (vector? sequence) (.concat sequence items)
         (string? sequence) (str sequence (apply str items))
         (nil? sequence) (apply list (reverse items))
-        (list? sequence) (conj-list sequence items)
+        (or (list? sequence)
+            (lazy-seq?)) (conj-list sequence items)
         (dictionary? sequence) (merge sequence (apply merge items))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
 
@@ -278,7 +316,7 @@
 
 (defn seq [sequence]
   (cond (nil? sequence) nil
-        (or (vector? sequence) (list? sequence)) sequence
+        (or (vector? sequence) (list? sequence) (lazy-seq? sequence)) sequence
         (string? sequence) (.call Array.prototype.slice sequence)
         (dictionary? sequence) (key-values sequence)
         :default (throw (TypeError (str "Can not seq " sequence)))))
@@ -314,6 +352,7 @@
           :else (sort f (seq items)))))
 
 (export cons conj list list? seq vec
+        lazy-seq
         empty? count
         first second third rest last butlast
         take drop
