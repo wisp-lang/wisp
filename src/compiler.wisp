@@ -977,7 +977,7 @@
 
 (install-operator '= '==)
 (install-operator 'not= '!=)
-(install-operator '== '==)
+(install-operator '== '===)
 (install-operator 'identical? '===)
 (install-operator '> '>)
 (install-operator '>= '>=)
