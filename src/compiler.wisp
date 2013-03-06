@@ -1,7 +1,7 @@
 (import [read-from-string] "./reader")
 (import [meta with-meta symbol? symbol keyword? keyword
          unquote? unquote-splicing? quote? syntax-quote? name gensym] "./ast")
-(import [empty? count list? list first second third rest cons
+(import [empty? count list? list first second third rest cons conj
          reverse reduce vec last
          map filter take concat] "./sequence")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
@@ -193,6 +193,18 @@
   create-server   createServer"
   [form]
   (def id (name form))
+  (set! id (cond (= id  "*") "multiply"
+                 (= id "/") "divide"
+                 (= id "+") "sum"
+                 (= id "-") "subtract"
+                 (= id "=") "equal?"
+                 (= id "==") "strict-equal?"
+                 (= id "<=") "not-greater-than"
+                 (= id ">=") "not-less-than"
+                 (= id ">") "greater-than"
+                 (= id "<") "less-than"
+                 :else id))
+
   ;; **macros** ->  __macros__
   (set! id (join "_" (split id "*")))
   ;; list->vector ->  listToVector
@@ -200,7 +212,11 @@
   ;; set! ->  set
   (set! id (join (split id "!")))
   (set! id (join "$" (split id "%")))
-  (set! id (join "$" (split id "&")))
+  ;; foo= -> fooEqual
+  ;(set! id (join "-equal-" (split id "="))
+  ;; foo+bar -> fooPlusBar
+  (set! id (join "-plus-" (split id "+")))
+  (set! id (join "-and-" (split id "&")))
   ;; number? -> isNumber
   (set! id (if (identical? (last id) "?")
              (str "is-" (subs id 0 (dec (count id))))

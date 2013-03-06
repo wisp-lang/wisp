@@ -1,5 +1,6 @@
 (import [symbol] "../src/ast")
 (import [list] "../src/sequence")
+(import [str] "../src/runtime")
 (import [self-evaluating? compile macroexpand] "../src/compiler")
 
 (defn transpile [form] (compile (macroexpand form)))
@@ -354,7 +355,7 @@
         "(not x) => !(x)")
 
 
-(.log console "compiles = == >= <= special forms")
+(.log console "compiles = == >= <= < > special forms")
 
 
 (assert (identical? (transpile '(= a b)) "a == b")
@@ -369,6 +370,32 @@
                     "arr.indexOf(el) >= 0")
         "(>= (.index-of arr el) 0) => arr.indexOf(el) >= 0")
 
+(.log console "compiles = - + == >= <= / * as functions")
+
+(assert (identical? (transpile '(apply and nums))
+        "and.apply(and, nums)"))
+(assert (identical? (transpile '(apply or nums))
+        "or.apply(or, nums)"))
+(assert (identical? (transpile '(apply = nums))
+                    "isEqual.apply(isEqual, nums)"))
+(assert (identical? (transpile '(apply == nums))
+                    "isStrictEqual.apply(isStrictEqual, nums)"))
+(assert (identical? (transpile '(apply > nums))
+                    "greaterThan.apply(greaterThan, nums)"))
+(assert (identical? (transpile '(apply < nums))
+                    "lessThan.apply(lessThan, nums)"))
+(assert (identical? (transpile '(apply <= nums))
+                    "notGreaterThan.apply(notGreaterThan, nums)"))
+(assert (identical? (transpile '(apply >= nums))
+                    "notLessThan.apply(notLessThan, nums)"))
+(assert (identical? (transpile '(apply * nums))
+                    "multiply.apply(multiply, nums)"))
+(assert (identical? (transpile '(apply / nums))
+                    "divide.apply(divide, nums)"))
+(assert (identical? (transpile '(apply + nums))
+                    "sum.apply(sum, nums)"))
+(assert (identical? (transpile '(apply - nums))
+                    "subtract.apply(subtract, nums)"))
 
 (.log console "compiles dictionaries to js objects")
 
