@@ -1,5 +1,9 @@
 # History
 
+## 0.3.2 - 2013/03/06
+
+  - Hotfix `(/ a b)` special forms.
+
 ## 0.3.1 - 2013/03/06
 
   - Fix the way `/` symbols are handled.
