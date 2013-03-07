@@ -25,7 +25,8 @@
         "def compiles properly")
 (assert (= (transpile '(def y 1)) "var y = 1")
         "def with two args compiled properly")
-(assert (= (transpile ''(def x 1)) "list(\"\uFEFFdef\", \"\uFEFFx\", 1)")
+(assert (= (transpile ''(def x 1))
+                      "list(symbol(void(0), \"def\"), symbol(void(0), \"x\"), 1)")
         "quotes preserve lists")
 
 

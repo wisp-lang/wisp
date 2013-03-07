@@ -21,9 +21,9 @@
   (cond
    (symbol? ns) ns
    (keyword? ns) (str "\uFEFF" (name ns))
-   :else (if (nil? id)
-           (str "\uFEFF" ns)
-           (str "\uFEFF" ns **ns-separator** id))))
+   (nil? id) (str "\uFEFF" ns)
+   (nil? ns) (str "\uFEFF" id)
+   :else (str "\uFEFF" ns **ns-separator** id)))
 
 (defn ^boolean symbol? [x]
   (and (string? x)
@@ -59,6 +59,15 @@
           (string? value) value
           :else (throw (TypeError. (str "Doesn't support name: " value))))))
 
+(defn namespace
+  "Returns the namespace String of a symbol or keyword, or nil if not present."
+  [value]
+  (let [supported (or (keyword? value)
+                      (symbol? value))
+        parts (if supported (split (subs value 1) **ns-separator**))]
+    (if supported
+      (if (> (count parts) 1) (get parts 0))
+      (throw (TypeError. (str "Doesn't supports namespace: " value))))))
 
 (defn gensym
   "Returns a new symbol with a unique name. If a prefix string is
@@ -95,7 +104,7 @@
 (export meta with-meta
         symbol? symbol
         keyword? keyword
-        gensym name
+        gensym name namespace
         unquote?
         unquote-splicing?
         quote?

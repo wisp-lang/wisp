@@ -1,5 +1,5 @@
 (import [read-from-string] "./reader")
-(import [meta with-meta symbol? symbol keyword? keyword
+(import [meta with-meta symbol? symbol keyword? keyword namespace
          unquote? unquote-splicing? quote? syntax-quote? name gensym] "./ast")
 (import [empty? count list? list first second third rest cons conj
          reverse reduce vec last
@@ -878,7 +878,8 @@
 
 
 (defn compile-keyword [form] (str "\"" "\uA789" (name form) "\""))
-(defn compile-symbol [form] (str "\"" "\uFEFF" (name form) "\""))
+(defn compile-symbol [form]
+  (compile (list 'symbol (namespace form) (name form))))
 (defn compile-nil [form] "void(0)")
 (defn compile-number [form] form)
 (defn compile-boolean [form] (if (true? form) "true" "false"))
