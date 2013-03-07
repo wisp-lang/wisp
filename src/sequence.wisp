@@ -89,6 +89,15 @@
         (recur (.concat [(first source)] items)
                (rest source)))))
 
+(defn ^boolean sequential?
+  "Returns true if coll satisfies ISequential"
+  [x] (or (list? x)
+          (vector? x)
+          (lazy-seq? x)
+          (dictionary? x)
+          (string? x)))
+
+
 (defn reverse
   "Reverse order of items in the sequence"
   [sequence]
@@ -352,6 +361,7 @@
           :else (sort f (seq items)))))
 
 (export cons conj list list? seq vec
+        sequential?
         lazy-seq
         empty? count
         first second third rest last butlast

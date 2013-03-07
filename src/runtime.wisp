@@ -113,6 +113,11 @@
       [x]
       (identical? (.call to-string x) "[object Array]"))))
 
+(defn ^boolean date?
+  "Returns true if x is a date"
+  [x]
+  (identical? (.call to-string x) "[object Date]"))
+
 (defn ^boolean boolean?
   "Returns true if x is a boolean"
   [x]
@@ -212,25 +217,87 @@
    [string start end]
    (.substring string start end))
 
-(defn ^boolean =
+(defn ^boolean pattern-equal?
+  [x y]
+  (and (re-pattern? x)
+       (re-pattern? y)
+       (identical? (.-source x) (.-source y))
+       (identical? (.-global x) (.-global y))
+       (identical? (.-multiline x) (.-multiline y))
+       (identical? (.-ignoreCase x) (.-ignoreCase y))))
+
+(defn ^boolean date-equal?
+  [x y]
+  (and (date? x)
+       (date? y)
+       (identical? (Number x) (Number y))))
+
+(defn ^boolean dictionary-equal?
+  [x y]
+  (let [x-keys (keys x)
+        y-keys (keys y)
+        x-count (.-length x-keys)
+        y-count (.-length y-keys)]
+    (and (identical? x-count y-count)
+         (loop [index 0
+                count x-count
+                keys x-keys]
+           (if (< index count)
+             (if (equivalent? (get x (get keys index))
+                              (get y (get keys index)))
+               (recur (inc index) count keys)
+               false)
+             true)))))
+
+(defn ^boolean vector-equal?
+  [x y]
+  (and (vector? x)
+       (vector? y)
+       (identical? (.-length x) (.-length y))
+       (loop [xs x
+              ys y
+              index 0
+              count (.-length x)]
+        (if (< index count)
+          (if (equivalent? (get xs index) (get ys index))
+              (recur xs ys (inc index) count)
+              false)
+          true))))
+
+(defn ^boolean equivalent?
   "Equality. Returns true if x equals y, false if not. Compares
   numbers and collections in a type-independent manner. Clojure's
   immutable data structures define -equiv (and thus =) as a value,
   not an identity, comparison."
   ([x] true)
-  ([x y] (or (identical? x y) (= x y)))
+  ([x y] (or (identical? x y)
+             (cond (nil? x) (nil? y)
+                   (nil? y) (nil? x)
+                   (string? x) false
+                   (number? x) false
+                   (fn? x) false
+                   (boolean? x) false
+                   ;(symbol? x) (symbol-equal? x y)
+                   ;(keyword? x) (keyword-equal? x y)
+                   (date? x) (date-equal? x y)
+                   (vector? x) (vector-equal? x y [] [])
+                   ;(dictionary? x) (dictionary-equal? x y [] [])
+                   (re-pattern? x) (pattern-equal? x y)
+                   :else (dictionary-equal? x y))))
   ([x y & more]
    (loop [previous x
           current y
           index 0
           count (.-length more)]
-    (and (= previous current)
+    (and (equivalent? previous current)
          (if (< index count)
           (recur current
                  (get more index)
                  (inc index)
                  count)
           true)))))
+
+(def = equivalent?)
 
 (defn ^boolean ==
   "Equality. Returns true if x equals y, false if not. Compares
