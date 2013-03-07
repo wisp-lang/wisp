@@ -1,5 +1,6 @@
 (import [read-from-string] "../src/reader")
 (import [list] "../src/sequence")
+(import [str] "../src/runtime")
 (import [name gensym symbol? symbol keyword? keyword
          quote? quote syntax-quote? syntax-quote] "../src/ast")
 
@@ -42,3 +43,16 @@
 (assert (not (syntax-quote?
               (read-string "foo"))) "foo symbol is not syntax quoted")
 
+(.log console "symbol tests")
+
+(assert (symbol? (symbol "foo")))
+(assert (symbol? (symbol "/")))
+; TODO: Fix
+;(assert (symbol? (symbol "")))
+(assert (symbol? (symbol "foo" "bar")))
+
+(assert (= "foo" (name (symbol "foo"))))
+(assert (= "/" (name (symbol "/"))))
+; TODO: fix
+; (assert (= "" (name (symbol ""))))
+(assert (= "bar" (name (symbol "foo" "bar"))))

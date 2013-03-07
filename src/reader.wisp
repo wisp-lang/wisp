@@ -409,9 +409,11 @@
   [reader initch]
   (let [token (read-token reader initch)
         parts (split token "/")
-        has-ns (> (count parts) 1)]
+        has-ns (> (count parts) 1)
+        ns (first parts)
+        name (or (join "/" (rest parts)) "/")]
     (if has-ns
-      (symbol (first parts) (join "/" (rest parts)))
+      (symbol ns name)
       (special-symbols token (symbol token)))))
 
 (defn read-keyword

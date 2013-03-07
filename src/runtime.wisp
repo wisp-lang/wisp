@@ -212,6 +212,7 @@
    [string start end]
    (.substring string start end))
 
+
 (export dictionary? dictionary merge odd? even? vector? string? number? fn?
         object? nil? boolean? true? false? map-dictionary contains-vector? keys
         vals re-pattern re-find re-matches re-pattern? inc dec str char

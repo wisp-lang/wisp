@@ -1,4 +1,5 @@
-(import [list? first count] "./sequence")
+(import [list? first count last] "./sequence")
+(import [split] "./string")
 (import [nil? vector? number? string? boolean? object? str subs] "./runtime")
 
 (defn with-meta
@@ -12,6 +13,7 @@
   [value]
   (if (object? value) (.-metadata value)))
 
+(def **ns-separator** "\u2044")
 
 (defn symbol
   "Returns a Symbol with the given namespace and name."
@@ -21,7 +23,7 @@
    (keyword? ns) (str "\uFEFF" (name ns))
    :else (if (nil? id)
            (str "\uFEFF" ns)
-           (str "\uFEFF" ns "/" id))))
+           (str "\uFEFF" ns **ns-separator** id))))
 
 (defn ^boolean symbol? [x]
   (and (string? x)
@@ -43,23 +45,19 @@
    (symbol? ns) (str "\uA789" (name ns))
    (nil? id) (str "\uA789" ns)
    (nil? ns) (str "\uA789" id)
-   :else (str "\uA789" ns "/" id)))
+   :else (str "\uA789" ns **ns-separator** id)))
 
 
 (defn name
   "Returns the name String of a string, symbol or keyword."
   [value]
-  (cond
-    (or (keyword? value)
-        (symbol? value)) (if (and (> (count value) 2)
-                                  (>= (.index-of value "/") 0))
-                          (.substr value (+ (.index-of value "/") 1))
-                          (subs value 1))
-
-    ;; Needs to be after keyword? and symbol? because keywords and
-    ;; symbols are strings.
-    (string? value) value
-    :else (throw (TypeError. (str "Doesn't support name: " value)))))
+  (let [named (or (keyword? value) (symbol? value))
+        parts (if named (split (subs value 1) **ns-separator**))]
+    (cond named (last parts)
+          ;; Needs to be after keyword? and symbol? because keywords and
+          ;; symbols are strings.
+          (string? value) value
+          :else (throw (TypeError. (str "Doesn't support name: " value))))))
 
 
 (defn gensym
