@@ -448,7 +448,7 @@ var isList = function isList(value) {
 };
 
 var list = function list() {
-  return arguments.length == 0 ?
+  return arguments.length === 0 ?
     Object.create(List.prototype) :
     Array.prototype.slice.call(arguments).reduceRight(function(tail, head) {
       return cons(head, tail);
@@ -469,6 +469,10 @@ var reverseList = function reverseList(sequence) {
     };
     return recur;
   })([], sequence);
+};
+
+var isSequential = function isSequential(x) {
+  return (isList(x)) || (isVector(x)) || (isLazySeq(x)) || (isDictionary(x)) || (isString(x));
 };
 
 var reverse = function reverse(sequence) {
@@ -578,7 +582,7 @@ var count = function count(sequence) {
 };
 
 var isEmpty = function isEmpty(sequence) {
-  return count(sequence) == 0;
+  return count(sequence) === 0;
 };
 
 var first = function first(sequence) {
@@ -704,7 +708,7 @@ var takeFromList = function takeFromList(n, sequence) {
   return (function loop(taken, items, n) {
     var recur = loop;
     while (recur === loop) {
-      recur = (n == 0) || (isEmpty(items)) ?
+      recur = (n === 0) || (isEmpty(items)) ?
       reverse(taken) :
       (taken = cons(first(items), taken), items = rest(items), n = dec(n), loop);
     };
@@ -857,6 +861,7 @@ exports.first = first;
 exports.count = count;
 exports.isEmpty = isEmpty;
 exports.lazySeq = lazySeq;
+exports.isSequential = isSequential;
 exports.vec = vec;
 exports.seq = seq;
 exports.isList = isList;
@@ -954,6 +959,10 @@ var isVector = isFn(Array.isArray) ?
     return toString.call(x) === "[object Array]";
   };
 
+var isDate = function isDate(x) {
+  return toString.call(x) === "[object Date]";
+};
+
 var isBoolean = function isBoolean(x) {
   return (x === true) || (x === false) || (toString.call(x) === "[object Boolean]");
 };
@@ -1029,19 +1038,79 @@ var subs = function subs(string, start, end) {
   return string.substring(start, end);
 };
 
-var isEqual = function isEqual(x, y) {
+var isPatternEqual = function isPatternEqual(x, y) {
+  return (isRePattern(x)) && (isRePattern(y)) && (x.source === y.source) && (x.global === y.global) && (x.multiline === y.multiline) && (x.ignoreCase === y.ignoreCase);
+};
+
+var isDateEqual = function isDateEqual(x, y) {
+  return (isDate(x)) && (isDate(y)) && (Number(x) === Number(y));
+};
+
+var isDictionaryEqual = function isDictionaryEqual(x, y) {
+  var xKeys = keys(x);
+  var yKeys = keys(y);
+  var xCount = xKeys.length;
+  var yCount = yKeys.length;
+  return (xCount === yCount) && ((function loop(index, count, keys) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = index < count ?
+      isEquivalent(x[keys[index]], y[keys[index]]) ?
+        (index = inc(index), count = count, keys = keys, loop) :
+        false :
+      true;
+    };
+    return recur;
+  })(0, xCount, xKeys));
+};
+
+var isVectorEqual = function isVectorEqual(x, y) {
+  return (isVector(x)) && (isVector(y)) && (x.length === y.length) && ((function loop(xs, ys, index, count) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = index < count ?
+      isEquivalent(xs[index], ys[index]) ?
+        (xs = xs, ys = ys, index = inc(index), count = count, loop) :
+        false :
+      true;
+    };
+    return recur;
+  })(x, y, 0, x.length));
+};
+
+var isEquivalent = function isEquivalent(x, y) {
   switch (arguments.length) {
     case 1:
       return true;
     case 2:
-      return (x === y) || (x == y);
+      return (x === y) || (isNil(x) ?
+        isNil(y) :
+      isNil(y) ?
+        isNil(x) :
+      isString(x) ?
+        false :
+      isNumber(x) ?
+        false :
+      isFn(x) ?
+        false :
+      isBoolean(x) ?
+        false :
+      isDate(x) ?
+        isDateEqual(x, y) :
+      isVector(x) ?
+        isVectorEqual(x, y, [], []) :
+      isRePattern(x) ?
+        isPatternEqual(x, y) :
+      "else" ?
+        isDictionaryEqual(x, y) :
+        void(0));
     
     default:
       var more = Array.prototype.slice.call(arguments, 2);
       return (function loop(previous, current, index, count) {
         var recur = loop;
         while (recur === loop) {
-          recur = (previous == current) && (index < count ?
+          recur = (isEquivalent(previous, current)) && (index < count ?
           (previous = current, current = more[index], index = inc(index), count = count, loop) :
           true);
         };
@@ -1050,6 +1119,8 @@ var isEqual = function isEqual(x, y) {
   };
   return void(0);
 };
+
+var isEqual = isEquivalent;
 
 var isStrictEqual = function isStrictEqual(x, y) {
   switch (arguments.length) {
@@ -1480,6 +1551,7 @@ var count = (require("./sequence")).count;
 var isList = (require("./sequence")).isList;
 var list = (require("./sequence")).list;;
 
+var isEqual = (require("./runtime")).isEqual;
 var vals = (require("./runtime")).vals;
 var char = (require("./runtime")).char;
 var subs = (require("./runtime")).subs;
@@ -2229,10 +2301,12 @@ var symbol = function symbol(ns, id) {
     ns :
   isKeyword(ns) ?
     str("﻿", name(ns)) :
+  isNil(id) ?
+    str("﻿", ns) :
+  isNil(ns) ?
+    str("﻿", id) :
   "else" ?
-    isNil(id) ?
-      str("﻿", ns) :
-      str("﻿", ns, __nsSeparator__, id) :
+    str("﻿", ns, __nsSeparator__, id) :
     void(0);
 };
 
@@ -2272,6 +2346,18 @@ var name = function name(value) {
     void(0);
 };
 
+var namespace = function namespace(value) {
+  var supported = (isKeyword(value)) || (isSymbol(value));
+  var parts = supported ?
+    split(subs(value, 1), __nsSeparator__) :
+    void(0);
+  return supported ?
+    count(parts) > 1 ?
+      parts[0] :
+      void(0) :
+    (function() { throw new TypeError(str("Doesn't supports namespace: ", value)); })();
+};
+
 var gensym = function gensym(prefix) {
   return symbol(str(isNil(prefix) ?
     "G__" :
@@ -2300,6 +2386,7 @@ exports.isSyntaxQuote = isSyntaxQuote;
 exports.isQuote = isQuote;
 exports.isUnquoteSplicing = isUnquoteSplicing;
 exports.isUnquote = isUnquote;
+exports.namespace = namespace;
 exports.name = name;
 exports.gensym = gensym;
 exports.keyword = keyword;
@@ -2413,6 +2500,7 @@ var isSyntaxQuote = (require("./ast")).isSyntaxQuote;
 var isQuote = (require("./ast")).isQuote;
 var isUnquoteSplicing = (require("./ast")).isUnquoteSplicing;
 var isUnquote = (require("./ast")).isUnquote;
+var namespace = (require("./ast")).namespace;
 var keyword = (require("./ast")).keyword;
 var isKeyword = (require("./ast")).isKeyword;
 var symbol = (require("./ast")).symbol;
@@ -2439,6 +2527,8 @@ var isList = (require("./sequence")).isList;
 var count = (require("./sequence")).count;
 var isEmpty = (require("./sequence")).isEmpty;;
 
+var isStrictEqual = (require("./runtime")).isStrictEqual;
+var isEqual = (require("./runtime")).isEqual;
 var int = (require("./runtime")).int;
 var char = (require("./runtime")).char;
 var str = (require("./runtime")).str;
@@ -2568,9 +2658,9 @@ var splitSplices = function splitSplices(form, fnName) {
 var syntaxQuoteSplit = function syntaxQuoteSplit(appendName, fnName, form) {
   var slices = splitSplices(form, fnName);
   var n = count(slices);
-  return n == 0 ?
+  return n === 0 ?
     list(fnName) :
-  n == 1 ?
+  n === 1 ?
     first(slices) :
   "default" ?
     applyForm(appendName, slices) :
@@ -2607,25 +2697,25 @@ var compileObject = function compileObject(form, isQuoted) {
 
 var compileReference = function compileReference(form) {
   var id = name(form);
-  id = id == "*" ?
+  id = id === "*" ?
     "multiply" :
-  id == "/" ?
+  id === "/" ?
     "divide" :
-  id == "+" ?
+  id === "+" ?
     "sum" :
-  id == "-" ?
+  id === "-" ?
     "subtract" :
-  id == "=" ?
+  id === "=" ?
     "equal?" :
-  id == "==" ?
+  id === "==" ?
     "strict-equal?" :
-  id == "<=" ?
+  id === "<=" ?
     "not-greater-than" :
-  id == ">=" ?
+  id === ">=" ?
     "not-less-than" :
-  id == ">" ?
+  id === ">" ?
     "greater-than" :
-  id == "<" ?
+  id === "<" ?
     "less-than" :
   "else" ?
     id :
@@ -2853,7 +2943,7 @@ var compileStatements = function compileStatements(form, prefix) {
 var compileFnBody = function compileFnBody(form, params) {
   return (isVector(params)) && (isContainsVector(params, "﻿&")) ?
     compileStatements(cons(list("﻿def", params[inc(params.indexOf("﻿&"))], list("﻿Array.prototype.slice.call", "﻿arguments", params.indexOf("﻿&"))), form), "return ") :
-  (count(form) == 1) && (isList(first(form))) && (first(first(form)) == "﻿do") ?
+  (count(form) === 1) && (isList(first(form))) && (first(first(form)) == "﻿do") ?
     compileFnBody(rest(first(form)), params) :
     compileStatements(form, "return ");
 };
@@ -2967,7 +3057,7 @@ var defineBindings = function defineBindings(form) {
   return (function loop(defs, bindings) {
     var recur = loop;
     while (recur === loop) {
-      recur = count(bindings) == 0 ?
+      recur = count(bindings) === 0 ?
       reverse(defs) :
       (defs = cons(list("﻿def", bindings[0], bindings[1]), defs), bindings = rest(rest(bindings)), loop);
     };
@@ -3114,7 +3204,7 @@ var compileKeyword = function compileKeyword(form) {
 };
 
 var compileSymbol = function compileSymbol(form) {
-  return str("\"", "﻿", name(form), "\"");
+  return compile(list("﻿symbol", namespace(form), name(form)));
 };
 
 var compileNil = function compileNil(form) {
@@ -3197,8 +3287,6 @@ installNative("﻿mod", symbol("%"), verifyTwo);
 installNative("﻿and", "﻿&&");
 
 installNative("﻿or", "﻿||");
-
-installOperator("﻿=", "﻿==");
 
 installOperator("﻿not=", "﻿!=");
 

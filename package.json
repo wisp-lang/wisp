@@ -1,7 +1,7 @@
 {
   "name": "wisp",
   "id": "wisp",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Homoiconic JS with clojure syntax, s-expressions & macros",
   "author": "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)",
   "homepage": "https://github.com/Gozala/wisp",
@@ -34,7 +34,7 @@
   },
   "scripts": {
     "prepublish": "make all",
-    "postpublish": "npm install",
+    "postpublish": "sleep 5 & npm install",
     "test": "./bin/wisp.js ./test/test.wisp"
   }
 }

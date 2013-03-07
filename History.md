@@ -1,5 +1,10 @@
 # History
 
+## 0.4.0 - 2013/03/27
+
+  - Compile symbols to function calls `'foo => (symbol nil "foo")`.
+  - Covert `=` special form to clojure compliant function.
+
 ## 0.3.3 - 2013/03/06
 
   - Implement runtime equivalents of `= == + - / * > >= < <=` special forms.
