@@ -409,9 +409,11 @@
   [reader initch]
   (let [token (read-token reader initch)
         parts (split token "/")
-        has-ns (> (count parts) 1)
+        has-ns (and (> (count parts) 1)
+                    ;; Make sure it's not just `/`
+                    (> (count token) 1))
         ns (first parts)
-        name (or (join "/" (rest parts)) "/")]
+        name (join "/" (rest parts))]
     (if has-ns
       (symbol ns name)
       (special-symbols token (symbol token)))))
