@@ -1586,8 +1586,10 @@ var readSymbol = function readSymbol(reader, initch) {
   var token = readToken(reader, initch);
   var parts = split(token, "/");
   var hasNs = count(parts) > 1;
+  var ns = first(parts);
+  var name = (join("/", rest(parts))) || "/";
   return hasNs ?
-    symbol(first(parts), join("/", rest(parts))) :
+    symbol(ns, name) :
     specialSymbols(token, symbol(token));
 };
 
@@ -1854,9 +1856,12 @@ exports.readFromString = readFromString;
 exports.read = read;
 });
 
-require.define("/lib/ast.js",function(require,module,exports,__dirname,__filename,process){var count = (require("./sequence")).count;
+require.define("/lib/ast.js",function(require,module,exports,__dirname,__filename,process){var last = (require("./sequence")).last;
+var count = (require("./sequence")).count;
 var first = (require("./sequence")).first;
 var isList = (require("./sequence")).isList;;
+
+var split = (require("./string")).split;;
 
 var subs = (require("./runtime")).subs;
 var str = (require("./runtime")).str;
@@ -1881,6 +1886,8 @@ var meta = function meta(value) {
     void(0);
 };
 
+var __nsSeparator__ = "⁄";
+
 var symbol = function symbol(ns, id) {
   return isSymbol(ns) ?
     ns :
@@ -1889,7 +1896,7 @@ var symbol = function symbol(ns, id) {
   "else" ?
     isNil(id) ?
       str("﻿", ns) :
-      str("﻿", ns, "/", id) :
+      str("﻿", ns, __nsSeparator__, id) :
     void(0);
 };
 
@@ -1911,15 +1918,17 @@ var keyword = function keyword(ns, id) {
   isNil(ns) ?
     str("꞉", id) :
   "else" ?
-    str("꞉", ns, "/", id) :
+    str("꞉", ns, __nsSeparator__, id) :
     void(0);
 };
 
 var name = function name(value) {
-  return (isKeyword(value)) || (isSymbol(value)) ?
-    (count(value) > 2) && (value.indexOf("/") >= 0) ?
-      value.substr((value.indexOf("/")) + 1) :
-      subs(value, 1) :
+  var named = (isKeyword(value)) || (isSymbol(value));
+  var parts = named ?
+    split(subs(value, 1), __nsSeparator__) :
+    void(0);
+  return named ?
+    last(parts) :
   isString(value) ?
     value :
   "else" ?

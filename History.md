@@ -1,5 +1,9 @@
 # History
 
+## 0.3.1 - 2013/03/06
+
+  - Fix the way `/` symbols are handled.
+
 ## 0.3.0 - 2013/03/06
 
   - Initial support for lazy sequences.
