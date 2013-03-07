@@ -6,7 +6,7 @@
          map filter take concat] "./sequence")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
          map-dictionary string? number? vector? boolean? subs re-find
-         true? false? nil? re-pattern? inc dec str char int] "./runtime")
+         true? false? nil? re-pattern? inc dec str char int = ==] "./runtime")
 (import [split join upper-case replace] "./string")
 
 (defn ^boolean self-evaluating?
@@ -151,8 +151,8 @@
   [append-name fn-name form]
   (let [slices (split-splices form fn-name)
         n (count slices)]
-    (cond (= n 0) (list fn-name)
-          (= n 1) (first slices)
+    (cond (identical? n 0) (list fn-name)
+          (identical? n 1) (first slices)
           :default (apply-form append-name slices))))
 
 
@@ -193,16 +193,16 @@
   create-server   createServer"
   [form]
   (def id (name form))
-  (set! id (cond (= id  "*") "multiply"
-                 (= id "/") "divide"
-                 (= id "+") "sum"
-                 (= id "-") "subtract"
-                 (= id "=") "equal?"
-                 (= id "==") "strict-equal?"
-                 (= id "<=") "not-greater-than"
-                 (= id ">=") "not-less-than"
-                 (= id ">") "greater-than"
-                 (= id "<") "less-than"
+  (set! id (cond (identical? id  "*") "multiply"
+                 (identical? id "/") "divide"
+                 (identical? id "+") "sum"
+                 (identical? id "-") "subtract"
+                 (identical? id "=") "equal?"
+                 (identical? id "==") "strict-equal?"
+                 (identical? id "<=") "not-greater-than"
+                 (identical? id ">=") "not-less-than"
+                 (identical? id ">") "greater-than"
+                 (identical? id "<") "less-than"
                  :else id))
 
   ;; **macros** ->  __macros__
@@ -492,7 +492,7 @@
 
     ;; Optimize functions who's body only contains `let` form to avoid
     ;; function call overhead.
-    (if (and (= (count form) 1)
+    (if (and (identical? (count form) 1)
              (list? (first form))
              (= (first (first form)) 'do))
       (compile-fn-body (rest (first form)) params)
@@ -648,7 +648,7 @@
   [form]
   (loop [defs '()
          bindings form]
-    (if (= (count bindings) 0)
+    (if (identical? (count bindings) 0)
       (reverse defs)
       (recur
         (cons
@@ -976,7 +976,6 @@
 
 ;; Comparison Operators
 
-(install-operator '= '==)
 (install-operator 'not= '!=)
 (install-operator '== '===)
 (install-operator 'identical? '===)

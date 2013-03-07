@@ -1,6 +1,6 @@
 (import [read-from-string] "../src/reader")
 (import [list] "../src/sequence")
-(import [str] "../src/runtime")
+(import [str =] "../src/runtime")
 (import [name gensym symbol? symbol keyword? keyword
          quote? quote syntax-quote? syntax-quote] "../src/ast")
 

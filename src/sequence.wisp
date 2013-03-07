@@ -69,7 +69,7 @@
 (defn list
   "Creates list of the given items"
   []
-  (if (= (.-length arguments) 0)
+  (if (identical? (.-length arguments) 0)
     (Object.create List.prototype)
     (.reduce-right (.call Array.prototype.slice arguments)
                    (fn [tail head] (cons head tail))
@@ -178,7 +178,7 @@
 (defn empty?
   "Returns true if list is empty"
   [sequence]
-  (= (count sequence) 0))
+  (identical? (count sequence) 0))
 
 (defn first
   "Return first item in a list"
@@ -267,7 +267,7 @@
   (loop [taken '()
          items sequence
          n n]
-    (if (or (= n 0) (empty? items))
+    (if (or (identical? n 0) (empty? items))
       (reverse taken)
       (recur (cons (first items) taken)
              (rest items)

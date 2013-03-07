@@ -1,7 +1,7 @@
 (import [join split] "../src/string")
 (import [list] "../src/sequence")
-(import [str] "../src/runtime")
 (import [equivalent?] "./utils")
+(import [str =] "../src/runtime")
 
 (.log console "test join")
 

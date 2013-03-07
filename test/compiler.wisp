@@ -1,6 +1,6 @@
 (import [symbol] "../src/ast")
 (import [list] "../src/sequence")
-(import [str] "../src/runtime")
+(import [str =] "../src/runtime")
 (import [self-evaluating? compile macroexpand] "../src/compiler")
 
 (defn transpile [form] (compile (macroexpand form)))
@@ -359,10 +359,10 @@
 (.log console "compiles = == >= <= < > special forms")
 
 
-(assert (identical? (transpile '(= a b)) "a == b")
-        "(= a b) => a == b")
-(assert (identical? (transpile '(= a b c)) "a == b && b == c")
-        "(= a b c) => a == b && b == c")
+(assert (identical? (transpile '(= a b)) "isEqual(a, b)")
+        "(= a b) => isEqual(a, b)")
+(assert (identical? (transpile '(= a b c)) "isEqual(a, b, c)")
+        "(= a b c) => isEqual(a, b, c)")
 (assert (identical? (transpile '(< a b c)) "a < b && b < c")
         "(< a b c) => a < b && b < c")
 (assert (identical? (transpile '(identical? a b c)) "a === b && b === c")
@@ -475,8 +475,3 @@
   };
   return recur;
 })(3, 5)") "multi bindings loops compile")
-
-
-
-
-

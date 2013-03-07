@@ -1,7 +1,7 @@
 (import [list list? count empty? first second third rest map vec
          cons conj rest concat last butlast sort] "./sequence")
 (import [odd? dictionary keys nil? inc dec vector? string? object? dictionary?
-         re-pattern re-matches re-find str subs char vals] "./runtime")
+         re-pattern re-matches re-find str subs char vals =] "./runtime")
 (import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
 (import [split join] "./string")
 

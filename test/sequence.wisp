@@ -4,8 +4,8 @@
          take drop
          concat reverse sort
          map filter reduce] "../src/sequence")
-(import [str inc dec even? odd? vals] "../src/runtime")
 (import [equivalent?] "./utils")
+(import [str inc dec even? odd? vals =] "../src/runtime")
 
 
 (.log console "test empty?")
