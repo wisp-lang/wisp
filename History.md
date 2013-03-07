@@ -1,5 +1,10 @@
 # History
 
+## 0.3.3 - 2013/03/06
+
+  - Implement runtime equivalents of `= == + - / * > >= < <=` special forms.
+  - Implement runtime equivalents of `and or` special forms.
+
 ## 0.3.2 - 2013/03/06
 
   - Hotfix `(/ a b)` special forms.
