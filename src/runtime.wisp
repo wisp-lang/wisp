@@ -399,8 +399,45 @@
               count)
        value))))
 
+(defn ^boolean and
+  ([] true)
+  ([a] a)
+  ([a b] (and a b))
+  ([a b c] (and a b c))
+  ([a b c d] (and a b c d))
+  ([a b c d e] (and a b c d e))
+  ([a b c d e f] (and a b c d e f))
+  ([a b c d e f & more]
+   (loop [value (and a b c d e f)
+          index 0
+          count (.-length more)]
+     (if (< index count)
+       (recur (and value (get more index))
+              (inc index)
+              count)
+       value))))
+
+(defn ^boolean or
+  ([] nil)
+  ([a] a)
+  ([a b] (or a b))
+  ([a b c] (or a b c))
+  ([a b c d] (or a b c d))
+  ([a b c d e] (or a b c d e))
+  ([a b c d e f] (or a b c d e f))
+  ([a b c d e f & more]
+   (loop [value (or a b c d e f)
+          index 0
+          count (.-length more)]
+     (if (< index count)
+       (recur (or value (get more index))
+              (inc index)
+              count)
+       value))))
+
 (export dictionary? dictionary merge odd? even? vector? string? number? fn?
         object? nil? boolean? true? false? map-dictionary contains-vector? keys
         vals re-pattern re-find re-matches re-pattern? inc dec str char
         key-values subs int
+        and or
         = == > < >= <= + - * /)

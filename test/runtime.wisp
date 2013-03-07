@@ -1,4 +1,5 @@
 (import [dictionary? vector? subs str
+        and or
          = == > >= < <= + - / *] "../src/runtime")
 (import [list concat] "../src/sequence")
 (import [equivalent?] "./utils")
@@ -111,3 +112,22 @@
 (assert (= 3 (apply / [6 2])))
 (assert (= 5/3 (apply / [10 2 3])))
 (assert (= 1/24 (apply / [30 1 2 3 4 5 6])))
+
+(assert (= true (apply and [])))
+(assert (= 1 (apply and [1])))
+(assert (= 2 (apply and [1 2])))
+(assert (= 2 (apply and [5 2])))
+(assert (= false (apply and [6 false 2])))
+(assert (= nil (apply and [6 4 nil 2])))
+(assert (= 3 (apply and [10 2 3])))
+(assert (= 6 (apply and [30 1 2 3 4 5 6])))
+(assert (= false (apply and [30 1 2 false 3 4 5 6])))
+(assert (= 17 (apply and [30 1 2 3 4 5 6 30 1 2 3 4 5 6 17])))
+
+(assert (= nil (apply or [])))
+(assert (= 1 (apply or [nil 1])))
+(assert (= 1 (apply or [1 nil 2])))
+(assert (= 5 (apply or [5 2])))
+(assert (= 2 (apply or [nil false 2])))
+(assert (= false (apply or [nil nil nil nil nil nil nil nil nil false])))
+(assert (= 17 (apply or [nil nil nil nil nil nil nil nil nil nil nil nil nil 17 18])))
