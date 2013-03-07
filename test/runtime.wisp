@@ -2,7 +2,6 @@
         and or
          = == > >= < <= + - / *] "../src/runtime")
 (import [list concat] "../src/sequence")
-(import [equivalent?] "./utils")
 (import [symbol] "../src/ast")
 
 
@@ -20,7 +19,7 @@
 (assert (not (vector? '())) "() is not vector")
 (assert (vector? []) "[] is vector")
 
-(assert (equivalent?
+(assert (=
           '(1 2 3 4 5)
           `(1 ~@'(2 3) 4 ~@'(5))))
 

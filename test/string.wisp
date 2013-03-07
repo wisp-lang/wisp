@@ -1,6 +1,5 @@
 (import [join split] "../src/string")
 (import [list] "../src/sequence")
-(import [equivalent?] "./utils")
 (import [str =] "../src/runtime")
 
 (.log console "test join")
@@ -32,14 +31,14 @@
 
 (.log console "test split")
 
-(assert (equivalent? [""] (split "" #"\s")))
-(assert (equivalent? ["hello"] (split "hello" #"world")))
-(assert (equivalent? ["q" "w" "e" "r" "t" "y" "u" "i" "o" "p"]
-                     (split "q1w2e3r4t5y6u7i8o9p" #"\d+")))
+(assert (= [""] (split "" #"\s")))
+(assert (= ["hello"] (split "hello" #"world")))
+(assert (= ["q" "w" "e" "r" "t" "y" "u" "i" "o" "p"]
+           (split "q1w2e3r4t5y6u7i8o9p" #"\d+")))
 
-(assert (equivalent? ["q" "w" "e" "r" "t"]
-        ; TODO: In clojure => ["q" "w" "e" "r" "t5y6u7i8o9p0"]
-        (split "q1w2e3r4t5y6u7i8o9p0" #"\d+" 5)))
+(assert (= ["q" "w" "e" "r" "t"]
+           ; TODO: In clojure => ["q" "w" "e" "r" "t5y6u7i8o9p0"]
+           (split "q1w2e3r4t5y6u7i8o9p0" #"\d+" 5)))
 
-(assert (equivalent? ["Some" "words" "to" "split"]
-        (split "Some words to split" " ")))
+(assert (= ["Some" "words" "to" "split"]
+           (split "Some words to split" " ")))

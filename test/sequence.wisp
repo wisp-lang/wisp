@@ -4,7 +4,6 @@
          take drop
          concat reverse sort
          map filter reduce] "../src/sequence")
-(import [equivalent?] "./utils")
 (import [str inc dec even? odd? vals =] "../src/runtime")
 
 
@@ -38,7 +37,7 @@
 (assert (= nil (first '())))
 (assert (= \a (first '(\a \b \c))))
 (assert (= nil (first {})))
-(assert (equivalent? [:a 1] (first {:a 1, :b 2})))
+(assert (= [:a 1] (first {:a 1, :b 2})))
 
 (.log console "test second")
 
@@ -54,7 +53,7 @@
 (assert (= \b (second '(\a \b \c))))
 (assert (= nil (second {})))
 (assert (= nil (second {:a 1})))
-(assert (equivalent? [:b 2] (second {:a 1, :b 2})))
+(assert (= [:b 2] (second {:a 1, :b 2})))
 
 (.log console "test third")
 
@@ -70,7 +69,7 @@
 (assert (= \c (third '(\a \b \c))))
 (assert (= nil (third {})))
 (assert (= nil (third {:a 1})))
-(assert (equivalent? [:c 3] (third {:a 1, :b 2, :c 3})))
+(assert (= [:c 3] (third {:a 1, :b 2, :c 3})))
 
 (.log console "test last")
 
@@ -82,7 +81,7 @@
 (assert (= \c (last '(\a \b \c))))
 (assert (= nil (last '())))
 (assert (= \c (last '(\a \b \c))))
-(assert (equivalent? [:b 2] (last {:a 1, :b 2})))
+(assert (= [:b 2] (last {:a 1, :b 2})))
 (assert (= nil (last {})))
 
 (.log console "test butlast")
@@ -91,36 +90,36 @@
 
 (assert (= nil (butlast '())))
 (assert (= nil (butlast '(1))))
-(assert (equivalent? '(1 2) (butlast '(1 2 3))))
+(assert (= '(1 2) (butlast '(1 2 3))))
 
 (assert (= nil (butlast [])))
 (assert (= nil (butlast [1])))
-(assert (equivalent? [1 2] (butlast [1 2 3])))
+(assert (= [1 2] (butlast [1 2 3])))
 
 (assert (= nil (butlast {})))
 (assert (= nil (butlast {:a 1})))
-(assert (equivalent? [[:a 1]] (butlast {:a 1, :b 2})))
+(assert (= [[:a 1]] (butlast {:a 1, :b 2})))
 
 
 (.log console "test rest")
 
-(assert (equivalent? [] (rest {:a 1})))
+(assert (= [] (rest {:a 1})))
 (assert (= "" (rest "a")))
-(assert (equivalent? '(2 3 4) (rest '(1 2 3 4))))
-(assert (equivalent? [2 3] (rest [1 2 3])))
-(assert (equivalent? [[:b 2]] (rest {:a 1 :b 2})))
+(assert (= '(2 3 4) (rest '(1 2 3 4))))
+(assert (= [2 3] (rest [1 2 3])))
+(assert (= [[:b 2]] (rest {:a 1 :b 2})))
 (assert (= "ello" (rest "hello")))
 
 
 
-(assert (equivalent? '() (rest nil)))
-(assert (equivalent? '() (rest '())))
-(assert (equivalent? [] (rest [1])))
-(assert (equivalent? [] (rest {:a 1})))
+(assert (= '() (rest nil)))
+(assert (= '() (rest '())))
+(assert (= [] (rest [1])))
+(assert (= [] (rest {:a 1})))
 (assert (= "" (rest "a")))
-(assert (equivalent? '(2 3 4) (rest '(1 2 3 4))))
-(assert (equivalent? [2 3] (rest [1 2 3])))
-(assert (equivalent? [[:b 2]] (rest {:a 1 :b 2})))
+(assert (= '(2 3 4) (rest '(1 2 3 4))))
+(assert (= [2 3] (rest [1 2 3])))
+(assert (= [[:b 2]] (rest {:a 1 :b 2})))
 (assert (= "ello" (rest "hello")))
 
 
@@ -142,7 +141,7 @@
 (assert (= (first (list 1 2 3 4)) 1)
         "first returns first item in the list")
 
-(assert (equivalent? (rest '(1 2 3 4)) '(2 3 4))
+(assert (= (rest '(1 2 3 4)) '(2 3 4))
         "rest returns rest items")
 
 (assert (identical? (str '(1 2 3 4)) "(1 2 3 4)")
@@ -153,53 +152,53 @@
 
 (assert (not (empty? (cons 1 '()))) "cons creates non-empty list")
 (assert (not (empty? (cons 1 nil)) "cons onto nil is list of that item"))
-(assert (equivalent? (cons 1 nil) '(1)))
+(assert (= (cons 1 nil) '(1)))
 (assert (= 1 (first (cons 1 nil))))
-(assert (equivalent? '() (rest (cons 1 nil))))
-(assert (equivalent? (cons 1 '(2 3)) '(1 2 3))
+(assert (= '() (rest (cons 1 nil))))
+(assert (= (cons 1 '(2 3)) '(1 2 3))
         "cons returns new list prefixed with first argument")
 (assert (not (empty? (cons 1 (list)))) "cons creates non-empty list")
-(assert (equivalent? (cons 1 (list 2 3)) (list 1 2 3))
+(assert (= (cons 1 (list 2 3)) (list 1 2 3))
         "cons returns new list prefixed with first argument")
 
 (.log console "test conj")
 
-(assert (equivalent? '(1) (conj nil 1)))
-(assert (equivalent? '(2 1) (conj nil 1 2)))
-(assert (equivalent? '(1) (conj '() 1)))
-(assert (equivalent? '(2 1) (conj '() 1 2)))
-(assert (equivalent? '(4 1 2 3) (conj '(1 2 3) 4)))
-(assert (equivalent? [1] (conj [] 1)))
-(assert (equivalent? [1 2] (conj [] 1 2)))
-(assert (equivalent? ["a" "b" "c" "d"] (conj ["a" "b" "c"] "d")))
-(assert (equivalent? [1 2 3 4] (conj [1 2] 3 4)))
-(assert (equivalent? [[1 2] [3 4] [5 6]] (conj [[1 2] [3 4]] [5 6])))
-(assert (equivalent? {:nationality "Chinese", :age 25
-                      :firstname "John", :lastname "Doe"}
-                     (conj {:firstname "John" :lastname "Doe"}
-                           {:age 25 :nationality "Chinese"})))
+(assert (= '(1) (conj nil 1)))
+(assert (= '(2 1) (conj nil 1 2)))
+(assert (= '(1) (conj '() 1)))
+(assert (= '(2 1) (conj '() 1 2)))
+(assert (= '(4 1 2 3) (conj '(1 2 3) 4)))
+(assert (= [1] (conj [] 1)))
+(assert (= [1 2] (conj [] 1 2)))
+(assert (= ["a" "b" "c" "d"] (conj ["a" "b" "c"] "d")))
+(assert (= [1 2 3 4] (conj [1 2] 3 4)))
+(assert (= [[1 2] [3 4] [5 6]] (conj [[1 2] [3 4]] [5 6])))
+(assert (= {:nationality "Chinese", :age 25
+            :firstname "John", :lastname "Doe"}
+           (conj {:firstname "John" :lastname "Doe"}
+                 {:age 25 :nationality "Chinese"})))
 ;; TODO fix this test
-;; (assert (equivalent? {5 6, 1 2, 3 4} (conj {1 2, 3 4} [5 6])))
+;; (assert (= {5 6, 1 2, 3 4} (conj {1 2, 3 4} [5 6])))
 
 (assert (not (empty? (cons 1 nil)) "cons onto nil is list of that item"))
-(assert (equivalent? (cons 1 nil) '(1)))
+(assert (= (cons 1 nil) '(1)))
 (assert (= 1 (first (cons 1 nil))))
-(assert (equivalent? '() (rest (cons 1 nil))))
-(assert (equivalent? (cons 1 '(2 3)) '(1 2 3))
+(assert (= '() (rest (cons 1 nil))))
+(assert (= (cons 1 '(2 3)) '(1 2 3))
         "cons returns new list prefixed with first argument")
 (assert (not (empty? (cons 1 (list)))) "cons creates non-empty list")
-(assert (equivalent? (cons 1 (list 2 3)) (list 1 2 3))
+(assert (= (cons 1 (list 2 3)) (list 1 2 3))
         "cons returns new list prefixed with first argument")
 
 
 
 (.log console "test reverse")
 
-(assert (equivalent? (reverse '(1 2 3 4)) '(4 3 2 1))
+(assert (= (reverse '(1 2 3 4)) '(4 3 2 1))
         "reverse reverses order of items")
-(assert (equivalent? [1 2 3 4] (reverse [4 3 2 1])))
-(assert (equivalent? '() (reverse nil)))
-(assert (equivalent? [[:b 2] [:a 1]] (reverse {:a 1, :b 2})))
+(assert (= [1 2 3 4] (reverse [4 3 2 1])))
+(assert (= '() (reverse nil)))
+(assert (= [[:b 2] [:a 1]] (reverse {:a 1, :b 2})))
 
 
 
@@ -211,7 +210,7 @@
         "list has expected length")
 (assert (= (first (list 1 2 3 4)) 1)
         "first returns first item in the list")
-(assert (equivalent? (rest (list 1 2 3 4)) (list 2 3 4))
+(assert (= (rest (list 1 2 3 4)) (list 2 3 4))
         "rest returns rest items")
 (assert (identical? (str (list 1 2 3 4)) "(1 2 3 4)")
         "stringification returs list")
@@ -220,35 +219,34 @@
 
 (.log console "test vec")
 
-(assert (equivalent? [1 2 3] (vec '(1 2 3))))
-(assert (equivalent? [1 2 3] (vec [1 2 3])))
-(assert (equivalent? [] (vec '())))
-(assert (equivalent? [] (vec nil)))
-(assert (equivalent? [\f \o \o] (vec "foo")))
-(assert (equivalent? [[:a 1] [:b 2]] (vec {:a 1 :b 2})))
+(assert (= [1 2 3] (vec '(1 2 3))))
+(assert (= [1 2 3] (vec [1 2 3])))
+(assert (= [] (vec '())))
+(assert (= [] (vec nil)))
+(assert (= [\f \o \o] (vec "foo")))
+(assert (= [[:a 1] [:b 2]] (vec {:a 1 :b 2})))
 
 (.log console "test map")
 
-(assert (equivalent? '() (map inc nil)))
-(assert (equivalent? '() (map inc '())))
-(assert (equivalent? [] (map inc [])))
-(assert (equivalent? [] (map inc {})))
-(assert (equivalent? '(2 3 4) (map inc '(1 2 3))))
-(assert (equivalent? [2 3 4 5 6] (map inc [1 2 3 4 5])))
-(assert (equivalent? [(str :a 1), (str :b 2)]
-                     (map (fn [pair] (apply str pair)) {:a 1 :b 2})))
+(assert (= '() (map inc nil)))
+(assert (= '() (map inc '())))
+(assert (= [] (map inc [])))
+(assert (= [] (map inc {})))
+(assert (= '(2 3 4) (map inc '(1 2 3))))
+(assert (= [2 3 4 5 6] (map inc [1 2 3 4 5])))
+(assert (= [(str :a 1), (str :b 2)]
+           (map (fn [pair] (apply str pair)) {:a 1 :b 2})))
 
 
 (.log console "test filter")
 
-(assert (equivalent? '() (filter even? nil)))
-(assert (equivalent? '() (filter even? '())))
-(assert (equivalent? [] (filter even? [])))
-(assert (equivalent? [] (filter even? {})))
-(assert (equivalent? [2 4] (filter even? [1 2 3 4])))
-(assert (equivalent? '(2 4) (filter even? '(1 2 3 4))))
-(assert (equivalent? [[:b 2]]
-                     (filter (fn [pair] (even? (second pair))) {:a 1 :b 2})))
+(assert (= '() (filter even? nil)))
+(assert (= '() (filter even? '())))
+(assert (= [] (filter even? [])))
+(assert (= [] (filter even? {})))
+(assert (= [2 4] (filter even? [1 2 3 4])))
+(assert (= '(2 4) (filter even? '(1 2 3 4))))
+(assert (= [[:b 2]] (filter (fn [pair] (even? (second pair))) {:a 1 :b 2})))
 
 
 (.log console "test reduce")
@@ -277,59 +275,59 @@
 
 (.log console "test take")
 
-(assert (equivalent? '() (take 1 nil)))
-(assert (equivalent? '() (take 1 '())))
-(assert (equivalent? [] (take 2 "")))
-(assert (equivalent? [] (take 2 {})))
+(assert (= '() (take 1 nil)))
+(assert (= '() (take 1 '())))
+(assert (= [] (take 2 "")))
+(assert (= [] (take 2 {})))
 
-(assert (equivalent? [\f \o] (take 2 "foo")))
-(assert (equivalent? '(1 2) (take 2 '(1 2 3 4))))
-(assert (equivalent? [1 2 3] (take 3 [1 2 3 4])))
-(assert (equivalent? [[:a 1] [:b 2]] (take 2 {:a 1 :b 2 :c 3})))
+(assert (= [\f \o] (take 2 "foo")))
+(assert (= '(1 2) (take 2 '(1 2 3 4))))
+(assert (= [1 2 3] (take 3 [1 2 3 4])))
+(assert (= [[:a 1] [:b 2]] (take 2 {:a 1 :b 2 :c 3})))
 
 
 (.log console "test drop")
 
-(assert (equivalent? '() (drop 1 nil) ))
-(assert (equivalent? '() (drop 1 '())))
-(assert (equivalent? [] (drop 1 [])))
-(assert (equivalent? '(1 2 3) (drop -1 '(1 2 3))))
-(assert (equivalent? [1 2 3 4] (drop -1 [1 2 3 4])))
-(assert (equivalent? '(1 2 3) (drop 0 '(1 2 3))))
-(assert (equivalent? [1 2 3 4] (drop 0 [1 2 3 4])))
-(assert (equivalent? '(3 4) (drop 2 '(1 2 3 4))))
-(assert (equivalent? [2 3 4] (drop 1 [1 2 3 4])))
+(assert (= '() (drop 1 nil) ))
+(assert (= '() (drop 1 '())))
+(assert (= [] (drop 1 [])))
+(assert (= '(1 2 3) (drop -1 '(1 2 3))))
+(assert (= [1 2 3 4] (drop -1 [1 2 3 4])))
+(assert (= '(1 2 3) (drop 0 '(1 2 3))))
+(assert (= [1 2 3 4] (drop 0 [1 2 3 4])))
+(assert (= '(3 4) (drop 2 '(1 2 3 4))))
+(assert (= [2 3 4] (drop 1 [1 2 3 4])))
 
 
 
 (.log console "test concat")
 
-(assert (equivalent? '(1 2 3 4) (concat '(1 2) '(3 4))))
-(assert (equivalent? '(1 2 3 4 5) (concat '(1 2) '() '() '(3 4) '(5))))
-(assert (equivalent? '(1 2 3 4) (concat [1 2] [3 4])))
-(assert (equivalent? (list :a :b 1 [2 3] 4) (concat [:a :b] nil [1 [2 3] 4])))
-(assert (equivalent? (list 1 2 3 4 [:a 1] [:b 2])
-                     (concat [1] [2] '(3 4) {:a 1, :b 2})))
-(assert (equivalent? (list :a :b 1 [2 3] 4)
-                     (concat [:a :b] nil [1 [2 3] 4])))
-(assert (equivalent? (list 1 2 3 4 5 6 7 [:a 9] [:b 10])
-                     (concat [1] [2] '(3 4) [5 6 7] {:a 9 :b 10})))
+(assert (= '(1 2 3 4) (concat '(1 2) '(3 4))))
+(assert (= '(1 2 3 4 5) (concat '(1 2) '() '() '(3 4) '(5))))
+(assert (= '(1 2 3 4) (concat [1 2] [3 4])))
+(assert (= (list :a :b 1 [2 3] 4) (concat [:a :b] nil [1 [2 3] 4])))
+(assert (= (list 1 2 3 4 [:a 1] [:b 2])
+           (concat [1] [2] '(3 4) {:a 1, :b 2})))
+(assert (= (list :a :b 1 [2 3] 4)
+           (concat [:a :b] nil [1 [2 3] 4])))
+(assert (= (list 1 2 3 4 5 6 7 [:a 9] [:b 10])
+           (concat [1] [2] '(3 4) [5 6 7] {:a 9 :b 10})))
 
 
 (.log console "test sort")
 
-(assert (equivalent? '() (sort nil)))
-(assert (equivalent? '() (sort (fn [a b] (> a b)) nil)))
+(assert (= '() (sort nil)))
+(assert (= '() (sort (fn [a b] (> a b)) nil)))
 
-(assert (equivalent? [] (sort [])))
-(assert (equivalent? [1 2 3 4] (sort [3 1 2 4])))
-(assert (equivalent? [ 10, 5, 2 ]
-                     (sort (fn [a b] (> a b)) (vals {:foo 5, :bar 2, :baz 10}))))
+(assert (= [] (sort [])))
+(assert (= [1 2 3 4] (sort [3 1 2 4])))
+(assert (= [ 10, 5, 2 ]
+           (sort (fn [a b] (> a b)) (vals {:foo 5, :bar 2, :baz 10}))))
 
-(assert (equivalent? [[:c 3] [:a 2] [:b 1]]
-                     (sort (fn [a b] (> (last a) (last b))) {:b 1 :c 3 :a  2})))
+(assert (= [[:c 3] [:a 2] [:b 1]]
+           (sort (fn [a b] (> (last a) (last b))) {:b 1 :c 3 :a  2})))
 
-(assert (equivalent? '(1 2 3 4) (sort '(3 1 2 4))))
-(assert (equivalent? '(4 3 2 1) (sort (fn [a b] (> a b)) '(3 1 2 4))))
-(assert (equivalent? '("dear" "frient" "hello" "my")
-                     (sort '("hello" "my" "dear" "frient"))))
+(assert (= '(1 2 3 4) (sort '(3 1 2 4))))
+(assert (= '(4 3 2 1) (sort (fn [a b] (> a b)) '(3 1 2 4))))
+(assert (= '("dear" "frient" "hello" "my")
+            (sort '("hello" "my" "dear" "frient"))))
