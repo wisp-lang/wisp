@@ -212,8 +212,195 @@
    [string start end]
    (.substring string start end))
 
+(defn ^boolean =
+  "Equality. Returns true if x equals y, false if not. Compares
+  numbers and collections in a type-independent manner. Clojure's
+  immutable data structures define -equiv (and thus =) as a value,
+  not an identity, comparison."
+  ([x] true)
+  ([x y] (or (identical? x y) (= x y)))
+  ([x y & more]
+   (loop [previous x
+          current y
+          index 0
+          count (.-length more)]
+    (and (= previous current)
+         (if (< index count)
+          (recur current
+                 (get more index)
+                 (inc index)
+                 count)
+          true)))))
+
+(defn ^boolean ==
+  "Equality. Returns true if x equals y, false if not. Compares
+  numbers and collections in a type-independent manner. Clojure's
+  immutable data structures define -equiv (and thus =) as a value,
+  not an identity, comparison."
+  ([x] true)
+  ([x y] (identical? x y))
+  ([x y & more]
+   (loop [previous x
+          current y
+          index 0
+          count (.-length more)]
+    (and (== previous current)
+         (if (< index count)
+          (recur current
+                 (get more index)
+                 (inc index)
+                 count)
+          true)))))
+
+
+(defn ^boolean >
+  "Returns non-nil if nums are in monotonically decreasing order,
+  otherwise false."
+  ([x] true)
+  ([x y] (> x y))
+  ([x y & more]
+   (loop [previous x
+          current y
+          index 0
+          count (.-length more)]
+    (and (> previous current)
+         (if (< index count)
+          (recur current
+                 (get more index)
+                 (inc index)
+                 count)
+          true)))))
+
+(defn ^boolean >=
+  "Returns non-nil if nums are in monotonically decreasing order,
+  otherwise false."
+  ([x] true)
+  ([x y] (>= x y))
+  ([x y & more]
+   (loop [previous x
+          current y
+          index 0
+          count (.-length more)]
+    (and (>= previous current)
+         (if (< index count)
+          (recur current
+                 (get more index)
+                 (inc index)
+                 count)
+          true)))))
+
+
+(defn ^boolean <
+  "Returns non-nil if nums are in monotonically decreasing order,
+  otherwise false."
+  ([x] true)
+  ([x y] (< x y))
+  ([x y & more]
+   (loop [previous x
+          current y
+          index 0
+          count (.-length more)]
+    (and (< previous current)
+         (if (< index count)
+          (recur current
+                 (get more index)
+                 (inc index)
+                 count)
+          true)))))
+
+
+(defn ^boolean <=
+  "Returns non-nil if nums are in monotonically decreasing order,
+  otherwise false."
+  ([x] true)
+  ([x y] (<= x y))
+  ([x y & more]
+   (loop [previous x
+          current y
+          index 0
+          count (.-length more)]
+    (and (<= previous current)
+         (if (< index count)
+          (recur current
+                 (get more index)
+                 (inc index)
+                 count)
+          true)))))
+
+(defn ^boolean +
+  ([] 0)
+  ([a] a)
+  ([a b] (+ a b))
+  ([a b c] (+ a b c))
+  ([a b c d] (+ a b c d))
+  ([a b c d e] (+ a b c d e))
+  ([a b c d e f] (+ a b c d e f))
+  ([a b c d e f & more]
+   (loop [value (+ a b c d e f)
+          index 0
+          count (.-length more)]
+     (if (< index count)
+       (recur (+ value (get more index))
+              (inc index)
+              count)
+       value))))
+
+(defn ^boolean -
+  ([] (throw (TypeError "Wrong number of args passed to: -")))
+  ([a] (- 0 a))
+  ([a b] (- a b))
+  ([a b c] (- a b c))
+  ([a b c d] (- a b c d))
+  ([a b c d e] (- a b c d e))
+  ([a b c d e f] (- a b c d e f))
+  ([a b c d e f & more]
+   (loop [value (- a b c d e f)
+          index 0
+          count (.-length more)]
+     (if (< index count)
+       (recur (- value (get more index))
+              (inc index)
+              count)
+       value))))
+
+(defn ^boolean /
+  ([] (throw (TypeError "Wrong number of args passed to: /")))
+  ([a] (/ 1 a))
+  ([a b] (/ a b))
+  ([a b c] (/ a b c))
+  ([a b c d] (/ a b c d))
+  ([a b c d e] (/ a b c d e))
+  ([a b c d e f] (/ a b c d e f))
+  ([a b c d e f & more]
+   (loop [value (/ a b c d e f)
+          index 0
+          count (.-length more)]
+     (if (< index count)
+       (recur (/ value (get more index))
+              (inc index)
+              count)
+       value))))
+
+(defn ^boolean *
+  ([] 1)
+  ([a] a)
+  ([a b] (* a b))
+  ([a b c] (* a b c))
+  ([a b c d] (* a b c d))
+  ([a b c d e] (* a b c d e))
+  ([a b c d e f] (* a b c d e f))
+  ([a b c d e f & more]
+   (loop [value (* a b c d e f)
+          index 0
+          count (.-length more)]
+     (if (< index count)
+       (recur (* value (get more index))
+              (inc index)
+              count)
+       value))))
 
 (export dictionary? dictionary merge odd? even? vector? string? number? fn?
         object? nil? boolean? true? false? map-dictionary contains-vector? keys
         vals re-pattern re-find re-matches re-pattern? inc dec str char
-        key-values subs int)
+        key-values subs int
+        = == > < >= <= + - * /)
