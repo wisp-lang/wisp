@@ -1,6 +1,7 @@
 (import repl "repl")
 (import vm "vm")
 (import transpile "./engine/node")
+(import [pr-str] "./ast")
 
 (defn evaluate [code context file callback]
   (try
@@ -17,6 +18,7 @@
   "Starts repl"
   []
   (.start repl {
+          :writer pr-str
           :prompt "=> "
           :ignoreUndefined true
           :useGlobal true
