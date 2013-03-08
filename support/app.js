@@ -1458,6 +1458,7 @@ exports.isTrue = isTrue;
 exports.isBoolean = isBoolean;
 exports.isNil = isNil;
 exports.isObject = isObject;
+exports.isDate = isDate;
 exports.isFn = isFn;
 exports.isNumber = isNumber;
 exports.isString = isString;
@@ -1627,7 +1628,7 @@ var readChar = function readChar(reader) {
     })() :
     (function() {
       var buffer = reader.bufferAtom;
-      reader.bufferAtom = buffer.substr(1);
+      reader.bufferAtom = subs(buffer, 1);
       return buffer[0];
     })();
 };
@@ -2267,15 +2268,25 @@ exports.readFromString = readFromString;
 exports.read = read;
 });
 
-require.define("/lib/ast.js",function(require,module,exports,__dirname,__filename,process){var last = (require("./sequence")).last;
+require.define("/lib/ast.js",function(require,module,exports,__dirname,__filename,process){var vec = (require("./sequence")).vec;
+var map = (require("./sequence")).map;
+var last = (require("./sequence")).last;
 var count = (require("./sequence")).count;
+var second = (require("./sequence")).second;
 var first = (require("./sequence")).first;
+var isSequential = (require("./sequence")).isSequential;
 var isList = (require("./sequence")).isList;;
 
+var join = (require("./string")).join;
 var split = (require("./string")).split;;
 
+var isEqual = (require("./runtime")).isEqual;
 var subs = (require("./runtime")).subs;
+var inc = (require("./runtime")).inc;
 var str = (require("./runtime")).str;
+var isDictionary = (require("./runtime")).isDictionary;
+var isRePattern = (require("./runtime")).isRePattern;
+var isDate = (require("./runtime")).isDate;
 var isObject = (require("./runtime")).isObject;
 var isBoolean = (require("./runtime")).isBoolean;
 var isString = (require("./runtime")).isString;
@@ -2299,22 +2310,33 @@ var meta = function meta(value) {
 
 var __nsSeparator__ = "⁄";
 
+var Symbol = function Symbol(namespace, name) {
+  this.namespace = namespace;
+  this.name = name;
+  return this;
+};
+
+Symbol.prototype.toString = function() {
+  var ns = namespace(this);
+  return ns ?
+    str(ns, "/", name(this)) :
+    str(name(this));
+};
+
 var symbol = function symbol(ns, id) {
   return isSymbol(ns) ?
     ns :
   isKeyword(ns) ?
-    str("﻿", name(ns)) :
+    new Symbol(namespace(ns), name(ns)) :
   isNil(id) ?
-    str("﻿", ns) :
-  isNil(ns) ?
-    str("﻿", id) :
+    new Symbol(void(0), ns) :
   "else" ?
-    str("﻿", ns, __nsSeparator__, id) :
+    new Symbol(ns, id) :
     void(0);
 };
 
 var isSymbol = function isSymbol(x) {
-  return (isString(x)) && (count(x) > 1) && (first(x) === "﻿");
+  return x instanceof Symbol;
 };
 
 var isKeyword = function isKeyword(x) {
@@ -2335,13 +2357,15 @@ var keyword = function keyword(ns, id) {
     void(0);
 };
 
+var keywordName = function keywordName(value) {
+  return last(split(subs(value, 1), __nsSeparator__));
+};
+
 var name = function name(value) {
-  var named = (isKeyword(value)) || (isSymbol(value));
-  var parts = named ?
-    split(subs(value, 1), __nsSeparator__) :
-    void(0);
-  return named ?
-    last(parts) :
+  return isSymbol(value) ?
+    value.name :
+  isKeyword(value) ?
+    keywordName(value) :
   isString(value) ?
     value :
   "else" ?
@@ -2349,16 +2373,21 @@ var name = function name(value) {
     void(0);
 };
 
-var namespace = function namespace(value) {
-  var supported = (isKeyword(value)) || (isSymbol(value));
-  var parts = supported ?
-    split(subs(value, 1), __nsSeparator__) :
+var keywordNamespace = function keywordNamespace(x) {
+  var parts = split(subs(x, 1), __nsSeparator__);
+  return count(parts) > 1 ?
+    parts[0] :
     void(0);
-  return supported ?
-    count(parts) > 1 ?
-      parts[0] :
-      void(0) :
-    (function() { throw new TypeError(str("Doesn't supports namespace: ", value)); })();
+};
+
+var namespace = function namespace(x) {
+  return isSymbol(x) ?
+    x.namespace :
+  isKeyword(x) ?
+    keywordNamespace(x) :
+  "else" ?
+    (function() { throw new TypeError(str("Doesn't supports namespace: ", x)); })() :
+    void(0);
 };
 
 var gensym = function gensym(prefix) {
@@ -2370,19 +2399,68 @@ var gensym = function gensym(prefix) {
 gensym.base = 0;
 
 var isUnquote = function isUnquote(form) {
-  return (isList(form)) && (first(form) === symbol(void(0), "unquote"));
+  return (isList(form)) && (isEqual(first(form), symbol(void(0), "unquote")));
 };
 
 var isUnquoteSplicing = function isUnquoteSplicing(form) {
-  return (isList(form)) && (first(form) === symbol(void(0), "unquote-splicing"));
+  return (isList(form)) && (isEqual(first(form), symbol(void(0), "unquote-splicing")));
 };
 
 var isQuote = function isQuote(form) {
-  return (isList(form)) && (first(form) === symbol(void(0), "quote"));
+  return (isList(form)) && (isEqual(first(form), symbol(void(0), "quote")));
 };
 
 var isSyntaxQuote = function isSyntaxQuote(form) {
-  return (isList(form)) && (first(form) === symbol(void(0), "syntax-quote"));
+  return (isList(form)) && (isEqual(first(form), symbol(void(0), "syntax-quote")));
+};
+
+var normalize = function normalize(n, len) {
+  return (function loop(ns) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = count(ns) < len ?
+      (ns = str("0", ns), loop) :
+      ns;
+    };
+    return recur;
+  })(str(n));
+};
+
+var quoteString = function quoteString(s) {
+  s = join("\\\"", split(s, "\""));
+  s = join("\\\\", split(s, "\\"));
+  s = join("\\b", split(s, ""));
+  s = join("\\f", split(s, ""));
+  s = join("\\n", split(s, "\n"));
+  s = join("\\r", split(s, "\r"));
+  s = join("\\t", split(s, "\t"));
+  return str("\"", s, "\"");
+};
+
+var prStr = function prStr(x) {
+  return isNil(x) ?
+    "nil" :
+  isKeyword(x) ?
+    namespace(x) ?
+      str(":", namespace(x), "/", name(x)) :
+      str(":", name(x)) :
+  isString(x) ?
+    quoteString(x) :
+  isDate(x) ?
+    str("#inst \"", x.getUTCFullYear(), "-", normalize(inc(x.getUTCMonth()), 2), "-", normalize(x.getUTCDate(), 2), "T", normalize(x.getUTCHours(), 2), ":", normalize(x.getUTCMinutes(), 2), ":", normalize(x.getUTCSeconds(), 2), ".", normalize(x.getUTCMilliseconds(), 3), "-", "00:00\"") :
+  isVector(x) ?
+    str("[", join(" ", map(prStr, vec(x))), "]") :
+  isDictionary(x) ?
+    str("{", join(", ", map(function(pair) {
+      return str(prStr(first(pair)), " ", prStr(second(pair)));
+    }, x)), "}") :
+  isSequential(x) ?
+    str("(", join(" ", map(prStr, vec(x))), ")") :
+  isRePattern(x) ?
+    str("#\"", join("\\/", split(x.source, "/")), "\"") :
+  "else" ?
+    str(x) :
+    void(0);
 };
 
 exports.isSyntaxQuote = isSyntaxQuote;
@@ -2396,6 +2474,7 @@ exports.keyword = keyword;
 exports.isKeyword = isKeyword;
 exports.symbol = symbol;
 exports.isSymbol = isSymbol;
+exports.prStr = prStr;
 exports.withMeta = withMeta;
 exports.meta = meta;
 });
@@ -2871,7 +2950,7 @@ var compileIfElse = function compileIfElse(form) {
   var condition = macroexpand(first(form));
   var thenExpression = macroexpand(second(form));
   var elseExpression = macroexpand(third(form));
-  return compileTemplate(list((isList(elseExpression)) && (first(elseExpression) === symbol(void(0), "if")) ?
+  return compileTemplate(list((isList(elseExpression)) && (isEqual(first(elseExpression), symbol(void(0), "if"))) ?
     "~{} ?\n  ~{} :\n~{}" :
     "~{} ?\n  ~{} :\n  ~{}", compile(condition), compile(thenExpression), compile(elseExpression)));
 };
@@ -3011,7 +3090,7 @@ var compileRebind = function compileRebind(bindings, names) {
     while (recur === loop) {
       recur = isEmpty(names) ?
       reverse(form) :
-      (form = first(names) === first(bindings) ?
+      (form = isEqual(first(names), first(bindings)) ?
         form :
         cons(list(symbol(void(0), "def"), first(names), first(bindings)), form), bindings = rest(bindings), names = rest(names), loop);
     };
@@ -3089,9 +3168,9 @@ var compileTry = function compileTry(form) {
       isEmpty(finallyExprs) ?
         compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n}})()", compileFnBody(tryExprs), compile(first(catchExprs)), compileFnBody(rest(catchExprs)))) :
         compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}})()", compileFnBody(tryExprs), compile(first(catchExprs)), compileFnBody(rest(catchExprs)), compileFnBody(finallyExprs))) :
-    first(first(exprs)) === symbol(void(0), "catch") ?
+    isEqual(first(first(exprs)), symbol(void(0), "catch")) ?
       (tryExprs = tryExprs, catchExprs = rest(first(exprs)), finallyExprs = finallyExprs, exprs = rest(exprs), loop) :
-    first(first(exprs)) === symbol(void(0), "finally") ?
+    isEqual(first(first(exprs)), symbol(void(0), "finally")) ?
       (tryExprs = tryExprs, catchExprs = catchExprs, finallyExprs = rest(first(exprs)), exprs = rest(exprs), loop) :
       (tryExprs = cons(first(exprs), tryExprs), catchExprs = catchExprs, finallyExprs = finallyExprs, exprs = rest(exprs), loop);
     };
@@ -3128,9 +3207,20 @@ var compileNot = function compileNot(form) {
 };
 
 var compileLoop = function compileLoop(form) {
-  var bindings = dictionary.apply(dictionary, first(form));
-  var names = keys(bindings);
-  var values = vals(bindings);
+  var bindings = (function loop(names, values, tokens) {
+    var recur = loop;
+    while (recur === loop) {
+      recur = isEmpty(tokens) ?
+      {
+        "names": names,
+        "values": values
+      } :
+      (names = conj(names, first(tokens)), values = conj(values, second(tokens)), tokens = rest(rest(tokens)), loop);
+    };
+    return recur;
+  })([], [], first(form));
+  var names = bindings["names"];
+  var values = bindings["values"];
   var body = rest(form);
   return compile(cons(cons(symbol(void(0), "fn"), cons(symbol(void(0), "loop"), cons(names, compileRecur(names, body)))), list.apply(list, values)));
 };
@@ -3150,7 +3240,7 @@ var rebindBindings = function rebindBindings(names, values) {
 var expandRecur = function expandRecur(names, body) {
   return map(function(form) {
     return isList(form) ?
-      first(form) === symbol(void(0), "recur") ?
+      isEqual(first(form), symbol(void(0), "recur")) ?
         list(symbol(void(0), "raw*"), compileGroup(concat(rebindBindings(names, rest(form)), list(symbol(void(0), "loop"))), true)) :
         expandRecur(names, form) :
       form;

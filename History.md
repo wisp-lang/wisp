@@ -1,5 +1,11 @@
 # History
 
+## 0.5.0 - 2013/03/27
+
+  - Improved REPL prints lisp forms instead of JS.
+  - Implement `pr-str` function from clojure.
+  - Symbols now obtain take metadata.
+
 ## 0.4.1 - 2013/03/27
 
   - Fix regressions introduced in 4.0.0
