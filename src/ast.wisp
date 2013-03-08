@@ -1,7 +1,7 @@
-(import [list? sequential? first count last map] "./sequence")
+(import [list? sequential? first second count last map vec] "./sequence")
 (import [split join] "./string")
 (import [nil? vector? number? string? boolean? object? date? re-pattern?
-         dictionary? str subs =] "./runtime")
+         dictionary? str inc subs =] "./runtime")
 
 (defn with-meta
   "Returns identical value with given metadata associated to it."
@@ -69,7 +69,7 @@
         :else (throw (TypeError. (str "Doesn't support name: " value)))))
 
 (defn keyword-namespace
-  [value]
+  [x]
   (let [parts (split (subs x 1) **ns-separator**)]
     (if (> (count parts) 1) (get parts 0))))
 
@@ -110,8 +110,55 @@
   [form]
   (and (list? form) (= (first form) 'syntax-quote)))
 
+(defn normalize [n len]
+  (loop [ns (str n)]
+    (if (< (count ns) len)
+      (recur (str "0" ns))
+      ns)))
+
+(defn quote-string
+  [s]
+  (set! s (join "\\\"" (split s "\"")))
+  (set! s (join "\\\\" (split s "\\")))
+  (set! s (join "\\b" (split s "\b")))
+  (set! s (join "\\f" (split s "\f")))
+  (set! s (join "\\n" (split s "\n")))
+  (set! s (join "\\r" (split s "\r")))
+  (set! s (join "\\t" (split s "\t")))
+  (str "\"" s "\""))
+
+(defn ^string pr-str
+  [x]
+  (cond (nil? x) "nil"
+        (keyword? x) (if (namespace x)
+                        (str ":" (namespace x) "/" (name x))
+                        (str ":" (name x)))
+        (string? x) (quote-string x)
+        (date? x) (str "#inst \""
+                       (.getUTCFullYear x) "-"
+                       (normalize (inc (.getUTCMonth x)) 2) "-"
+                       (normalize (.getUTCDate x) 2) "T"
+                       (normalize (.getUTCHours x) 2) ":"
+                       (normalize (.getUTCMinutes x) 2) ":"
+                       (normalize (.getUTCSeconds x) 2) "."
+                       (normalize (.getUTCMilliseconds x) 3) "-"
+                       "00:00\"")
+        (vector? x) (str "[" (join " " (map pr-str (vec x))) "]")
+        (dictionary? x) (str "{"
+                             (join ", "
+                                   (map (fn [pair]
+                                          (str
+                                           (pr-str (first pair))
+                                           " "
+                                           (pr-str (second pair))))
+                                        x))
+                             "}")
+        (sequential? x) (str "(" (join " " (map pr-str (vec x))) ")")
+        (re-pattern? x) (str "#\"" (join "\\/" (split (.-source x) "/")) "\"")
+        :else (str x)))
 
 (export meta with-meta
+        pr-str
         symbol? symbol
         keyword? keyword
         gensym name namespace

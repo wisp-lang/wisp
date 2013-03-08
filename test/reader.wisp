@@ -1,5 +1,5 @@
 (import [symbol quote deref name keyword
-         unquote meta dictionary] "../src/ast")
+         unquote meta dictionary pr-str] "../src/ast")
 (import [dictionary nil? str =] "../src/runtime")
 (import [read-from-string] "../src/reader")
 (import [list] "../src/sequence")
@@ -199,13 +199,16 @@
        :გამარჯობა
 
        ;compound data
-       ;{:привет :ru "你好" :cn} // TODO: Implement serialized function
+       {:привет :ru "你好" :cn}
        ]]
   (.for-each assets
              (fn [unicode]
-               (assert (= unicode
-                          (read-string (str "\"" unicode "\"")))
-                       (str "Failed to read-string " unicode)))))
+              (let [input (pr-str unicode)
+                    read (read-string input)]
+                (assert (= unicode read)
+                        (str "Failed to read-string \"" unicode "\" from: " input))))))
+
+(.log console "unicode error cases")
 
 ; unicode error cases
 (let [unicode-errors
