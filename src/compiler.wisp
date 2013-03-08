@@ -792,9 +792,16 @@
   in the binding-forms are bound to their respective
   initial-expressions or parts therein. Acts as a recur target."
   [form]
-  (let [bindings (apply dictionary (first form))
-        names (keys bindings)
-        values (vals bindings)
+  (let [bindings (loop [names []
+                        values []
+                        tokens (first form)]
+                  (if (empty? tokens)
+                    {:names names :values values}
+                    (recur (conj names (first tokens))
+                           (conj values (second tokens))
+                           (rest (rest tokens)))))
+        names (:names bindings)
+        values (:values bindings)
         body (rest form)]
     ;; `((fn loop []
     ;;    ~@(define-bindings bindings)
