@@ -384,7 +384,7 @@
     (compile-template
       (list
         (if (and (list? else-expression)
-                 (identical? (first else-expression) 'if))
+                 (= (first else-expression) 'if))
           "~{} ?\n  ~{} :\n~{}"
           "~{} ?\n  ~{} :\n  ~{}")
         (compile condition)
@@ -574,7 +574,7 @@
        ;; If name and binding are identical then rebind is unnecessary
        ;; and it's skipped. Also not skipping such rebinds could be
        ;; problematic as definitions may shadow bindings.
-       (if (identical? (first names) (first bindings))
+       (if (= (first names) (first bindings))
          form
          (cons (list 'def (first names) (first bindings)) form))
        (rest bindings)
@@ -712,12 +712,12 @@
               (compile (first catch-exprs))
               (compile-fn-body (rest catch-exprs))
               (compile-fn-body finally-exprs)))))
-        (if (identical? (first (first exprs)) 'catch)
+        (if (= (first (first exprs)) 'catch)
           (recur try-exprs
                  (rest (first exprs))
                  finally-exprs
                  (rest exprs))
-          (if (identical? (first (first exprs)) 'finally)
+          (if (= (first (first exprs)) 'finally)
             (recur try-exprs
                    catch-exprs
                    (rest (first exprs))
@@ -825,7 +825,7 @@
   [names body]
   (map (fn [form]
          (if (list? form)
-           (if (identical? (first form) 'recur)
+           (if (= (first form) 'recur)
              (list 'raw*
                    (compile-group
                     (concat
