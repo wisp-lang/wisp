@@ -36,9 +36,9 @@
 
   (set! request.onreadystatechange
         (fn []
-          (if (= request.ready-state 4)
-            (if (or (= request.status 0)
-                    (= request.status 200))
+          (if (identical? request.ready-state 4)
+            (if (or (identical? request.status 0)
+                    (identical? request.status 200))
               (callback (run request.response-text url))
               (callback "Could not load")))))
 
@@ -53,7 +53,7 @@
   (def scripts
     (Array.prototype.filter.call
      (document.get-elements-by-tag-name :script)
-     (fn [script] (= script.type "application/wisp"))))
+     (fn [script] (identical? script.type "application/wisp"))))
 
   (defn next []
     (if scripts.length
@@ -65,8 +65,8 @@
   (next))
 
 ;; Listen for window load, both in browsers and in IE.
-(if (or (= document.ready-state :complete)
-        (= document.ready-state :interactive))
+(if (or (identical? document.ready-state :complete)
+        (identical? document.ready-state :interactive))
   (run-scripts)
   (if window.add-event-listener
     (.add-event-listener window :DOMContentLoaded run-scripts false)

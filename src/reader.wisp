@@ -1,7 +1,7 @@
 (import [list list? count empty? first second third rest map vec
          cons conj rest concat last butlast sort] "./sequence")
 (import [odd? dictionary keys nil? inc dec vector? string? object? dictionary?
-         re-pattern re-matches re-find str subs char vals =] "./runtime")
+         re-pattern re-matches re-find str subs char vals = ==] "./runtime")
 (import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
 (import [split join] "./string")
 
@@ -504,7 +504,7 @@
 (defn lambda-params [body]
   (let [names (sort (vals (lambda-params-hash body)))
         variadic (= (first names) (symbol "%&"))
-        n (if (and variadic (= (count names) 1))
+        n (if (and variadic (== (count names) 1))
               0
               (parseInt (rest (name (last names)))))
         params (loop [names []

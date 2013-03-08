@@ -160,7 +160,7 @@
   [re s]
   (let [matches (.exec re s)]
     (if (not (nil? matches))
-      (if (= (.-length matches) 1)
+      (if (identical? (.-length matches) 1)
         (get matches 0)
         matches))))
 
@@ -169,7 +169,7 @@
   (let [matches (.exec pattern source)]
     (if (and (not (nil? matches))
              (identical? (get matches 0) source))
-      (if (= (.-length matches) 1)
+      (if (identical? (.-length matches) 1)
         (get matches 0)
         matches))))
 
@@ -232,22 +232,25 @@
        (date? y)
        (identical? (Number x) (Number y))))
 
+
 (defn ^boolean dictionary-equal?
   [x y]
-  (let [x-keys (keys x)
-        y-keys (keys y)
-        x-count (.-length x-keys)
-        y-count (.-length y-keys)]
-    (and (identical? x-count y-count)
-         (loop [index 0
-                count x-count
-                keys x-keys]
-           (if (< index count)
-             (if (equivalent? (get x (get keys index))
-                              (get y (get keys index)))
-               (recur (inc index) count keys)
-               false)
-             true)))))
+  (and (object? x)
+       (object? y)
+       (let [x-keys (keys x)
+             y-keys (keys y)
+             x-count (.-length x-keys)
+             y-count (.-length y-keys)]
+         (and (identical? x-count y-count)
+              (loop [index 0
+                     count x-count
+                     keys x-keys]
+                (if (< index count)
+                  (if (equivalent? (get x (get keys index))
+                                   (get y (get keys index)))
+                    (recur (inc index) count keys)
+                    false)
+                  true))))))
 
 (defn ^boolean vector-equal?
   [x y]
@@ -277,11 +280,8 @@
                    (number? x) false
                    (fn? x) false
                    (boolean? x) false
-                   ;(symbol? x) (symbol-equal? x y)
-                   ;(keyword? x) (keyword-equal? x y)
                    (date? x) (date-equal? x y)
                    (vector? x) (vector-equal? x y [] [])
-                   ;(dictionary? x) (dictionary-equal? x y [] [])
                    (re-pattern? x) (pattern-equal? x y)
                    :else (dictionary-equal? x y))))
   ([x y & more]

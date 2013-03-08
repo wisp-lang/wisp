@@ -47,7 +47,7 @@
       ;; start repl.
       (set-timeout
        (fn []
-         (if (= process.stdin.bytes-read 0)
+         (if (identical? process.stdin.bytes-read 0)
            (do
              (.remove-all-listeners process.stdin :data)
              (repl))))
