@@ -357,6 +357,10 @@
          (rest values))
          (str code (first parts))))))
 
+(defn compile-comment
+  [form]
+  (compile-template (list "//~{}\n" (first form))))
+
 (defn compile-def
   "Creates and interns or locates a global var with the name of symbol
   and a namespace of the value of the current namespace (*ns*). If init
@@ -877,6 +881,7 @@
 (install-special 'not compile-not)
 (install-special 'loop compile-loop)
 (install-special 'raw* compile-raw)
+(install-special 'comment compile-comment)
 
 
 (defn compile-keyword [form] (str "\"" "\uA789" (name form) "\""))

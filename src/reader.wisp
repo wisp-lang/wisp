@@ -157,6 +157,7 @@
         reader
         (recur)))))
 
+
 ;; Note: Input begin and end matchers are used in a pattern since otherwise
 ;; anything begininng with `0` will match just `0` cause it's listed first.
 (def int-pattern (re-pattern "^([-+]?)(?:(0)|([1-9][0-9]*)|0[xX]([0-9A-Fa-f]+)|0([0-7]+)|([1-9][0-9]?)[rR]([0-9A-Za-z]+)|0[0-9]+)(N)?$"))
@@ -328,7 +329,18 @@
         items (read-delimited-list ")" reader true)]
     (with-meta (apply list items) {:line line-number :column column-number })))
 
-(def read-comment skip-line)
+(defn read-comment
+  [reader _]
+  (loop [buffer ""
+         ch (read-char reader)]
+
+    (cond
+     (or (nil? ch)
+         (identical? "\n" ch)) (or reader ;; ignore comments for now
+                                   (list 'comment buffer))
+     (or (identical? \\ ch)) (recur (str buffer (escape-char buffer reader))
+                                    (read-char reader))
+     :else (recur (str buffer ch) (read-char reader)))))
 
 (defn read-vector
   [reader]
