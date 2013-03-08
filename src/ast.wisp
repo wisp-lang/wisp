@@ -1,6 +1,7 @@
-(import [list? first count last] "./sequence")
-(import [split] "./string")
-(import [nil? vector? number? string? boolean? object? str subs] "./runtime")
+(import [list? sequential? first count last map] "./sequence")
+(import [split join] "./string")
+(import [nil? vector? number? string? boolean? object? date? re-pattern?
+         dictionary? str subs =] "./runtime")
 
 (defn with-meta
   "Returns identical value with given metadata associated to it."
@@ -15,21 +16,30 @@
 
 (def **ns-separator** "\u2044")
 
+(defn Symbol
+  "Type for the symbols"
+  [namespace name]
+  (set! (.-namespace this) namespace)
+  (set! (.-name this) name)
+  this)
+(set! Symbol.prototype.to-string
+      (fn []
+        (let [ns (namespace this)]
+          (if ns
+            (str ns "/" (name this))
+            (str (name this))))))
+
 (defn symbol
   "Returns a Symbol with the given namespace and name."
   [ns id]
   (cond
    (symbol? ns) ns
-   (keyword? ns) (str "\uFEFF" (name ns))
-   (nil? id) (str "\uFEFF" ns)
-   (nil? ns) (str "\uFEFF" id)
-   :else (str "\uFEFF" ns **ns-separator** id)))
+   (keyword? ns) (Symbol. (namespace ns) (name ns))
+   (nil? id) (Symbol. nil ns)
+   :else (Symbol. ns id)))
 
 (defn ^boolean symbol? [x]
-  (and (string? x)
-       (> (count x) 1)
-       (identical? (first x) "\uFEFF")))
-
+  (instance? Symbol x))
 
 (defn ^boolean keyword? [x]
   (and (string? x)
@@ -40,34 +50,35 @@
   "Returns a Keyword with the given namespace and name. Do not use :
   in the keyword strings, it will be added automatically."
   [ns id]
-  (cond
-   (keyword? ns) ns
-   (symbol? ns) (str "\uA789" (name ns))
-   (nil? id) (str "\uA789" ns)
-   (nil? ns) (str "\uA789" id)
-   :else (str "\uA789" ns **ns-separator** id)))
+  (cond (keyword? ns) ns
+        (symbol? ns) (str "\uA789" (name ns))
+        (nil? id) (str "\uA789" ns)
+        (nil? ns) (str "\uA789" id)
+        :else (str "\uA789" ns **ns-separator** id)))
 
+(defn keyword-name
+  [value]
+  (last (split (subs value 1) **ns-separator**)))
 
 (defn name
   "Returns the name String of a string, symbol or keyword."
   [value]
-  (let [named (or (keyword? value) (symbol? value))
-        parts (if named (split (subs value 1) **ns-separator**))]
-    (cond named (last parts)
-          ;; Needs to be after keyword? and symbol? because keywords and
-          ;; symbols are strings.
-          (string? value) value
-          :else (throw (TypeError. (str "Doesn't support name: " value))))))
+  (cond (symbol? value) (.-name value)
+        (keyword? value) (keyword-name value)
+        (string? value) value
+        :else (throw (TypeError. (str "Doesn't support name: " value)))))
+
+(defn keyword-namespace
+  [value]
+  (let [parts (split (subs x 1) **ns-separator**)]
+    (if (> (count parts) 1) (get parts 0))))
 
 (defn namespace
   "Returns the namespace String of a symbol or keyword, or nil if not present."
-  [value]
-  (let [supported (or (keyword? value)
-                      (symbol? value))
-        parts (if supported (split (subs value 1) **ns-separator**))]
-    (if supported
-      (if (> (count parts) 1) (get parts 0))
-      (throw (TypeError. (str "Doesn't supports namespace: " value))))))
+  [x]
+  (cond (symbol? x) (.-namespace x)
+        (keyword? x) (keyword-namespace x)
+        :else (throw (TypeError. (str "Doesn't supports namespace: " x)))))
 
 (defn gensym
   "Returns a new symbol with a unique name. If a prefix string is
@@ -82,23 +93,22 @@
 (defn ^boolean unquote?
   "Returns true if it's unquote form: ~foo"
   [form]
-  (and (list? form) (identical? (first form) 'unquote)))
+  (and (list? form) (= (first form) 'unquote)))
 
 (defn ^boolean unquote-splicing?
   "Returns true if it's unquote-splicing form: ~@foo"
   [form]
-  (and (list? form) (identical? (first form) 'unquote-splicing)))
+  (and (list? form) (= (first form) 'unquote-splicing)))
 
 (defn ^boolean quote?
   "Returns true if it's quote form: 'foo '(foo)"
   [form]
-  (and (list? form) (identical? (first form) 'quote)))
+  (and (list? form) (= (first form) 'quote)))
 
 (defn ^boolean syntax-quote?
   "Returns true if it's syntax quote form: `foo `(foo)"
   [form]
-  (and (list? form) (identical? (first form) 'syntax-quote)))
-
+  (and (list? form) (= (first form) 'syntax-quote)))
 
 
 (export meta with-meta
