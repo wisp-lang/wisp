@@ -1,5 +1,10 @@
 # History
 
+## 0.4.1 - 2013/03/27
+
+  - Fix regressions introduced in 4.0.0
+  - Rewrite function compiler to depend less on symbol implementation details.
+
 ## 0.4.0 - 2013/03/27
 
   - Compile symbols to function calls `'foo => (symbol nil "foo")`.

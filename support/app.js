@@ -990,7 +990,7 @@ var isFalse = function isFalse(x) {
 var reFind = function reFind(re, s) {
   var matches = re.exec(s);
   return !(isNil(matches)) ?
-    matches.length == 1 ?
+    matches.length === 1 ?
       matches[0] :
       matches :
     void(0);
@@ -999,7 +999,7 @@ var reFind = function reFind(re, s) {
 var reMatches = function reMatches(pattern, source) {
   var matches = pattern.exec(source);
   return (!(isNil(matches))) && (matches[0] === source) ?
-    matches.length == 1 ?
+    matches.length === 1 ?
       matches[0] :
       matches :
     void(0);
@@ -1047,21 +1047,23 @@ var isDateEqual = function isDateEqual(x, y) {
 };
 
 var isDictionaryEqual = function isDictionaryEqual(x, y) {
-  var xKeys = keys(x);
-  var yKeys = keys(y);
-  var xCount = xKeys.length;
-  var yCount = yKeys.length;
-  return (xCount === yCount) && ((function loop(index, count, keys) {
-    var recur = loop;
-    while (recur === loop) {
-      recur = index < count ?
-      isEquivalent(x[keys[index]], y[keys[index]]) ?
-        (index = inc(index), count = count, keys = keys, loop) :
-        false :
-      true;
-    };
-    return recur;
-  })(0, xCount, xKeys));
+  return (isObject(x)) && (isObject(y)) && ((function() {
+    var xKeys = keys(x);
+    var yKeys = keys(y);
+    var xCount = xKeys.length;
+    var yCount = yKeys.length;
+    return (xCount === yCount) && ((function loop(index, count, keys) {
+      var recur = loop;
+      while (recur === loop) {
+        recur = index < count ?
+        isEquivalent(x[keys[index]], y[keys[index]]) ?
+          (index = inc(index), count = count, keys = keys, loop) :
+          false :
+        true;
+      };
+      return recur;
+    })(0, xCount, xKeys));
+  })());
 };
 
 var isVectorEqual = function isVectorEqual(x, y) {
@@ -1496,8 +1498,8 @@ var load = function load(url, callback) {
     request.overrideMimeType("application/wisp") :
     void(0);
   request.onreadystatechange = function() {
-    return request.readyState == 4 ?
-      (request.status == 0) || (request.status == 200) ?
+    return request.readyState === 4 ?
+      (request.status === 0) || (request.status === 200) ?
         callback(run(request.responseText, url)) :
         callback("Could not load") :
       void(0);
@@ -1507,7 +1509,7 @@ var load = function load(url, callback) {
 
 var runScripts = function runScripts() {
   var scripts = Array.prototype.filter.call(document.getElementsByTagName("script"), function(script) {
-    return script.type == "application/wisp";
+    return script.type === "application/wisp";
   });
   var next = function next() {
     return scripts.length ?
@@ -1522,7 +1524,7 @@ var runScripts = function runScripts() {
   return next();
 };
 
-(document.readyState == "complete") || (document.readyState == "interactive") ?
+(document.readyState === "complete") || (document.readyState === "interactive") ?
   runScripts() :
 window.addEventListener ?
   window.addEventListener("DOMContentLoaded", runScripts, false) :
@@ -1551,6 +1553,7 @@ var count = (require("./sequence")).count;
 var isList = (require("./sequence")).isList;
 var list = (require("./sequence")).list;;
 
+var isStrictEqual = (require("./runtime")).isStrictEqual;
 var isEqual = (require("./runtime")).isEqual;
 var vals = (require("./runtime")).vals;
 var char = (require("./runtime")).char;
@@ -1924,7 +1927,7 @@ var readSet = function readSet(reader, _) {
   var lineNumber = line(reader);
   var columnNumber = column(reader);
   var items = readDelimitedList("}", reader, true);
-  return withMeta(concat(["﻿set"], items), {
+  return withMeta(concat([symbol(void(0), "set")], items), {
     "line": lineNumber,
     "column": columnNumber
   });
@@ -1971,10 +1974,10 @@ var readUnquote = function readUnquote(reader) {
   return !(ch) ?
     readerError(reader, "EOF while reading character") :
   ch === "@" ?
-    list("﻿unquote-splicing", read(reader, true, void(0), true)) :
+    list(symbol(void(0), "unquote-splicing"), read(reader, true, void(0), true)) :
     (function() {
       unreadChar(reader, ch);
-      return list("﻿unquote", read(reader, true, void(0), true));
+      return list(symbol(void(0), "unquote"), read(reader, true, void(0), true));
     })();
 };
 
@@ -2090,7 +2093,7 @@ var readRegex = function readRegex(reader) {
 
 var readParam = function readParam(reader, initch) {
   var form = readSymbol(reader, initch);
-  return form == symbol("%") ?
+  return isEqual(form, symbol("%")) ?
     symbol("%1") :
     form;
 };
@@ -2111,8 +2114,8 @@ var lambdaParamsHash = function lambdaParamsHash(form) {
 
 var lambdaParams = function lambdaParams(body) {
   var names = sort(vals(lambdaParamsHash(body)));
-  var variadic = first(names) == symbol("%&");
-  var n = variadic && (count(names) == 1) ?
+  var variadic = isEqual(first(names), symbol("%&"));
+  var n = variadic && (count(names) === 1) ?
     0 :
     parseInt(rest(name(last(names))));
   var params = (function loop(names, i) {
@@ -2125,13 +2128,13 @@ var lambdaParams = function lambdaParams(body) {
     return recur;
   })([], 1);
   return variadic ?
-    conj(params, "﻿&", "﻿%&") :
+    conj(params, symbol(void(0), "&"), symbol(void(0), "%&")) :
     names;
 };
 
 var readLambda = function readLambda(reader) {
   var body = readList(reader);
-  return list("﻿fn", lambdaParams(body), body);
+  return list(symbol(void(0), "fn"), lambdaParams(body), body);
 };
 
 var readDiscard = function readDiscard(reader, _) {
@@ -2147,13 +2150,13 @@ var macros = function macros(c) {
   c === ";" ?
     readComment :
   c === "'" ?
-    wrappingReader("﻿quote") :
+    wrappingReader(symbol(void(0), "quote")) :
   c === "@" ?
-    wrappingReader("﻿deref") :
+    wrappingReader(symbol(void(0), "deref")) :
   c === "^" ?
     readMeta :
   c === "`" ?
-    wrappingReader("﻿syntax-quote") :
+    wrappingReader(symbol(void(0), "syntax-quote")) :
   c === "~" ?
     readUnquote :
   c === "(" ?
@@ -2239,13 +2242,13 @@ var readFromString = function readFromString(source, uri) {
 
 var readUuid = function readUuid(uuid) {
   return isString(uuid) ?
-    list("﻿UUID.", uuid) :
+    list(symbol(void(0), "UUID."), uuid) :
     readerError(void(0), "UUID literal expects a string as its representation.");
 };
 
 var readQueue = function readQueue(items) {
   return isVector(items) ?
-    list("﻿PersistentQueue.", items) :
+    list(symbol(void(0), "PersistentQueue."), items) :
     readerError(void(0), "Queue literal expects a vector for its elements.");
 };
 
@@ -2367,19 +2370,19 @@ var gensym = function gensym(prefix) {
 gensym.base = 0;
 
 var isUnquote = function isUnquote(form) {
-  return (isList(form)) && (first(form) === "﻿unquote");
+  return (isList(form)) && (first(form) === symbol(void(0), "unquote"));
 };
 
 var isUnquoteSplicing = function isUnquoteSplicing(form) {
-  return (isList(form)) && (first(form) === "﻿unquote-splicing");
+  return (isList(form)) && (first(form) === symbol(void(0), "unquote-splicing"));
 };
 
 var isQuote = function isQuote(form) {
-  return (isList(form)) && (first(form) === "﻿quote");
+  return (isList(form)) && (first(form) === symbol(void(0), "quote"));
 };
 
 var isSyntaxQuote = function isSyntaxQuote(form) {
-  return (isList(form)) && (first(form) === "﻿syntax-quote");
+  return (isList(form)) && (first(form) === symbol(void(0), "syntax-quote"));
 };
 
 exports.isSyntaxQuote = isSyntaxQuote;
@@ -2577,11 +2580,11 @@ var isMacro = function isMacro(name) {
 };
 
 var makeMacro = function makeMacro(pattern, body) {
-  var macroFn = concat(list("﻿fn", pattern), body);
+  var macroFn = concat(list(symbol(void(0), "fn"), pattern), body);
   return eval(str("(", compile(macroexpand(macroFn)), ")"));
 };
 
-installMacro("﻿defmacro", function(name, signature) {
+installMacro(symbol(void(0), "defmacro"), function(name, signature) {
   var body = Array.prototype.slice.call(arguments, 2);
   return installMacro(name, makeMacro(signature, body));
 });
@@ -2614,7 +2617,7 @@ var opt = function opt(argument, fallback) {
 var applyForm = function applyForm(fnName, form, isQuoted) {
   return cons(fnName, isQuoted ?
     map(function(e) {
-      return list("﻿quote", e);
+      return list(symbol(void(0), "quote"), e);
     }, form) :
     form, form);
 };
@@ -2624,8 +2627,8 @@ var applyUnquotedForm = function applyUnquotedForm(fnName, form) {
     return isUnquote(e) ?
       second(e) :
     (isList(e)) && (isKeyword(first(e))) ?
-      list("﻿syntax-quote", second(e)) :
-      list("﻿syntax-quote", e);
+      list(symbol(void(0), "syntax-quote"), second(e)) :
+      list(symbol(void(0), "syntax-quote"), e);
   }, form));
 };
 
@@ -2683,13 +2686,13 @@ var compileObject = function compileObject(form, isQuoted) {
   isRePattern(form) ?
     compileRePattern(form) :
   isVector(form) ?
-    compile(applyForm("﻿vector", list.apply(list, form), isQuoted)) :
+    compile(applyForm(symbol(void(0), "vector"), list.apply(list, form), isQuoted)) :
   isList(form) ?
-    compile(applyForm("﻿list", form, isQuoted)) :
+    compile(applyForm(symbol(void(0), "list"), form, isQuoted)) :
   isDictionary(form) ?
     compileDictionary(isQuoted ?
       mapDictionary(form, function(x) {
-        return list("﻿quote", x);
+        return list(symbol(void(0), "quote"), x);
       }) :
       form) :
     void(0);
@@ -2742,15 +2745,15 @@ var compileKeywordReference = function compileKeywordReference(form) {
 };
 
 var compileSyntaxQuotedVector = function compileSyntaxQuotedVector(form) {
-  var concatForm = syntaxQuoteSplit("﻿concat", "﻿vector", list.apply(list, form));
+  var concatForm = syntaxQuoteSplit(symbol(void(0), "concat"), symbol(void(0), "vector"), list.apply(list, form));
   return compile(count(concatForm) > 1 ?
-    list("﻿vec", concatForm) :
+    list(symbol(void(0), "vec"), concatForm) :
     concatForm);
 };
 
 var compileSyntaxQuoted = function compileSyntaxQuoted(form) {
   return isList(form) ?
-    compile(syntaxQuoteSplit("﻿concat", "﻿list", form)) :
+    compile(syntaxQuoteSplit(symbol(void(0), "concat"), symbol(void(0), "list"), form)) :
   isVector(form) ?
     compileSyntaxQuotedVector(form) :
   "else" ?
@@ -2779,7 +2782,7 @@ var compile = function compile(form) {
       isSpecial(head) ?
         executeSpecial(head, form) :
       isKeyword(head) ?
-        compile(list("﻿get", second(form), head)) :
+        compile(list(symbol(void(0), "get"), second(form), head)) :
       "else" ?
         (function() {
           return !((isSymbol(head)) || (isList(head))) ?
@@ -2820,9 +2823,9 @@ var macroexpand1 = function macroexpand1(form) {
         first(id) === "." ?
           count(form) < 2 ?
             (function() { throw Error("Malformed member expression, expecting (.member target ...)"); })() :
-            cons("﻿.", cons(second(form), cons(symbol(subs(id, 1)), rest(rest(form))))) :
+            cons(symbol(void(0), "."), cons(second(form), cons(symbol(subs(id, 1)), rest(rest(form))))) :
         last(id) === "." ?
-          cons("﻿new", cons(symbol(subs(id, 0, dec(count(id)))), rest(form))) :
+          cons(symbol(void(0), "new"), cons(symbol(subs(id, 0, dec(count(id)))), rest(form))) :
           form :
       "else" ?
         form :
@@ -2861,14 +2864,14 @@ var compileTemplate = function compileTemplate(form) {
 };
 
 var compileDef = function compileDef(form) {
-  return compileTemplate(list("var ~{}", compile(cons("﻿set!", form))));
+  return compileTemplate(list("var ~{}", compile(cons(symbol(void(0), "set!"), form))));
 };
 
 var compileIfElse = function compileIfElse(form) {
   var condition = macroexpand(first(form));
   var thenExpression = macroexpand(second(form));
   var elseExpression = macroexpand(third(form));
-  return compileTemplate(list((isList(elseExpression)) && (first(elseExpression) === "﻿if") ?
+  return compileTemplate(list((isList(elseExpression)) && (first(elseExpression) === symbol(void(0), "if")) ?
     "~{} ?\n  ~{} :\n~{}" :
     "~{} ?\n  ~{} :\n  ~{}", compile(condition), compile(thenExpression), compile(elseExpression)));
 };
@@ -2908,22 +2911,10 @@ var desugarFnAttrs = function desugarFnAttrs(form) {
     cons(first(form), cons(second(form), cons(void(0), rest(rest(form)))));
 };
 
-var compileFnParams = function compileFnParams(params) {
-  return (function loop(nonVariadic, params) {
-    var recur = loop;
-    while (recur === loop) {
-      recur = (isEmpty(params)) || (first(params) == "﻿&") ?
-      join(", ", map(compile, nonVariadic)) :
-      (nonVariadic = concat(nonVariadic, [first(params)]), params = rest(params), loop);
-    };
-    return recur;
-  })([], params);
-};
-
 var compileDesugaredFn = function compileDesugaredFn(name, doc, attrs, params, body) {
   return compileTemplate(isNil(name) ?
-    list("function(~{}) {\n  ~{}\n}", compileFnParams(params), compileFnBody(map(macroexpand, body), params)) :
-    list("function ~{}(~{}) {\n  ~{}\n}", compile(name), compileFnParams(params), compileFnBody(map(macroexpand, body), params)));
+    list("function(~{}) {\n  ~{}\n}", join(", ", map(compile, params["names"])), compileFnBody(map(macroexpand, body), params)) :
+    list("function ~{}(~{}) {\n  ~{}\n}", compile(name), join(", ", map(compile, params["names"])), compileFnBody(map(macroexpand, body), params)));
 };
 
 var compileStatements = function compileStatements(form, prefix) {
@@ -2941,43 +2932,54 @@ var compileStatements = function compileStatements(form, prefix) {
 };
 
 var compileFnBody = function compileFnBody(form, params) {
-  return (isVector(params)) && (isContainsVector(params, "﻿&")) ?
-    compileStatements(cons(list("﻿def", params[inc(params.indexOf("﻿&"))], list("﻿Array.prototype.slice.call", "﻿arguments", params.indexOf("﻿&"))), form), "return ") :
-  (count(form) === 1) && (isList(first(form))) && (first(first(form)) == "﻿do") ?
+  return (isDictionary(params)) && (params["rest"]) ?
+    compileStatements(cons(list(symbol(void(0), "def"), params["rest"], list(symbol(void(0), "Array.prototype.slice.call"), symbol(void(0), "arguments"), params["arity"])), form), "return ") :
+  (count(form) === 1) && (isList(first(form))) && (isEqual(first(first(form)), symbol(void(0), "do"))) ?
     compileFnBody(rest(first(form)), params) :
     compileStatements(form, "return ");
 };
 
-var isVariadic = function isVariadic(params) {
-  return (function loop(params) {
+var desugarParams = function desugarParams(params) {
+  return (function loop(names, params) {
     var recur = loop;
     while (recur === loop) {
       recur = isEmpty(params) ?
-      false :
-    first(params) == "﻿&" ?
-      true :
+      {
+        "names": names,
+        "arity": count(names),
+        "rest": void(0)
+      } :
+    isEqual(first(params), symbol(void(0), "&")) ?
+      isEqual(count(params), 1) ?
+        {
+          "names": names,
+          "arity": count(names),
+          "rest": void(0)
+        } :
+      isEqual(count(params), 2) ?
+        {
+          "names": names,
+          "arity": count(names),
+          "rest": second(params)
+        } :
+      "else" ?
+        (function() { throw TypeError("Unexpected number of parameters after &"); })() :
+        void(0) :
     "else" ?
-      (params = rest(params), loop) :
+      (names = conj(names, first(params)), params = rest(params), loop) :
       void(0);
     };
     return recur;
-  })(params);
+  })([], params);
 };
 
 var analyzeOverloadedFn = function analyzeOverloadedFn(name, doc, attrs, overloads) {
   return map(function(overload) {
-    var params = first(overload);
-    var variadic = isVariadic(params);
-    var fixedArity = variadic ?
-      (count(params)) - 2 :
-      count(params);
+    var params = desugarParams(first(overload));
     return {
-      "variadic": variadic,
-      "rest": variadic ?
-        params[dec(count(params))] :
-        void(0),
-      "fixed-arity": fixedArity,
-      "params": take(fixedArity, params),
+      "rest": params["rest"],
+      "names": params["names"],
+      "arity": params["arity"],
       "body": rest(overload)
     };
   }, overloads);
@@ -2986,21 +2988,21 @@ var analyzeOverloadedFn = function analyzeOverloadedFn(name, doc, attrs, overloa
 var compileOverloadedFn = function compileOverloadedFn(name, doc, attrs, overloads) {
   var methods = analyzeOverloadedFn(name, doc, attrs, overloads);
   var fixedMethods = filter(function(method) {
-    return !(method["variadic"]);
+    return !(method["rest"]);
   }, methods);
   var variadic = first(filter(function(method) {
-    return method["variadic"];
+    return method["rest"];
   }, methods));
-  var names = reduce(function(a, b) {
-    return count(a) > count(b["params"]) ?
-      a :
-      b["params"];
+  var names = reduce(function(names, params) {
+    return count(names) > params["arity"] ?
+      names :
+      params["names"];
   }, [], methods);
-  return list("﻿fn", name, doc, attrs, names, list("﻿raw*", compileSwitch("﻿arguments.length", map(function(method) {
-    return cons(method["fixed-arity"], list("﻿raw*", compileFnBody(concat(compileRebind(names, method["params"]), method["body"]))));
+  return list(symbol(void(0), "fn"), name, doc, attrs, names, list(symbol(void(0), "raw*"), compileSwitch(symbol(void(0), "arguments.length"), map(function(method) {
+    return cons(method["arity"], list(symbol(void(0), "raw*"), compileFnBody(concat(compileRebind(names, method["names"]), method["body"]))));
   }, fixedMethods), isNil(variadic) ?
-    list("﻿throw", list("﻿Error", "Invalid arity")) :
-    list("﻿raw*", compileFnBody(concat(compileRebind(cons(list("﻿Array.prototype.slice.call", "﻿arguments", variadic["fixed-arity"]), names), cons(variadic["rest"], variadic["params"])), variadic["body"]))))), void(0));
+    list(symbol(void(0), "throw"), list(symbol(void(0), "Error"), "Invalid arity")) :
+    list(symbol(void(0), "raw*"), compileFnBody(concat(compileRebind(cons(list(symbol(void(0), "Array.prototype.slice.call"), symbol(void(0), "arguments"), variadic["arity"]), names), cons(variadic["rest"], variadic["names"])), variadic["body"]))))), void(0));
 };
 
 var compileRebind = function compileRebind(bindings, names) {
@@ -3011,7 +3013,7 @@ var compileRebind = function compileRebind(bindings, names) {
       reverse(form) :
       (form = first(names) === first(bindings) ?
         form :
-        cons(list("﻿def", first(names), first(bindings)), form), bindings = rest(bindings), names = rest(names), loop);
+        cons(list(symbol(void(0), "def"), first(names), first(bindings)), form), bindings = rest(bindings), names = rest(names), loop);
     };
     return recur;
   })(list(), bindings, names);
@@ -3033,7 +3035,7 @@ var compileFn = function compileFn(form) {
   var doc = second(signature);
   var attrs = third(signature);
   return isVector(third(rest(signature))) ?
-    compileDesugaredFn(name, doc, attrs, third(rest(signature)), rest(rest(rest(rest(signature))))) :
+    compileDesugaredFn(name, doc, attrs, desugarParams(third(rest(signature))), rest(rest(rest(rest(signature))))) :
     compile(compileOverloadedFn(name, doc, attrs, rest(rest(rest(signature)))));
 };
 
@@ -3050,7 +3052,7 @@ var compileGroup = function compileGroup(form, wrap) {
 };
 
 var compileDo = function compileDo(form) {
-  return compile(list(cons("﻿fn", cons([], form))));
+  return compile(list(cons(symbol(void(0), "fn"), cons([], form))));
 };
 
 var defineBindings = function defineBindings(form) {
@@ -3059,7 +3061,7 @@ var defineBindings = function defineBindings(form) {
     while (recur === loop) {
       recur = count(bindings) === 0 ?
       reverse(defs) :
-      (defs = cons(list("﻿def", bindings[0], bindings[1]), defs), bindings = rest(rest(bindings)), loop);
+      (defs = cons(list(symbol(void(0), "def"), bindings[0], bindings[1]), defs), bindings = rest(rest(bindings)), loop);
     };
     return recur;
   })(list(), form);
@@ -3087,9 +3089,9 @@ var compileTry = function compileTry(form) {
       isEmpty(finallyExprs) ?
         compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n}})()", compileFnBody(tryExprs), compile(first(catchExprs)), compileFnBody(rest(catchExprs)))) :
         compileTemplate(list("(function() {\ntry {\n  ~{}\n} catch (~{}) {\n  ~{}\n} finally {\n  ~{}\n}})()", compileFnBody(tryExprs), compile(first(catchExprs)), compileFnBody(rest(catchExprs)), compileFnBody(finallyExprs))) :
-    first(first(exprs)) === "﻿catch" ?
+    first(first(exprs)) === symbol(void(0), "catch") ?
       (tryExprs = tryExprs, catchExprs = rest(first(exprs)), finallyExprs = finallyExprs, exprs = rest(exprs), loop) :
-    first(first(exprs)) === "﻿finally" ?
+    first(first(exprs)) === symbol(void(0), "finally") ?
       (tryExprs = tryExprs, catchExprs = catchExprs, finallyExprs = rest(first(exprs)), exprs = rest(exprs), loop) :
       (tryExprs = cons(first(exprs), tryExprs), catchExprs = catchExprs, finallyExprs = finallyExprs, exprs = rest(exprs), loop);
     };
@@ -3106,7 +3108,7 @@ var compileProperty = function compileProperty(form) {
 };
 
 var compileApply = function compileApply(form) {
-  return compile(list("﻿.", first(form), "﻿apply", first(form), second(form)));
+  return compile(list(symbol(void(0), "."), first(form), symbol(void(0), "apply"), first(form), second(form)));
 };
 
 var compileNew = function compileNew(form) {
@@ -3130,7 +3132,7 @@ var compileLoop = function compileLoop(form) {
   var names = keys(bindings);
   var values = vals(bindings);
   var body = rest(form);
-  return compile(cons(cons("﻿fn", cons("﻿loop", cons(names, compileRecur(names, body)))), list.apply(list, values)));
+  return compile(cons(cons(symbol(void(0), "fn"), cons(symbol(void(0), "loop"), cons(names, compileRecur(names, body)))), list.apply(list, values)));
 };
 
 var rebindBindings = function rebindBindings(names, values) {
@@ -3139,7 +3141,7 @@ var rebindBindings = function rebindBindings(names, values) {
     while (recur === loop) {
       recur = isEmpty(names) ?
       reverse(result) :
-      (result = cons(list("﻿set!", first(names), first(values)), result), names = rest(names), values = rest(values), loop);
+      (result = cons(list(symbol(void(0), "set!"), first(names), first(values)), result), names = rest(names), values = rest(values), loop);
     };
     return recur;
   })(list(), names, values);
@@ -3148,63 +3150,63 @@ var rebindBindings = function rebindBindings(names, values) {
 var expandRecur = function expandRecur(names, body) {
   return map(function(form) {
     return isList(form) ?
-      first(form) === "﻿recur" ?
-        list("﻿raw*", compileGroup(concat(rebindBindings(names, rest(form)), list("﻿loop")), true)) :
+      first(form) === symbol(void(0), "recur") ?
+        list(symbol(void(0), "raw*"), compileGroup(concat(rebindBindings(names, rest(form)), list(symbol(void(0), "loop"))), true)) :
         expandRecur(names, form) :
       form;
   }, body);
 };
 
 var compileRecur = function compileRecur(names, body) {
-  return list(list("﻿raw*", compileTemplate(list("var recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}", compileStatements(expandRecur(names, body))))), "﻿recur");
+  return list(list(symbol(void(0), "raw*"), compileTemplate(list("var recur = loop;\nwhile (recur === loop) {\n  recur = ~{}\n}", compileStatements(expandRecur(names, body))))), symbol(void(0), "recur"));
 };
 
 var compileRaw = function compileRaw(form) {
   return first(form);
 };
 
-installSpecial("﻿set!", compileSet);
+installSpecial(symbol(void(0), "set!"), compileSet);
 
-installSpecial("﻿get", compileCompoundAccessor);
+installSpecial(symbol(void(0), "get"), compileCompoundAccessor);
 
-installSpecial("﻿aget", compileCompoundAccessor);
+installSpecial(symbol(void(0), "aget"), compileCompoundAccessor);
 
-installSpecial("﻿def", compileDef);
+installSpecial(symbol(void(0), "def"), compileDef);
 
-installSpecial("﻿if", compileIfElse);
+installSpecial(symbol(void(0), "if"), compileIfElse);
 
-installSpecial("﻿do", compileDo);
+installSpecial(symbol(void(0), "do"), compileDo);
 
-installSpecial("﻿do*", compileStatements);
+installSpecial(symbol(void(0), "do*"), compileStatements);
 
-installSpecial("﻿fn", compileFn);
+installSpecial(symbol(void(0), "fn"), compileFn);
 
-installSpecial("﻿throw", compileThrow);
+installSpecial(symbol(void(0), "throw"), compileThrow);
 
-installSpecial("﻿vector", compileVector);
+installSpecial(symbol(void(0), "vector"), compileVector);
 
-installSpecial("﻿try", compileTry);
+installSpecial(symbol(void(0), "try"), compileTry);
 
-installSpecial("﻿.", compileProperty);
+installSpecial(symbol(void(0), "."), compileProperty);
 
-installSpecial("﻿apply", compileApply);
+installSpecial(symbol(void(0), "apply"), compileApply);
 
-installSpecial("﻿new", compileNew);
+installSpecial(symbol(void(0), "new"), compileNew);
 
-installSpecial("﻿instance?", compileInstance);
+installSpecial(symbol(void(0), "instance?"), compileInstance);
 
-installSpecial("﻿not", compileNot);
+installSpecial(symbol(void(0), "not"), compileNot);
 
-installSpecial("﻿loop", compileLoop);
+installSpecial(symbol(void(0), "loop"), compileLoop);
 
-installSpecial("﻿raw*", compileRaw);
+installSpecial(symbol(void(0), "raw*"), compileRaw);
 
 var compileKeyword = function compileKeyword(form) {
   return str("\"", "꞉", name(form), "\"");
 };
 
 var compileSymbol = function compileSymbol(form) {
-  return compile(list("﻿symbol", namespace(form), name(form)));
+  return compile(list(symbol(void(0), "symbol"), namespace(form), name(form)));
 };
 
 var compileNil = function compileNil(form) {
@@ -3274,104 +3276,104 @@ var verifyTwo = function verifyTwo(form) {
     void(0);
 };
 
-installNative("﻿+", "﻿+", void(0), 0);
+installNative(symbol(void(0), "+"), symbol(void(0), "+"), void(0), 0);
 
-installNative("﻿-", "﻿-", void(0), "NaN");
+installNative(symbol(void(0), "-"), symbol(void(0), "-"), void(0), "NaN");
 
-installNative("﻿*", "﻿*", void(0), 1);
+installNative(symbol(void(0), "*"), symbol(void(0), "*"), void(0), 1);
 
-installNative("﻿/", "﻿/", verifyTwo);
+installNative(symbol(void(0), "/"), symbol(void(0), "/"), verifyTwo);
 
-installNative("﻿mod", symbol("%"), verifyTwo);
+installNative(symbol(void(0), "mod"), symbol("%"), verifyTwo);
 
-installNative("﻿and", "﻿&&");
+installNative(symbol(void(0), "and"), symbol(void(0), "&&"));
 
-installNative("﻿or", "﻿||");
+installNative(symbol(void(0), "or"), symbol(void(0), "||"));
 
-installOperator("﻿not=", "﻿!=");
+installOperator(symbol(void(0), "not="), symbol(void(0), "!="));
 
-installOperator("﻿==", "﻿===");
+installOperator(symbol(void(0), "=="), symbol(void(0), "==="));
 
-installOperator("﻿identical?", "﻿===");
+installOperator(symbol(void(0), "identical?"), symbol(void(0), "==="));
 
-installOperator("﻿>", "﻿>");
+installOperator(symbol(void(0), ">"), symbol(void(0), ">"));
 
-installOperator("﻿>=", "﻿>=");
+installOperator(symbol(void(0), ">="), symbol(void(0), ">="));
 
-installOperator("﻿<", "﻿<");
+installOperator(symbol(void(0), "<"), symbol(void(0), "<"));
 
-installOperator("﻿<=", "﻿<=");
+installOperator(symbol(void(0), "<="), symbol(void(0), "<="));
 
-installNative("﻿bit-and", "﻿&", verifyTwo);
+installNative(symbol(void(0), "bit-and"), symbol(void(0), "&"), verifyTwo);
 
-installNative("﻿bit-or", "﻿|", verifyTwo);
+installNative(symbol(void(0), "bit-or"), symbol(void(0), "|"), verifyTwo);
 
-installNative("﻿bit-xor", symbol("^"));
+installNative(symbol(void(0), "bit-xor"), symbol("^"));
 
-installNative("﻿bit-not", symbol("~"), verifyTwo);
+installNative(symbol(void(0), "bit-not"), symbol("~"), verifyTwo);
 
-installNative("﻿bit-shift-left", "﻿<<", verifyTwo);
+installNative(symbol(void(0), "bit-shift-left"), symbol(void(0), "<<"), verifyTwo);
 
-installNative("﻿bit-shift-right", "﻿>>", verifyTwo);
+installNative(symbol(void(0), "bit-shift-right"), symbol(void(0), ">>"), verifyTwo);
 
-installNative("﻿bit-shift-right-zero-fil", "﻿>>>", verifyTwo);
+installNative(symbol(void(0), "bit-shift-right-zero-fil"), symbol(void(0), ">>>"), verifyTwo);
 
-installMacro("﻿let", function letMacro(bindings) {
+installMacro(symbol(void(0), "let"), function letMacro(bindings) {
   var body = Array.prototype.slice.call(arguments, 1);
-  return cons("﻿do", concat(defineBindings(bindings), body));
+  return cons(symbol(void(0), "do"), concat(defineBindings(bindings), body));
 });
 
-installMacro("﻿cond", function cond() {
+installMacro(symbol(void(0), "cond"), function cond() {
   var clauses = Array.prototype.slice.call(arguments, 0);
   return !(isEmpty(clauses)) ?
-    list("﻿if", first(clauses), isEmpty(rest(clauses)) ?
+    list(symbol(void(0), "if"), first(clauses), isEmpty(rest(clauses)) ?
       (function() { throw Error("cond requires an even number of forms"); })() :
-      second(clauses), cons("﻿cond", rest(rest(clauses)))) :
+      second(clauses), cons(symbol(void(0), "cond"), rest(rest(clauses)))) :
     void(0);
 });
 
-installMacro("﻿defn", function defn(name) {
+installMacro(symbol(void(0), "defn"), function defn(name) {
   var body = Array.prototype.slice.call(arguments, 1);
-  return list("﻿def", name, concat(list("﻿fn", name), body));
+  return list(symbol(void(0), "def"), name, concat(list(symbol(void(0), "fn"), name), body));
 });
 
-installMacro("﻿assert", function assert(x, message) {
+installMacro(symbol(void(0), "assert"), function assert(x, message) {
   return isNil(message) ?
-    list("﻿assert", x, "") :
-    list("﻿if", list("﻿not", x), list("﻿throw", list("﻿Error.", list("﻿str", "Assert failed: ", message, "\n", list("﻿quote", x)))));
+    list(symbol(void(0), "assert"), x, "") :
+    list(symbol(void(0), "if"), list(symbol(void(0), "not"), x), list(symbol(void(0), "throw"), list(symbol(void(0), "Error."), list(symbol(void(0), "str"), "Assert failed: ", message, "\n", list(symbol(void(0), "quote"), x)))));
 });
 
-installMacro("﻿export", function() {
+installMacro(symbol(void(0), "export"), function() {
   var names = Array.prototype.slice.call(arguments, 0);
   return isEmpty(names) ?
     void(0) :
   isEmpty(rest(names)) ?
-    list("﻿set!", "﻿module.exports", first(names)) :
+    list(symbol(void(0), "set!"), symbol(void(0), "module.exports"), first(names)) :
     (function loop(form, exports) {
       var recur = loop;
       while (recur === loop) {
         recur = isEmpty(exports) ?
-        concat(list("﻿do*"), form) :
-        (form = cons(list("﻿set!", list(symbol(str(".-", name(first(exports)))), "﻿exports"), first(exports)), form), exports = rest(exports), loop);
+        concat(list(symbol(void(0), "do*")), form) :
+        (form = cons(list(symbol(void(0), "set!"), list(symbol(str(".-", name(first(exports)))), symbol(void(0), "exports")), first(exports)), form), exports = rest(exports), loop);
       };
       return recur;
     })(list(), names);
 });
 
-installMacro("﻿import", function(imports, path) {
+installMacro(symbol(void(0), "import"), function(imports, path) {
   return isNil(path) ?
-    list("﻿require", imports) :
+    list(symbol(void(0), "require"), imports) :
   isSymbol(imports) ?
-    list("﻿def", imports, list("﻿require", path)) :
+    list(symbol(void(0), "def"), imports, list(symbol(void(0), "require"), path)) :
     (function loop(form, names) {
       var recur = loop;
       while (recur === loop) {
         recur = isEmpty(names) ?
-        concat(list("﻿do*"), form) :
+        concat(list(symbol(void(0), "do*")), form) :
         (function() {
           var alias = first(names);
           var id = symbol(str(".-", name(alias)));
-          return (form = cons(list("﻿def", alias, list(id, list("﻿require", path))), form), names = rest(names), loop);
+          return (form = cons(list(symbol(void(0), "def"), alias, list(id, list(symbol(void(0), "require"), path))), form), names = rest(names), loop);
         })();
       };
       return recur;
