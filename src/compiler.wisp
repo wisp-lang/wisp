@@ -437,17 +437,6 @@
           (cons (second form)
                 (cons nil (rest (rest form)))))))
 
-(defn compile-fn-params
-  ;"compiles function params"
-  [params]
-  (loop [non-variadic []
-         params params]
-    (if (or (empty? params)
-            (= (first params) '&))
-      (join ", " (map compile non-variadic))
-      (recur (concat non-variadic [(first params)])
-             (rest params)))))
-
 (defn compile-desugared-fn
   ;"(fn name? [params* ] exprs*)
   ;Defines a function (fn)"
@@ -455,11 +444,11 @@
   (compile-template
     (if (nil? name)
       (list "function(~{}) {\n  ~{}\n}"
-            (compile-fn-params params)
+            (join ", " (map compile (:names params)))
             (compile-fn-body (map macroexpand body) params))
       (list "function ~{}(~{}) {\n  ~{}\n}"
             (compile name)
-            (compile-fn-params params)
+            (join ", " (map compile (:names params)))
             (compile-fn-body (map macroexpand body) params)))))
 
 (defn compile-statements
@@ -479,14 +468,14 @@
 
 (defn compile-fn-body
   [form params]
-  (if (and (vector? params) (contains-vector? params '&))
+  (if (and (dictionary? params) (:rest params))
     (compile-statements
       (cons (list 'def
-                  (get params (inc (.index-of params '&)))
+                  (:rest params)
                   (list
                     'Array.prototype.slice.call
                     'arguments
-                    (.index-of params '&)))
+                    (:arity params)))
       form)
       "return ")
 
@@ -498,52 +487,58 @@
       (compile-fn-body (rest (first form)) params)
       (compile-statements form "return "))))
 
-(defn variadic?
-  "Returns true if function signature is variadic"
+(defn desugar-params
+  "Returns map like `{:names ['foo 'bar] :rest 'baz}` if takes non-variadic
+  number of params `:rest` is `nil`"
   [params]
-  (loop [params params]
-    (cond (empty? params) false
-          (= (first params) '&) true
-          :else (recur (rest params)))))
+  (loop [names []
+         params params]
+    (cond (empty? params) {:names names :arity (count names) :rest nil}
+          (= (first params) '&)
+            (cond (= (count params) 1) {:names names
+                                        :arity (count names)
+                                        :rest nil}
+                  (= (count params) 2) {:names names
+                                        :arity (count names)
+                                        :rest (second params)}
+                  :else (throw (TypeError
+                                "Unexpected number of parameters after &")))
+          :else (recur (conj names (first params)) (rest params)))))
 
 (defn analyze-overloaded-fn
   "Compiles function that has overloads defined"
   [name doc attrs overloads]
   (map (fn [overload]
-         (let [params (first overload)
-               variadic (variadic? params)
-               fixed-arity (if variadic
-                              (- (count params) 2)
-                              (count params))]
-           {:variadic variadic
-            :rest (if variadic (get params (dec (count params))))
-            :fixed-arity fixed-arity
-            :params (take fixed-arity params)
+         (let [params (desugar-params (first overload))]
+           {:rest (:rest params)
+            :names (:names params)
+            :arity (:arity params)
             :body (rest overload)}))
        overloads))
 
 (defn compile-overloaded-fn
   [name doc attrs overloads]
   (let [methods (analyze-overloaded-fn name doc attrs overloads)
-        fixed-methods (filter (fn [method] (not (:variadic method))) methods)
-        variadic (first (filter (fn [method] (:variadic method)) methods))
-        names (reduce (fn [a b]
-                        (if (> (count a) (count (get b :params)))
-                          a
-                          (get b :params)))
-                      [] methods)]
+        fixed-methods (filter (fn [method] (not (:rest method))) methods)
+        variadic (first (filter (fn [method] (:rest method)) methods))
+        names (reduce (fn [names params]
+                        (if (> (count names) (:arity params))
+                              names
+                              (:names params)))
+                      []
+                      methods)]
     (list 'fn name doc attrs names
           (list 'raw*
                 (compile-switch
                   'arguments.length
                   (map (fn [method]
-                    (cons (:fixed-arity method)
+                        (cons (:arity method)
                           (list 'raw*
                                 (compile-fn-body
                                   (concat
-                                    (compile-rebind names (:params method))
+                                    (compile-rebind names (:names method))
                                     (:body method))))))
-                    fixed-methods)
+                        fixed-methods)
                   (if (nil? variadic)
                     '(throw (Error "Invalid arity"))
                     (list 'raw*
@@ -552,10 +547,10 @@
                               (compile-rebind
                                 (cons `(Array.prototype.slice.call
                                         arguments
-                                        ~(:fixed-arity variadic))
+                                        ~(:arity variadic))
                                       names)
                                 (cons (:rest variadic)
-                                      (:params variadic)))
+                                      (:names variadic)))
                               (:body variadic)))))))
           nil)))
 
@@ -617,7 +612,7 @@
         attrs (third signature)]
     (if (vector? (third (rest signature)))
       (compile-desugared-fn name doc attrs
-                            (third (rest signature))
+                            (desugar-params (third (rest signature)))
                             (rest (rest (rest (rest signature)))))
       (compile
         (compile-overloaded-fn name doc attrs (rest (rest (rest signature))))))))
