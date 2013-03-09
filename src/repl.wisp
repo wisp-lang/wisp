@@ -16,7 +16,7 @@
   [code uri context]
   (if context.*debug* (.log console "INPUT:" (pr-str code)))
   (let [reader (push-back-reader code uri)]
-    (loop [last-output nil]
+    (loop [last-output {:finished true}]
       (let [output (evaluate-next-form reader context)
             error (:error output)]
         (if (not (:finished output))
@@ -25,8 +25,11 @@
                 output)
             (recur output))
           (do (set! context.*3 context.*2)
+              (set! context.**3 context.**2)
               (set! context.*2 context.*1)
+              (set! context.**2 context.**1)
               (set! context.*1 (:value last-output))
+              (set! context.**1 (:form last-output))
               last-output))))))
 
 (defn evaluate-next-form
@@ -46,8 +49,8 @@
               body form
               code (compile-program (list body))
               _ (if context.*debug* (.log console "EMITTED:" (pr-str code)))
-              value (.run-in-this-context vm code uri)]
-          {:value value :js code})))
+              value (.run-in-context vm code context uri)]
+          {:value value :js code :form form})))
     (catch error
       {:error error})))
 
@@ -65,11 +68,14 @@
 (defn start
   "Starts repl"
   []
-  (.start repl {
-          :writer pr-str
-          :prompt "=> "
-          :ignoreUndefined true
-          :useGlobal true
-          :eval evaluate}))
+  (let [session (.start repl
+                        {:writer pr-str
+                         :prompt "=> "
+                         :ignoreUndefined true
+                         :useGlobal false
+                         :eval evaluate})
+        context (.-context session)]
+    (set! context.exports {})
+    session))
 
 (export start)
