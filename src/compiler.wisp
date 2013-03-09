@@ -79,7 +79,7 @@
   (set! (get **specials** name)
         (fn [form]
           (if validator (validator form))
-          (f (rest form)))))
+          (f (with-meta (rest form) (meta form))))))
 
 (defn special?
   "Returns true if special form"
@@ -282,15 +282,18 @@
 (defn compile-program
   "compiles all expansions"
   [forms]
-  (loop [result ""
+  (loop [result []
          expressions forms]
     (if (empty? expressions)
-      result
-      (recur
-        (str result
-             (if (empty? result) "" ";\n\n")
-             (compile (macroexpand (first expressions))))
-        (rest expressions)))))
+      (join ";\n\n" result)
+      (let [expression (first expressions)
+            form (macroexpand expression)
+            metadata (conj {:top true} (meta form))
+            expanded (if (self-evaluating? form)
+                       form
+                       (with-meta form metadata))]
+        (recur (conj result (compile expanded))
+               (rest expressions))))))
 
 (defn macroexpand-1
   "If form represents a macro form, returns its expansion,
@@ -371,9 +374,17 @@
   the var is thread-bound at the point where def is called. def yields
   the var itself (not its value)."
   [form]
-  (compile-template
-   (list "var ~{}"
-         (compile (cons 'set! form)))))
+  (let [id (first form)
+        export? (and (:top (or (meta form) {}))
+                     (not (:private (or (meta id) {}))))
+        attribute (symbol (namespace id)
+                          (str "-" (name id)))]
+    (if export?
+      (compile-template (list "var ~{};\n~{}"
+                               (compile (cons 'set! form))
+                               (compile `(set! (. exports ~attribute) ~id))))
+      (compile-template (list "var ~{}"
+                              (compile (cons 'set! form)))))))
 
 (defn compile-if-else
   "Evaluates test. If not the singular values nil or false,
@@ -1043,6 +1054,15 @@
    [name & body]
    `(def ~name (fn ~name ~@body))))
 
+(install-macro
+ 'defn-
+ (fn defn
+   "Same as (def name (fn [params* ] exprs*)) or
+   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
+   to the var metadata"
+   {:added "1.0" :special-form true }
+   [name & body]
+   `(defn ~(with-meta name (conj {:private true} (meta name))) ~@body)))
 
 (install-macro
  'assert
