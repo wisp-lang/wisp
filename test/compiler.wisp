@@ -265,6 +265,11 @@
                     "\"/\".b().a()")
         "(.a (.b \"/\")) => \"/\".b().a()")
 
+(.log console "compile sugar for keyword based access")
+
+(assert (identical? (transpile '(:foo bar))
+                    "(bar || 0)[\"foo\"]"))
+
 
 (.log console "compile unquote-splicing forms")
 

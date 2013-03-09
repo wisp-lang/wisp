@@ -1,22 +1,28 @@
 # History
 
-## 0.5.1 - 2013/03/27
+## 0.6.0 - 2013/03/09
 
+  - Add support for `()` form as a sugar to `'()`
   - Improve REPL support for multi-line inputs.
   - Add `*debug*` setting to REPL to print intermediate forms.
+  - Allow access to last 3 forms read in REPL from `**1`, `**2`, `**3`.
+  - Allow access to last 3 evalution result in REPL as `*1`, `*2` `*3`.
+  - Make wisp types more tolarant to multiple JS contexts.
+  - Fix bug in `(get (or a b) c)` like forms.
+  - Make `(:foo bar)` compatible with `nil` `bar` values.
 
-## 0.5.0 - 2013/03/27
+## 0.5.0 - 2013/03/08
 
   - Improved REPL prints lisp forms instead of JS.
   - Implement `pr-str` function from clojure.
   - Symbols now obtain take metadata.
 
-## 0.4.1 - 2013/03/27
+## 0.4.1 - 2013/03/08
 
   - Fix regressions introduced in 4.0.0
   - Rewrite function compiler to depend less on symbol implementation details.
 
-## 0.4.0 - 2013/03/27
+## 0.4.0 - 2013/03/07
 
   - Compile symbols to function calls `'foo => (symbol nil "foo")`.
   - Covert `=` special form to clojure compliant function.

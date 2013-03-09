@@ -271,7 +271,7 @@
        (syntax-quote? form) (compile-syntax-quoted (second form))
        (special? head) (execute-special head form)
        ;; Compile keyword invoke as a property access.
-       (keyword? head) (compile (list 'get (second form) head))
+       (keyword? head) (compile `(get (or ~(second form) 0) ~head))
        :else (do
               (if (not (or (symbol? head) (list? head)))
                 (throw (compiler-error
