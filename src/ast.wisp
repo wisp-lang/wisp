@@ -22,6 +22,8 @@
   (set! (.-namespace this) namespace)
   (set! (.-name this) name)
   this)
+(set! Symbol.type "wisp.symbol")
+(set! Symbol.prototype.type Symbol.type)
 (set! Symbol.prototype.to-string
       (fn []
         (let [ns (namespace this)]
@@ -39,7 +41,7 @@
    :else (Symbol. ns id)))
 
 (defn ^boolean symbol? [x]
-  (instance? Symbol x))
+  (and x (identical? Symbol.type x.type)))
 
 (defn ^boolean keyword? [x]
   (and (string? x)

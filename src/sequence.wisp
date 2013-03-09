@@ -12,6 +12,8 @@
   this)
 
 (set! List.prototype.length 0)
+(set! List.type "wisp.list")
+(set! List.prototype.type List.type)
 (set! List.prototype.tail (Object.create List.prototype))
 (set! List.prototype.to-string
       (fn []
@@ -43,6 +45,8 @@
   (set! (.-realized this) (or realized false))
   (set! (.-x this) x)
   this)
+(set! LazySeq.type "wisp.lazy.seq")
+(set! LazySeq.prototype.type LazySeq.type)
 
 (defn lazy-seq
   [realized body]
@@ -50,7 +54,7 @@
 
 (defn lazy-seq?
   [value]
-  (instance? LazySeq value))
+  (and value (identical? LazySeq.type value.type)))
 
 (defmacro lazy-seq
   "Takes a body of expressions that returns an ISeq or nil, and yields
@@ -64,7 +68,7 @@
 (defn list?
   "Returns true if list"
   [value]
-  (.prototype-of? List.prototype value))
+  (and value (identical? List.type value.type)))
 
 (defn list
   "Creates list of the given items"
