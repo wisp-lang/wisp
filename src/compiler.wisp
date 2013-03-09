@@ -783,10 +783,11 @@
 (defn compile-compound-accessor
   "Compiles compound property accessor"
   [form]
-  (compile-template
-    (list "~{}[~{}]"
-          (compile (macroexpand (first form)))
-          (compile (macroexpand (second form))))))
+  (let [target (macroexpand (first form))
+        attribute (macroexpand (second form))
+        template (if (list? target) "(~{})[~{}]" "~{}[~{}]")]
+    (compile-template
+     (list template (compile target) (compile attribute)))))
 
 (defn compile-instance
   "Evaluates x and tests if it is an instance of the class

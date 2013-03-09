@@ -427,8 +427,10 @@
 (assert (identical? (transpile '(aget arguments 1)) "arguments[1]")
         "(aget arguments 1) => arguments[1]")
 (assert (identical? (transpile '(get (a b) (get c d)))
-                    "a(b)[c[d]]")
+                    "(a(b))[c[d]]")
         "(get (a b) (get c d)) => a(b)[c[d]]")
+(assert (identical? (transpile '(get (or t1 t2) p))
+                    "(t1 || t2)[p]"))
 
 (.log console "compiles instance?")
 
