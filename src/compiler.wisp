@@ -266,6 +266,7 @@
    (list? form)
     (let [head (first form)]
       (cond
+       (empty? form) (compile-object form true)
        (quote? form) (compile-object (second form) true)
        (syntax-quote? form) (compile-syntax-quoted (second form))
        (special? head) (execute-special head form)
@@ -297,7 +298,7 @@
   [form]
   (if (list? form)
     (let [op (first form)
-          id (if (not (list? op)) (name op))]
+          id (if (symbol? op) (name op))]
       (cond
         (special? op) form
         (macro? op) (execute-macro op (rest form))
