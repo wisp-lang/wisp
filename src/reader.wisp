@@ -578,7 +578,7 @@
     (let [ch (read-char reader)]
       (cond
        (nil? ch) (if eof-is-error (reader-error reader "EOF") sentinel)
-       (whitespace? ch) (recur)
+       (whitespace? ch) (recur eof-is-error sentinel is-recursive)
        (comment-prefix? ch) (read (read-comment reader ch)
                                   eof-is-error
                                   sentinel
@@ -589,7 +589,7 @@
                         (number-literal? reader ch) (read-number reader ch)
                         :else (read-symbol reader ch))]
                (if (identical? form reader)
-                 (recur)
+                 (recur eof-is-error sentinel is-recursive)
                  form))))))
 
 (defn read-from-string
