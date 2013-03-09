@@ -1,5 +1,10 @@
 # History
 
+## 0.5.1 - 2013/03/27
+
+  - Improve REPL support for multi-line inputs.
+  - Add `*debug*` setting to REPL to print intermediate forms.
+
 ## 0.5.0 - 2013/03/27
 
   - Improved REPL prints lisp forms instead of JS.
