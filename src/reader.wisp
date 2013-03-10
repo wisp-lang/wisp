@@ -11,17 +11,18 @@
   [source uri]
   {:lines (split source "\n") :buffer ""
    :uri uri
-   :column 0 :line 0})
+   :column -1 :line 0})
 
 (defn peek-char
   "Returns next char from the Reader without reading it.
   nil if the end of stream has being reached."
   [reader]
   (let [line (aget (:lines reader)
-                   (:line reader))]
+                   (:line reader))
+        column (inc (:column reader))]
     (if (nil? line)
       nil
-      (or (aget line (:column reader)) "\n"))))
+      (or (aget line column) "\n"))))
 
 (defn read-char
   "Returns the next char from the Reader, nil if the end
@@ -32,7 +33,7 @@
     (if (newline? (peek-char reader))
       (do
         (set! (:line reader) (inc (:line reader)))
-        (set! (:column reader) 0))
+        (set! (:column reader) -1))
       (set! (:column reader) (inc (:column reader))))
     ch))
 
