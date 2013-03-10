@@ -1014,6 +1014,14 @@
 (install-native 'bit-shift-right '>> verify-two)
 (install-native 'bit-shift-right-zero-fil '>>> verify-two)
 
+
+(install-macro
+ 'str
+ (fn str
+   "str inlining and optimization via macros"
+   [& forms]
+   `(+ "" ~@forms)))
+
 (install-macro
   'let
   (fn let-macro
