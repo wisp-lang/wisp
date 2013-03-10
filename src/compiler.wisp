@@ -288,10 +288,10 @@
       (join ";\n\n" result)
       (let [expression (first expressions)
             form (macroexpand expression)
-            metadata (conj {:top true} (meta form))
-            expanded (if (self-evaluating? form)
-                       form
-                       (with-meta form metadata))]
+            expanded (if (list? form)
+                       (with-meta form (conj {:top true}
+                                             (meta form)))
+                       form)]
         (recur (conj result (compile expanded))
                (rest expressions))))))
 
