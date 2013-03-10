@@ -15,6 +15,7 @@
   - Implement `str` macro in order to inline common cases.
   - Fix keyword based metadata sugar `(^:foo bar) ;; => (with-meta bar {:foo true})`.
   - Improvements to `assert` macro.
+  - Reader simplifications.
 
 ## 0.5.0 - 2013/03/08
 
