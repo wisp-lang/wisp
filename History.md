@@ -10,6 +10,11 @@
   - Make wisp types more tolarant to multiple JS contexts.
   - Fix bug in `(get (or a b) c)` like forms.
   - Make `(:foo bar)` compatible with `nil` `bar` values.
+  - Export all the top level definitions unless marked as private.
+  - Implement `defn-` macro for defining private functions.
+  - Implement `str` macro in order to inline common cases.
+  - Fix keyword based metadata sugar `(^:foo bar) ;; => (with-meta bar {:foo true})`.
+  - Improvements to `assert` macro.
 
 ## 0.5.0 - 2013/03/08
 

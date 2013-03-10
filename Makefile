@@ -1,7 +1,13 @@
 BROWSERIFY = node ./node_modules/browserify/bin/cmd.js
+WIPS_CURRENT = node ./bin/wisp.js
+FLAGS =
+
+ifdef verbose
+	FLAGS = --verbose
+endif
 
 ifdef current
-	WISP = node ./bin/wisp.js
+	WISP = WIPS_CURRENT
 else
 	WISP = ./node_modules/wisp/bin/wisp.js
 endif
@@ -10,6 +16,10 @@ core: runtime sequence string ast reader compiler
 node: core wisp node-engine repl
 browser: core embed browser-engine browserify
 all: node browser
+test: test1
+
+test1:
+	$(WIPS_CURRENT) ./test/test.wisp $(FLAGS)
 
 repl:
 	cat ./src/repl.wisp | $(WISP) > ./repl.js && mv ./repl.js ./lib/repl.js

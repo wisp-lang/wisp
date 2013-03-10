@@ -35,6 +35,6 @@
   "scripts": {
     "prepublish": "make all",
     "postpublish": "sleep 10 & npm install",
-    "test": "./bin/wisp.js ./test/test.wisp"
+    "test": "make test"
   }
 }
