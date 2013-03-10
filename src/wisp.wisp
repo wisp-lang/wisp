@@ -4,7 +4,7 @@
 
 (import repl "./repl")
 (import [str] "./runtime")
-(import transpile "./engine/node")
+(import [transpile] "./engine/node")
 (import [compile-program] "./compiler")
 (import [read-from-string] "./reader")
 

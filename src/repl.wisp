@@ -1,6 +1,6 @@
 (import repl "repl")
 (import vm "vm")
-(import transpile "./engine/node")
+(import [transpile] "./engine/node")
 (import [read push-back-reader] "./reader")
 (import [subs =] "./runtime")
 (import [count list] "./sequence")
