@@ -1,62 +1,56 @@
 (import [list list? count empty? first second third rest map vec
          cons conj rest concat last butlast sort] "./sequence")
-(import [odd? dictionary keys nil? inc dec vector? string? object? dictionary?
+(import [odd? dictionary keys nil? inc dec vector? string?
+         number? boolean? object? dictionary?
          re-pattern re-matches re-find str subs char vals = ==] "./runtime")
 (import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
 (import [split join] "./string")
 
-(defn PushbackReader
-  "StringPushbackReader"
-  [source uri index buffer]
-  (set! this.source source)
-  (set! this.index-atom (or index 0))
-  (set! this.buffer-atom buffer)
-  (with-meta this {:uri uri :column 1 :line 0}))
-
-
 (defn push-back-reader
   "Creates a StringPushbackReader from a given string"
   [source uri]
-  (new PushbackReader source uri 0 ""))
+  {:lines (split source "\n") :buffer ""
+   :uri uri
+   :column 0 :line 0})
 
 (defn peek-char
   "Returns next char from the Reader without reading it.
   nil if the end of stream has being reached."
   [reader]
-  (if (empty? reader.buffer-atom)
-    (aget reader.source reader.index-atom)
-    (aget reader.buffer-atom 0)))
+  (let [line (aget (:lines reader)
+                   (:line reader))]
+    (if (nil? line)
+      nil
+      (or (aget line (:column reader)) "\n"))))
 
 (defn read-char
   "Returns the next char from the Reader, nil if the end
   of stream has been reached"
   [reader]
-  (let [position (meta reader)
-        index reader.index-atom
-        buffer  reader.buffer-atom]
+  (let [ch (peek-char reader)]
     ;; Update line column depending on what has being read.
-    (if (identical? (peek-char reader) "\n")
-      (do (set! position.line (inc (:line position)))
-          (set! position.colum 1))
-      (set! position.colum (inc (:column position))))
-
-    (if (empty? reader.buffer-atom)
-      (do (set! reader.index-atom (inc index))
-          (aget reader.source index))
-      (do (set! reader.buffer-atom (subs buffer 1))
-          (aget buffer 0)))))
+    (if (newline? (peek-char reader))
+      (do
+        (set! (:line reader) (inc (:line reader)))
+        (set! (:column reader) 0))
+      (set! (:column reader) (inc (:column reader))))
+    ch))
 
 (defn unread-char
   "Push back a single character on to the stream"
   [reader ch]
-  (let [position (meta reader)]
-    (if (identical? ch "\n")
-      (set! position.line (dec (:line position)))
-      (set! position.column (dec (:column position))))
-    (set! reader.buffer-atom (str ch reader.buffer-atom))))
-
+  (if (newline? ch)
+    (do (set! (:line reader) (dec (:line reader)))
+        (set! (:column reader) (count (aget (:lines reader)
+                                            (:line reader)))))
+    (set! (:column reader) (dec (:column reader)))))
 
 ;; Predicates
+
+(defn ^boolean newline?
+  "Checks whether the character is a newline."
+  [ch]
+  (identical? "\n" ch))
 
 (defn ^boolean breaking-whitespace?
  "Checks if a string is all breaking whitespace."
@@ -105,13 +99,13 @@
 
 (defn reader-error
   [reader message]
-  (let [position (meta reader)
-        error (SyntaxError (str message
-               "\n" "line:" (:line position)
-               "\n" "column:" (:column position)))]
-    (set! error.line (:line position))
-    (set! error.column (:column position))
-    (set! error.uri (:uri position))
+  (let [text (str message
+                  "\n" "line:" (:line reader)
+                  "\n" "column:" (:column reader))
+        error (SyntaxError text (:uri reader))]
+    (set! error.line (:line reader))
+    (set! error.column (:column reader))
+    (set! error.uri (:uri reader))
     (throw error)))
 
 (defn ^boolean macro-terminating? [ch]
@@ -125,14 +119,13 @@
   "Reads out next token from the reader stream"
   [reader initch]
   (loop [buffer initch
-         ch (read-char reader)]
+         ch (peek-char reader)]
 
     (if (or (nil? ch)
             (whitespace? ch)
-            (macro-terminating? ch))
-      (do (unread-char reader ch) buffer)
-      (recur (str buffer ch)
-             (read-char reader)))))
+            (macro-terminating? ch)) buffer
+        (recur (str buffer (read-char reader))
+               (peek-char reader)))))
 
 (defn skip-line
   "Advances the reader to the end of a line. Returns the reader"
@@ -165,7 +158,7 @@
                (aget groups 4) [(aget groups 4) 16]
                (aget groups 5) [(aget groups 5) 8]
                (aget groups 7) [(aget groups 7) (parse-int (aget groups 7))]
-               :default [nil nil])
+               :else [nil nil])
             n (aget a 0)
             radix (aget a 1)]
         (if (nil? n)
@@ -270,23 +263,23 @@
 (defn read-delimited-list
   "Reads out delimited list"
   [delim reader recursive?]
-  (loop [a []]
+  (loop [form []]
     (let [ch (read-past whitespace? reader)]
-      (if (not ch) (reader-error reader "EOF"))
+      (if (not ch) (reader-error reader :EOF))
       (if (identical? delim ch)
-        a
+        form
         (let [macrofn (macros ch)]
           (if macrofn
             (let [mret (macrofn reader ch)]
               (recur (if (identical? mret reader)
-                       a
-                       (conj a mret))))
+                       form
+                       (conj form mret))))
             (do
               (unread-char reader ch)
               (let [o (read reader true nil recursive?)]
                 (recur (if (identical? o reader)
-                         a
-                         (conj a o)))))))))))
+                         form
+                         (conj form o)))))))))))
 
 ;; data structure readers
 
@@ -312,9 +305,8 @@
 
 (defn read-list
   [reader _]
-  (let [from (meta reader)
-        items (read-delimited-list ")" reader true)]
-    (with-meta (apply list items) {:from from :to (meta reader)})))
+  (let [items (read-delimited-list ")" reader true)]
+    (apply list items)))
 
 (defn read-comment
   [reader _]
@@ -331,40 +323,35 @@
 
 (defn read-vector
   [reader]
-  (let [from (meta reader)
-        items (read-delimited-list "]" reader true)]
-    (with-meta items {:from from :to (meta reader)})))
+  (read-delimited-list "]" reader true))
 
 (defn read-map
   [reader]
-  (let [from (meta reader)
-        items (read-delimited-list "}" reader true)]
+  (let [items (read-delimited-list "}" reader true)]
     (if (odd? (count items))
       (reader-error reader "Map literal must contain an even number of forms")
-      (with-meta (apply dictionary items) {:from from :to (meta reader)}))))
+      (apply dictionary items))))
 
 (defn read-set
   [reader _]
-  (let [from (meta reader)
-        items (read-delimited-list "}" reader true)]
-    (with-meta (concat ['set] items) {:from from :to (meta reader)})))
+  (let [items (read-delimited-list "}" reader true)]
+    (concat ['set] items)))
 
 (defn read-number
   [reader initch]
   (loop [buffer initch
-         ch (read-char reader)]
+         ch (peek-char reader)]
 
     (if (or (nil? ch)
             (whitespace? ch)
             (macros ch))
       (do
-        (unread-char reader ch)
         (def match (match-number buffer))
         (if (nil? match)
             (reader-error reader "Invalid number format [" buffer "]")
             match))
-      (recur (str buffer ch)
-             (read-char reader)))))
+      (recur (str buffer (read-char reader))
+             (peek-char reader)))))
 
 (defn read-string
   [reader]
@@ -381,14 +368,13 @@
 (defn read-unquote
   "Reads unquote form ~form or ~(foo bar)"
   [reader]
-  (let [ch (read-char reader)]
+  (let [ch (peek-char reader)]
     (if (not ch)
       (reader-error reader "EOF while reading character")
-      (if (identical? ch "@")
-        (list 'unquote-splicing (read reader true nil true))
-        (do
-          (unread-char reader ch)
-          (list 'unquote (read reader true nil true)))))))
+      (if (identical? ch \@)
+        (do (read-char reader)
+            (list 'unquote-splicing (read reader true nil true)))
+        (list 'unquote (read reader true nil true))))))
 
 
 (defn special-symbols [text not-found]
@@ -451,13 +437,12 @@
 
 (defn read-meta
   [reader _]
-  (let [from (meta reader)
-        metadata (desugar-meta (read reader true nil true))]
-    (if (not (object? metadata))
+  (let [metadata (desugar-meta (read reader true nil true))]
+    (if (not (dictionary? metadata))
       (reader-error reader "Metadata must be Symbol, Keyword, String or Map"))
     (let [form (read reader true nil true)]
       (if (object? form)
-        (with-meta form (conj metadata (meta form) {:from from :to (meta reader)}))
+        (with-meta form (conj metadata (meta form)))
         ;(reader-error
         ; reader "Metadata can only be applied to IWithMetas")
 
@@ -557,20 +542,31 @@
   (loop []
     (let [ch (read-char reader)]
       (cond
-       (nil? ch) (if eof-is-error (reader-error reader "EOF") sentinel)
+       (nil? ch) (if eof-is-error (reader-error reader :EOF) sentinel)
        (whitespace? ch) (recur eof-is-error sentinel is-recursive)
        (comment-prefix? ch) (read (read-comment reader ch)
                                   eof-is-error
                                   sentinel
                                   is-recursive)
-       :else (let [f (macros ch)
-                   form (cond
-                        f (f reader ch)
-                        (number-literal? reader ch) (read-number reader ch)
-                        :else (read-symbol reader ch))]
-               (if (identical? form reader)
-                 (recur eof-is-error sentinel is-recursive)
-                 form))))))
+       :else (let [start {:line (:line reader)
+                          :column (:column reader)}
+                   read-form (macros ch)
+                   form (cond read-form (read-form reader ch)
+                              (number-literal? reader ch) (read-number reader ch)
+                              :else (read-symbol reader ch))]
+               (cond (identical? form reader) (recur eof-is-error
+                                                     sentinel
+                                                     is-recursive)
+                     (not (or (string? form)
+                              (number? form)
+                              (boolean? form)
+                              (nil? form)
+                              (keyword? form))) (with-meta form
+                                                           (conj {:start start
+                                                                  :end {:line (:line reader)
+                                                                        :column (:column reader)}}
+                                                                 (meta form)))
+                     :else form))))))
 
 (defn read-from-string
   "Reads one object from the string s"
