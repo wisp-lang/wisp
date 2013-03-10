@@ -535,39 +535,44 @@
    (identical? s \_) read-discard
    :else nil))
 
+(defn read-form
+  [reader ch]
+  (let [start {:line (:line reader)
+               :column (:column reader)}
+        read-macro (macros ch)
+        form (cond read-macro (read-macro reader ch)
+                   (number-literal? reader ch) (read-number reader ch)
+                   :else (read-symbol reader ch))]
+    (cond (identical? form reader) form
+          (not (or (string? form)
+                   (number? form)
+                   (boolean? form)
+                   (nil? form)
+                   (keyword? form))) (with-meta form
+                                                (conj {:start start
+                                                       :end {:line (:line reader)
+                                                             :column (:column reader)}}
+                                                      (meta form)))
+          :else form)))
+
 (defn read
   "Reads the first object from a PushbackReader.
   Returns the object read. If EOF, throws if eof-is-error is true.
   Otherwise returns sentinel."
   [reader eof-is-error sentinel is-recursive]
   (loop []
-    (let [ch (read-char reader)]
-      (cond
-       (nil? ch) (if eof-is-error (reader-error reader :EOF) sentinel)
-       (whitespace? ch) (recur eof-is-error sentinel is-recursive)
-       (comment-prefix? ch) (read (read-comment reader ch)
-                                  eof-is-error
-                                  sentinel
-                                  is-recursive)
-       :else (let [start {:line (:line reader)
-                          :column (:column reader)}
-                   read-form (macros ch)
-                   form (cond read-form (read-form reader ch)
-                              (number-literal? reader ch) (read-number reader ch)
-                              :else (read-symbol reader ch))]
-               (cond (identical? form reader) (recur eof-is-error
-                                                     sentinel
-                                                     is-recursive)
-                     (not (or (string? form)
-                              (number? form)
-                              (boolean? form)
-                              (nil? form)
-                              (keyword? form))) (with-meta form
-                                                           (conj {:start start
-                                                                  :end {:line (:line reader)
-                                                                        :column (:column reader)}}
-                                                                 (meta form)))
-                     :else form))))))
+    (let [ch (read-char reader)
+          form (cond
+                (nil? ch) (if eof-is-error (reader-error reader :EOF) sentinel)
+                (whitespace? ch) reader
+                (comment-prefix? ch) (read (read-comment reader ch)
+                                           eof-is-error
+                                           sentinel
+                                           is-recursive)
+                :else (read-form reader ch))]
+      (if (identical? form reader)
+        (recur eof-is-error sentinel is-recursive)
+        form))))
 
 (defn read-from-string
   "Reads one object from the string s"
