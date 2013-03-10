@@ -1,9 +1,10 @@
 (import [symbol] "../src/ast")
 (import [list] "../src/sequence")
 (import [str =] "../src/runtime")
-(import [self-evaluating? compile macroexpand] "../src/compiler")
+(import [self-evaluating? compile macroexpand compile-program] "../src/compiler")
+(import [read-from-string] "../src/reader")
 
-(defn transpile [form] (compile (macroexpand form)))
+(defn transpile [& forms] (compile-program forms))
 
 (.log console "self evaluating forms")
 (assert (self-evaluating? 1) "number is self evaluating")
@@ -21,13 +22,23 @@
 
 (.log console "compile primitive forms")
 
-(assert (= (transpile '(def x)) "var x = void(0)")
+(assert (= (transpile '(def x)) "var x = void(0);\nexports.x = x")
         "def compiles properly")
-(assert (= (transpile '(def y 1)) "var y = 1")
+(assert (= (transpile '(def y 1)) "var y = 1;\nexports.y = y")
         "def with two args compiled properly")
 (assert (= (transpile ''(def x 1))
                       "list(symbol(void(0), \"def\"), symbol(void(0), \"x\"), 1)")
         "quotes preserve lists")
+
+(.log console "private defs")
+
+;; Note need to actually read otherwise metadata is lost after
+;; compilation.
+(assert (= (transpile (read-from-string "(def ^:private x)"))
+           "var x = void(0)"))
+(assert (= (transpile (read-from-string "(def ^:private y 1)"))
+           "var y = 1"))
+
 
 
 (.log console "compile invoke forms")
@@ -310,7 +321,7 @@
 ;          "set! => set")
 
 (assert (identical? (transpile '(def under_dog))
-                    "var under_dog = void(0)")
+                    "var under_dog = void(0);\nexports.under_dog = under_dog")
         "foo_bar => foo_bar")
 (assert (identical? (transpile '(digit? 0))
                     "isDigit(0)")
@@ -482,3 +493,11 @@
   };
   return recur;
 })(3, 5)") "multi bindings loops compile")
+
+(assert (= (transpile '(defn identity [x] x))
+           (str "var identity = function identity(x) {\n  return x;\n};\n"
+                "exports.identity = identity")))
+
+(assert (= (transpile '(defn- identity [x] x))
+           "var identity = function identity(x) {\n  return x;\n}")
+        "private functions")
