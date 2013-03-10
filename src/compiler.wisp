@@ -1,6 +1,6 @@
 (import [read-from-string] "./reader")
 (import [meta with-meta symbol? symbol keyword? keyword namespace
-         unquote? unquote-splicing? quote? syntax-quote? name gensym] "./ast")
+         unquote? unquote-splicing? quote? syntax-quote? name gensym pr-str] "./ast")
 (import [empty? count list? list first second third rest cons conj
          reverse reduce vec last
          map filter take concat] "./sequence")
@@ -1080,10 +1080,21 @@
    logical true."
    {:added "1.0"}
    [x message]
-   (if (nil? message)
-     `(assert ~x "")
-     `(if (not ~x)
-        (throw (Error. (str "Assert failed: " ~message "\n" '~x)))))))
+   (let [title (or message "")
+         assertion (pr-str x)
+         form (if (list? x) (second x) x)]
+     `(do
+        (if (and (not (identical? (typeof **verbose**) "undefined")
+                      **verbose**))
+          (.log console "Assert:" ~assertion))
+        (if (not ~x)
+          (throw (Error. (str "Assert failed: "
+                              ~title
+                              "\n\nAssertion:\n\n"
+                              ~assertion
+                              "\n\nActual:\n\n"
+                              ~form
+                              "\n--------------\n"))))))))
 
 (install-macro
  'export
