@@ -1082,10 +1082,11 @@
    [x message]
    (let [title (or message "")
          assertion (pr-str x)
+         uri (:uri x)
          form (if (list? x) (second x) x)]
      `(do
-        (if (and (not (identical? (typeof **verbose**) "undefined")
-                      **verbose**))
+        (if (and (not (identical? (typeof **verbose**) "undefined"))
+                 **verbose**)
           (.log console "Assert:" ~assertion))
         (if (not ~x)
           (throw (Error. (str "Assert failed: "
@@ -1094,7 +1095,8 @@
                               ~assertion
                               "\n\nActual:\n\n"
                               ~form
-                              "\n--------------\n"))))))))
+                              "\n--------------\n")
+                         ~uri)))))))
 
 (install-macro
  'export
