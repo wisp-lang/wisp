@@ -77,3 +77,5 @@
         context (.-context session)]
     (set! context.exports {})
     session))
+
+(export start)

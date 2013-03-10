@@ -1,10 +1,5 @@
 # History
 
-## 0.6.1 - 2013/03/10
-
-  - Remove obsolete `exprots` form in favor of
-    implicit exports.
-
 ## 0.6.0 - 2013/03/09
 
   - Add support for `()` form as a sugar to `'()`

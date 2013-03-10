@@ -610,3 +610,7 @@
                          (name tag)
                          " in "
                          (str (keys **tag-table**)))))))
+
+
+
+(export read read-from-string push-back-reader)

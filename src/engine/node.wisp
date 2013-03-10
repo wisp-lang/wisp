@@ -21,3 +21,4 @@
                (transpile (.read-file-sync fs uri :utf8))
                uri)))
 
+(export transpile)

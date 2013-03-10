@@ -8,7 +8,7 @@
 (import [compile-program] "./compiler")
 (import [read-from-string] "./reader")
 
-(defn- exit
+(defn exit
   "Takes care of exiting node and printing erros if encounted"
   [error]
   (if error
@@ -17,7 +17,7 @@
       (.exit process 1))
     (.exit process 0)))
 
-(defn- compile
+(defn compile
   "Compiles lispy from input and writes it to output"
   [input output uri]
   (def source "")
@@ -55,3 +55,5 @@
     ;; Loading module as main one, same way as nodejs does it:
     ;; https://github.com/joyent/node/blob/master/lib/module.js#L489-493
     (Module._load (.resolve path (get process.argv 2)) null true)))
+
+(export main)
