@@ -451,9 +451,10 @@
 (defn desugar-meta
   [f]
   (cond
+   ;; keyword should go before string since it is a string.
+   (keyword? f) (dictionary (name f) true)
    (symbol? f) {:tag f}
    (string? f) {:tag f}
-   (keyword? f) (dictionary (name f) true)
    :else f))
 
 (defn wrapping-reader
