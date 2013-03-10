@@ -20,7 +20,7 @@ var updatePreview = function updatePreview(editor) {
         return output.setValue(transpile(code));
       } catch (error) {
         updatePreview.line = error.line;
-        return editor.setMarker(error.line || 0, str("<span title='", error.message, "'>●</span> %N%"));
+        return editor.setMarker(error.line || 0, "" + "<span title='" + error.message + "'>●</span> %N%");
       }})();
     }, 200);
   })();
