@@ -55,4 +55,4 @@ embed:
 	cat ./support/embed.wisp | $(WISP) > ./embed.js && mv ./embed.js ./support/embed.js
 
 browserify:
-	$(BROWSERIFY) ./support/embed.js > ./support/app.js
+	$(BROWSERIFY) --debug --exports require --entry ./support/embed.js > ./support/app.js
