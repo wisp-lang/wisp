@@ -4,6 +4,7 @@
 (import [read-from-string] "../reader")
 (import [compile-program] "../compiler")
 
+(set! global.**verbose** (<= 0 (.indexOf process.argv :--verbose)))
 
 (defn transpile
   [source uri]
