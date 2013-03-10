@@ -9,28 +9,15 @@
   "StringPushbackReader"
   [source uri index buffer]
   (set! this.source source)
-  (set! this.uri uri)
-  (set! this.index-atom index)
+  (set! this.index-atom (or index 0))
   (set! this.buffer-atom buffer)
-  (set! this.column-atom 1)
-  (set! this.line-atom 1)
-  this)
+  (with-meta this {:uri uri :column 1 :line 0}))
 
 
 (defn push-back-reader
   "Creates a StringPushbackReader from a given string"
   [source uri]
   (new PushbackReader source uri 0 ""))
-
-(defn line
-  "Return current line of the reader"
-  [reader]
-  (.-line-atom reader))
-
-(defn column
-  "Return current column of the reader"
-  [reader]
-  (.-column-atom reader))
 
 (defn peek-char
   "Returns next char from the Reader without reading it.
@@ -44,29 +31,29 @@
   "Returns the next char from the Reader, nil if the end
   of stream has been reached"
   [reader]
-  ;; Update line column depending on what has being read.
-  (if (identical? (peek-char reader) "\n")
-    (do (set! reader.line-atom (+ (line reader) 1))
-        (set! reader.column-atom 1))
-    (set! reader.column-atom (+ (column reader) 1)))
+  (let [position (meta reader)
+        index reader.index-atom
+        buffer  reader.buffer-atom]
+    ;; Update line column depending on what has being read.
+    (if (identical? (peek-char reader) "\n")
+      (do (set! position.line (inc (:line position)))
+          (set! position.colum 1))
+      (set! position.colum (inc (:column position))))
 
-  (if (empty? reader.buffer-atom)
-    (let [index reader.index-atom]
-      (set! reader.index-atom (+ index 1))
-      (aget reader.source index))
-    (let [buffer reader.buffer-atom]
-      (set! reader.buffer-atom (subs buffer 1))
-      (aget buffer 0))))
+    (if (empty? reader.buffer-atom)
+      (do (set! reader.index-atom (inc index))
+          (aget reader.source index))
+      (do (set! reader.buffer-atom (subs buffer 1))
+          (aget buffer 0)))))
 
 (defn unread-char
   "Push back a single character on to the stream"
   [reader ch]
-  (if ch
-    (do
-      (if (identical? ch "\n")
-        (set! reader.line-atom (- reader.line-atom 1))
-        (set! reader.column-atom (- reader.column-atom 1)))
-      (set! reader.buffer-atom (str ch reader.buffer-atom)))))
+  (let [position (meta reader)]
+    (if (identical? ch "\n")
+      (set! position.line (dec (:line position)))
+      (set! position.column (dec (:column position))))
+    (set! reader.buffer-atom (str ch reader.buffer-atom))))
 
 
 ;; Predicates
@@ -118,12 +105,13 @@
 
 (defn reader-error
   [reader message]
-  (let [error (SyntaxError (str message
-               "\n" "line:" (line reader)
-               "\n" "column:" (column reader)))]
-    (set! error.line (line reader))
-    (set! error.column (column reader))
-    (set! error.uri (get reader :uri))
+  (let [position (meta reader)
+        error (SyntaxError (str message
+               "\n" "line:" (:line position)
+               "\n" "column:" (:column position)))]
+    (set! error.line (:line position))
+    (set! error.column (:column position))
+    (set! error.uri (:uri position))
     (throw error)))
 
 (defn ^boolean macro-terminating? [ch]
@@ -324,10 +312,9 @@
 
 (defn read-list
   [reader _]
-  (let [line-number (line reader)
-        column-number (column reader)
+  (let [from (meta reader)
         items (read-delimited-list ")" reader true)]
-    (with-meta (apply list items) {:line line-number :column column-number })))
+    (with-meta (apply list items) {:from from :to (meta reader)})))
 
 (defn read-comment
   [reader _]
@@ -344,28 +331,23 @@
 
 (defn read-vector
   [reader]
-  (let [line-number (line reader)
-        column-number (column reader)
+  (let [from (meta reader)
         items (read-delimited-list "]" reader true)]
-    (with-meta items {:line line-number :column column-number })))
+    (with-meta items {:from from :to (meta reader)})))
 
 (defn read-map
   [reader]
-  (let [line-number (line reader)
-        column-number (column reader)
+  (let [from (meta reader)
         items (read-delimited-list "}" reader true)]
     (if (odd? (count items))
       (reader-error reader "Map literal must contain an even number of forms")
-      (with-meta (apply dictionary items)
-                 {:line line-number :column column-number}))))
+      (with-meta (apply dictionary items) {:from from :to (meta reader)}))))
 
 (defn read-set
   [reader _]
-  (let [line-number (line reader)
-        column-number (column reader)
+  (let [from (meta reader)
         items (read-delimited-list "}" reader true)]
-    (with-meta (concat ['set] items)
-               {:line line-number :column column-number })))
+    (with-meta (concat ['set] items) {:from from :to (meta reader)})))
 
 (defn read-number
   [reader initch]
@@ -469,16 +451,13 @@
 
 (defn read-meta
   [reader _]
-  (let [line-number (line reader)
-        column-number (line column)
+  (let [from (meta reader)
         metadata (desugar-meta (read reader true nil true))]
     (if (not (object? metadata))
       (reader-error reader "Metadata must be Symbol, Keyword, String or Map"))
     (let [form (read reader true nil true)]
       (if (object? form)
-        (with-meta form (conj metadata
-                              (meta form)
-                              {:line line-number :column column-number}))
+        (with-meta form (conj metadata (meta form) {:from from :to (meta reader)}))
         ;(reader-error
         ; reader "Metadata can only be applied to IWithMetas")
 
