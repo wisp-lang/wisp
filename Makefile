@@ -7,7 +7,7 @@ ifdef verbose
 endif
 
 ifdef current
-	WISP = WIPS_CURRENT
+	WISP = $(WIPS_CURRENT)
 else
 	WISP = ./node_modules/wisp/bin/wisp.js
 endif
