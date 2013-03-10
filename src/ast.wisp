@@ -16,7 +16,7 @@
 
 (def **ns-separator** "\u2044")
 
-(defn Symbol
+(defn- Symbol
   "Type for the symbols"
   [namespace name]
   (set! (.-namespace this) namespace)
@@ -58,7 +58,7 @@
         (nil? ns) (str "\uA789" id)
         :else (str "\uA789" ns **ns-separator** id)))
 
-(defn keyword-name
+(defn- keyword-name
   [value]
   (last (split (subs value 1) **ns-separator**)))
 
@@ -70,7 +70,7 @@
         (string? value) value
         :else (throw (TypeError. (str "Doesn't support name: " value)))))
 
-(defn keyword-namespace
+(defn- keyword-namespace
   [x]
   (let [parts (split (subs x 1) **ns-separator**)]
     (if (> (count parts) 1) (get parts 0))))
@@ -112,7 +112,7 @@
   [form]
   (and (list? form) (= (first form) 'syntax-quote)))
 
-(defn normalize [n len]
+(defn- normalize [n len]
   (loop [ns (str n)]
     (if (< (count ns) len)
       (recur (str "0" ns))
@@ -158,13 +158,3 @@
         (sequential? x) (str "(" (join " " (map pr-str (vec x))) ")")
         (re-pattern? x) (str "#\"" (join "\\/" (split (.-source x) "/")) "\"")
         :else (str x)))
-
-(export meta with-meta
-        pr-str
-        symbol? symbol
-        keyword? keyword
-        gensym name namespace
-        unquote?
-        unquote-splicing?
-        quote?
-        syntax-quote?)

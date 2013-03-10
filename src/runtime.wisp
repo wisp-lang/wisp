@@ -217,7 +217,7 @@
    [string start end]
    (.substring string start end))
 
-(defn ^boolean pattern-equal?
+(defn- ^boolean pattern-equal?
   [x y]
   (and (re-pattern? x)
        (re-pattern? y)
@@ -226,14 +226,14 @@
        (identical? (.-multiline x) (.-multiline y))
        (identical? (.-ignoreCase x) (.-ignoreCase y))))
 
-(defn ^boolean date-equal?
+(defn- ^boolean date-equal?
   [x y]
   (and (date? x)
        (date? y)
        (identical? (Number x) (Number y))))
 
 
-(defn ^boolean dictionary-equal?
+(defn- ^boolean dictionary-equal?
   [x y]
   (and (object? x)
        (object? y)
@@ -252,7 +252,7 @@
                     false)
                   true))))))
 
-(defn ^boolean vector-equal?
+(defn- ^boolean vector-equal?
   [x y]
   (and (vector? x)
        (vector? y)
@@ -501,11 +501,3 @@
               (inc index)
               count)
        value))))
-
-
-(export dictionary? dictionary merge odd? even? vector? string? number? fn? date?
-        object? nil? boolean? true? false? map-dictionary contains-vector? keys
-        vals re-pattern re-find re-matches re-pattern? inc dec str char
-        key-values subs int
-        and or
-        = == > < >= <= + - * /)

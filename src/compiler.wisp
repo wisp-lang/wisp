@@ -1099,25 +1099,6 @@
                          ~uri)))))))
 
 (install-macro
- 'export
- (fn
-   "Helper macro for exporting multiple / single value"
-   [& names]
-   (if (empty? names)
-     nil
-     (if (empty? (rest names))
-       `(set! module.exports ~(first names))
-       (loop [form '() exports names]
-         (if (empty? exports)
-           `(do* ~@form)
-           (recur (cons `(set!
-                          (~(symbol (str ".-" (name (first exports))))
-                            exports)
-                          ~(first exports))
-                        form)
-                  (rest exports))))))))
-
-(install-macro
  'import
  (fn
    "Helper macro for importing node modules"
@@ -1125,23 +1106,12 @@
    (if (nil? path)
      `(require ~imports)
      (if (symbol? imports)
-       `(def ~imports (require ~path))
+       `(def ~(with-meta imports {:private true}) (require ~path))
        (loop [form '() names imports]
          (if (empty? names)
            `(do* ~@form)
            (let [alias (first names)
                  id (symbol (str ".-" (name alias)))]
-             (recur (cons `(def ~alias
+             (recur (cons `(def ~(with-meta alias {:private true})
                              (~id (require ~path))) form)
                     (rest names)))))))))
-;; TODO:
-;; - alength
-;; - defn with metadata in front of name
-;; - declare
-
-(export
-  self-evaluating?
-  compile
-  compile-program
-  macroexpand
-  macroexpand-1)

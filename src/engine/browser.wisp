@@ -71,5 +71,3 @@
   (if window.add-event-listener
     (.add-event-listener window :DOMContentLoaded run-scripts false)
     (.attach-event window :onload run-scripts)))
-
-(export transpile evaluate run)
