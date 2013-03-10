@@ -306,8 +306,8 @@
 
 (defn read-list
   [reader _]
-  (let [items (read-delimited-list ")" reader true)]
-    (apply list items)))
+  (let [form (read-delimited-list ")" reader true)]
+    (with-meta (apply list form) (meta form))))
 
 (defn read-comment
   [reader _]
@@ -328,15 +328,15 @@
 
 (defn read-map
   [reader]
-  (let [items (read-delimited-list "}" reader true)]
-    (if (odd? (count items))
+  (let [form (read-delimited-list "}" reader true)]
+    (if (odd? (count form))
       (reader-error reader "Map literal must contain an even number of forms")
-      (apply dictionary items))))
+      (with-meta (apply dictionary form) (meta form)))))
 
 (defn read-set
   [reader _]
-  (let [items (read-delimited-list "}" reader true)]
-    (concat ['set] items)))
+  (let [form (read-delimited-list "}" reader true)]
+    (with-meta (concat ['set] form) (meta form))))
 
 (defn read-number
   [reader initch]
