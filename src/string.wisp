@@ -108,6 +108,3 @@
   (or (nil? string)
       (empty? string)
       (re-matches **SPACES** string)))
-
-(export split join lower-case upper-case capitalize
-        replace trim triml trimr blank?)

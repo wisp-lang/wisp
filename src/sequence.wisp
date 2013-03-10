@@ -3,7 +3,7 @@
 
 ;; Implementation of list
 
-(defn List
+(defn- List
   "List type"
   [head tail]
   (set! this.head head)
@@ -35,13 +35,13 @@
                           (first list))))))
              (rest list))))))
 
-(defn lazy-seq-value [lazy-seq]
+(defn- lazy-seq-value [lazy-seq]
   (if (not (.-realized lazy-seq))
     (and (set! (.-realized lazy-seq) true)
          (set! (.-x lazy-seq) (.x lazy-seq)))
     (.-x lazy-seq)))
 
-(defn LazySeq [realized x]
+(defn- LazySeq [realized x]
   (set! (.-realized this) (or realized false))
   (set! (.-x this) x)
   this)
@@ -84,7 +84,7 @@
   [head tail]
   (new List head tail))
 
-(defn reverse-list
+(defn- reverse-list
   [sequence]
   (loop [items []
            source sequence]
@@ -120,7 +120,7 @@
         (nil? sequence) '()
         :else (map f (seq sequence))))
 
-(defn map-list
+(defn- map-list
   "Like map but optimized for lists"
   [f sequence]
   (loop [result '()
@@ -138,7 +138,7 @@
         (nil? sequence) '()
         :else (filter f? (seq sequence))))
 
-(defn filter-list
+(defn- filter-list
   "Like filter but for lists"
   [f? sequence]
   (loop [result '()
@@ -164,7 +164,7 @@
                             (reduce-list f (first sequence) (rest sequence)))
           :else (reduce f initial (seq sequence)))))
 
-(defn reduce-list
+(defn- reduce-list
   [f initial sequence]
   (loop [result initial
          items sequence]
@@ -220,7 +220,7 @@
         (lazy-seq? sequence) (rest (lazy-seq-value sequence))
         :else (rest (seq sequence))))
 
-(defn last-of-list
+(defn- last-of-list
   [list]
   (loop [item (first list)
          items (rest list)]
@@ -260,12 +260,12 @@
         (lazy-seq? sequence) (take n (lazy-seq-value sequence))
         :else (take n (seq sequence))))
 
-(defn take-from-vector
+(defn- take-from-vector
   "Like take but optimized for vectors"
   [n vector]
   (.slice vector 0 n))
 
-(defn take-from-list
+(defn- take-from-list
   "Like take but for lists"
   [n sequence]
   (loop [taken '()
@@ -280,7 +280,7 @@
 
 
 
-(defn drop-from-list [n sequence]
+(defn- drop-from-list [n sequence]
   (loop [left n
          items sequence]
     (if (or (< left 1) (empty? items))
@@ -299,7 +299,7 @@
           :else (drop n (seq sequence)))))
 
 
-(defn conj-list
+(defn- conj-list
   [sequence items]
   (reduce (fn [result item] (cons item result)) sequence items))
 
@@ -334,7 +334,7 @@
         (dictionary? sequence) (key-values sequence)
         :default (throw (TypeError (str "Can not seq " sequence)))))
 
-(defn list->vector [source]
+(defn- list->vector [source]
   (loop [result []
          list source]
     (if (empty? list)
@@ -363,13 +363,3 @@
           (list? items) (apply list (.sort (vec items) compare))
           (dictionary? items) (.sort (seq items) compare)
           :else (sort f (seq items)))))
-
-(export cons conj list list? seq vec
-        sequential?
-        lazy-seq
-        empty? count
-        first second third rest last butlast
-        take drop
-        concat reverse
-        sort
-        map filter reduce)
