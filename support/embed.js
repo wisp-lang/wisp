@@ -20,11 +20,12 @@ var updatePreview = function updatePreview(editor) {
         return output.setValue(transpile(code));
       } catch (error) {
         updatePreview.line = error.line;
-        return editor.setMarker(error.line || 0, str("<span title='", error.message, "'>●</span> %N%"));
+        return editor.setMarker(error.line || 0, "" + "<span title='" + error.message + "'>●</span> %N%");
       }})();
     }, 200);
   })();
 };
+exports.updatePreview = updatePreview;
 
 var input = CodeMirror(document.getElementById("input"), {
   "lineNumbers": true,
@@ -52,8 +53,10 @@ var input = CodeMirror(document.getElementById("input"), {
       "50%";
   }
 });
+exports.input = input;
 
 var hlLine = input.setLineClass(0, void(0), "activeline");
+exports.hlLine = hlLine;
 
 var output = CodeMirror(document.getElementById("output"), {
   "lineNumbers": true,
@@ -63,5 +66,6 @@ var output = CodeMirror(document.getElementById("output"), {
   "theme": "ambiance",
   "readOnly": true
 });
+exports.output = output;
 
 setTimeout(updatePreview, 1000, input)
