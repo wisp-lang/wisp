@@ -1,5 +1,9 @@
 # History
 
+## 0.6.3 - 2013/03/10
+
+  - Fix bugs introduced by 0.6.1 and re-release.
+
 ## 0.6.2 - 2013/03/10
 
   - Revert back to 0.6.0 as builds were broken.
