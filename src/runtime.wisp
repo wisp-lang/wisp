@@ -267,7 +267,7 @@
               false)
           true))))
 
-(defn ^boolean equivalent?
+(defn- ^boolean equivalent?
   "Equality. Returns true if x equals y, false if not. Compares
   numbers and collections in a type-independent manner. Clojure's
   immutable data structures define -equiv (and thus =) as a value,
