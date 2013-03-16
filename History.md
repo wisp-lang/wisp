@@ -3,6 +3,8 @@
 ## 0.6.4 - 2013/03/16
 
   - Fix regression in REPL.
+  - Change reader such that no unread is necessary.
+  - Fix metadata mixup in multiline forms.
 
 ## 0.6.3 - 2013/03/10
 

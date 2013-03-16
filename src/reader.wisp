@@ -37,15 +37,6 @@
       (set! (:column reader) (inc (:column reader))))
     ch))
 
-(defn unread-char
-  "Push back a single character on to the stream"
-  [reader ch]
-  (if (newline? ch)
-    (do (set! (:line reader) (dec (:line reader)))
-        (set! (:column reader) (count (aget (:lines reader)
-                                            (:line reader)))))
-    (set! (:column reader) (dec (:column reader)))))
-
 ;; Predicates
 
 (defn ^boolean newline?
@@ -254,10 +245,10 @@
   "Read until first character that doesn't match pred, returning
   char."
   [predicate reader]
-  (loop [ch (read-char reader)]
-    (if (predicate ch)
+  (loop [_ nil]
+    (if (predicate (peek-char reader))
       (recur (read-char reader))
-      ch)))
+      (peek-char reader))))
 
 
 ;; TODO: Complete implementation
@@ -268,19 +259,17 @@
     (let [ch (read-past whitespace? reader)]
       (if (not ch) (reader-error reader :EOF))
       (if (identical? delim ch)
-        form
-        (let [macrofn (macros ch)]
-          (if macrofn
-            (let [mret (macrofn reader ch)]
-              (recur (if (identical? mret reader)
+        (do (read-char reader) form)
+        (let [macro (macros ch)]
+          (if macro
+            (let [result (macro reader (read-char reader))]
+              (recur (if (identical? result reader)
                        form
-                       (conj form mret))))
-            (do
-              (unread-char reader ch)
-              (let [o (read reader true nil recursive?)]
-                (recur (if (identical? o reader)
-                         form
-                         (conj form o)))))))))))
+                       (conj form result))))
+            (let [o (read reader true nil recursive?)]
+              (recur (if (identical? o reader)
+                       form
+                       (conj form o))))))))))
 
 ;; data structure readers
 
