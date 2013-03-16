@@ -2,7 +2,7 @@
 (import path "path")
 (import [Module] "module")
 
-(import repl "./repl")
+(import [start] "./repl")
 (import [str] "./runtime")
 (import [transpile] "./engine/node")
 (import [compile-program] "./compiler")
@@ -50,7 +50,7 @@
          (if (identical? process.stdin.bytes-read 0)
            (do
              (.remove-all-listeners process.stdin :data)
-             (repl))))
+             (start))))
        20))
     ;; Loading module as main one, same way as nodejs does it:
     ;; https://github.com/joyent/node/blob/master/lib/module.js#L489-493

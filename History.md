@@ -1,5 +1,9 @@
 # History
 
+## 0.6.4 - 2013/03/16
+
+  - Fix regression in REPL.
+
 ## 0.6.3 - 2013/03/10
 
   - Fix bugs introduced by 0.6.1 and re-release.
