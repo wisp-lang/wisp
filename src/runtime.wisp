@@ -1,5 +1,9 @@
 ;; Define alias for the clojures alength.
 
+(defn identity
+  "Returns its argument."
+  [x] x)
+
 (defn ^boolean odd? [n]
   (identical? (mod n 2) 1))
 
