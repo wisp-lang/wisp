@@ -334,6 +334,10 @@
         (dictionary? sequence) (key-values sequence)
         :default (throw (TypeError (str "Can not seq " sequence)))))
 
+(defn seq? [sequence]
+  (or (list? sequence)
+      (lazy-seq? sequence)))
+
 (defn- list->vector [source]
   (loop [result []
          list source]
