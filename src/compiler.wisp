@@ -230,18 +230,15 @@
 (defn compile-program
   "compiles all expansions"
   [forms]
-  (loop [result []
-         expressions forms]
-    (if (empty? expressions)
-      (join ";\n\n" result)
-      (let [expression (first expressions)
-            form (macroexpand expression)
-            expanded (if (list? form)
-                       (with-meta form (conj {:top true}
-                                             (meta form)))
-                       form)]
-        (recur (conj result (compile expanded))
-               (rest expressions))))))
+  (reduce (fn [result form]
+            (str result
+                 (if (empty? result) "" ";\n\n")
+                 (compile (if (list? form)
+                            (with-meta (macroexpand form)
+                              (conj {:top true} (meta form)))
+                            form))))
+          ""
+          forms))
 
 (defn macroexpand-1
   "If form represents a macro form, returns its expansion,
