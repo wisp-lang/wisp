@@ -8,6 +8,10 @@
          map-dictionary string? number? vector? boolean? subs re-find
          true? false? nil? re-pattern? inc dec str char int = ==] "./runtime")
 (import [split join upper-case replace] "./string")
+(import [write-reference write-keyword-reference
+         write-keyword write-symbol write-nil
+         write-comment
+         write-number write-string write-number write-boolean] "./backend/javascript/writer")
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
@@ -158,18 +162,17 @@
 
 ;; compiler
 
-
 (defn compile-object
   ""
   [form quoted?]
   ;; TODO: Add regexp to the list.
   (cond
-    (keyword? form) (compile-keyword form)
-    (symbol? form) (compile-symbol form)
-    (number? form) (compile-number form)
-    (string? form) (compile-string form)
-    (boolean? form) (compile-boolean form)
-    (nil? form) (compile-nil form)
+    (keyword? form) (write-keyword form)
+    (symbol? form) (write-symbol form)
+    (number? form) (write-number form)
+    (string? form) (write-string form)
+    (boolean? form) (write-boolean form)
+    (nil? form) (write-nil form)
     (re-pattern? form) (compile-re-pattern form)
     (vector? form) (compile (apply-form 'vector
                                         (apply list form)
@@ -181,61 +184,6 @@
                         (if quoted?
                           (map-dictionary form (fn [x] (list 'quote x)))
                           form))))
-
-(defn compile-reference
-  "Translates references from clojure convention to JS:
-
-  **macros**      __macros__
-  list->vector    listToVector
-  set!            set
-  foo_bar         foo_bar
-  number?         isNumber
-  create-server   createServer"
-  [form]
-  (def id (name form))
-  (set! id (cond (identical? id  "*") "multiply"
-                 (identical? id "/") "divide"
-                 (identical? id "+") "sum"
-                 (identical? id "-") "subtract"
-                 (identical? id "=") "equal?"
-                 (identical? id "==") "strict-equal?"
-                 (identical? id "<=") "not-greater-than"
-                 (identical? id ">=") "not-less-than"
-                 (identical? id ">") "greater-than"
-                 (identical? id "<") "less-than"
-                 :else id))
-
-  ;; **macros** ->  __macros__
-  (set! id (join "_" (split id "*")))
-  ;; list->vector ->  listToVector
-  (set! id (join "-to-" (split id "->")))
-  ;; set! ->  set
-  (set! id (join (split id "!")))
-  (set! id (join "$" (split id "%")))
-  ;; foo= -> fooEqual
-  ;(set! id (join "-equal-" (split id "="))
-  ;; foo+bar -> fooPlusBar
-  (set! id (join "-plus-" (split id "+")))
-  (set! id (join "-and-" (split id "&")))
-  ;; number? -> isNumber
-  (set! id (if (identical? (last id) "?")
-             (str "is-" (subs id 0 (dec (count id))))
-             id))
-  ;; create-server -> createServer
-  (set! id (reduce
-            (fn [result key]
-              (str result
-                   (if (and (not (empty? result))
-                            (not (empty? key)))
-                     (str (upper-case (get key 0)) (subs key 1))
-                     key)))
-            ""
-            (split id "-")))
-  id)
-
-(defn compile-keyword-reference
-  [form]
-  (str "\"" (name form) "\""))
 
 (defn compile-syntax-quoted-vector
   [form]
@@ -259,8 +207,8 @@
   [form]
   (cond
    (self-evaluating? form) (compile-object form)
-   (symbol? form) (compile-reference form)
-   (keyword? form) (compile-keyword-reference form)
+   (symbol? form) (write-reference form)
+   (keyword? form) (write-keyword-reference form)
    (vector? form) (compile-object form)
    (dictionary? form) (compile-object form)
    (list? form)
@@ -361,9 +309,6 @@
          (rest values))
          (str code (first parts))))))
 
-(defn compile-comment
-  [form]
-  (compile-template (list "//~{}\n" (first form))))
 
 (defn compile-def
   "Creates and interns or locates a global var with the name of symbol
@@ -894,23 +839,8 @@
 (install-special 'not compile-not)
 (install-special 'loop compile-loop)
 (install-special 'raw* compile-raw)
-(install-special 'comment compile-comment)
+(install-special 'comment write-comment)
 
-
-(defn compile-keyword [form] (str "\"" "\uA789" (name form) "\""))
-(defn compile-symbol [form]
-  (compile (list 'symbol (namespace form) (name form))))
-(defn compile-nil [form] "void(0)")
-(defn compile-number [form] form)
-(defn compile-boolean [form] (if (true? form) "true" "false"))
-(defn compile-string
-  [form]
-  (set! form (replace form (RegExp "\\\\" "g") "\\\\"))
-  (set! form (replace form (RegExp "\n" "g") "\\n"))
-  (set! form (replace form (RegExp "\r" "g") "\\r"))
-  (set! form (replace form (RegExp "\t" "g") "\\t"))
-  (set! form (replace form (RegExp "\"" "g") "\\\""))
-  (str "\"" form "\""))
 
 (defn compile-re-pattern
   [form]
