@@ -260,6 +260,40 @@
         (lazy-seq? sequence) (take n (lazy-seq-value sequence))
         :else (take n (seq sequence))))
 
+(defn- take-vector-while
+  [predicate vector]
+  (loop [result []
+         tail vector
+         head (first vector)]
+    (if (and (not (empty? tail))
+             (predicate head))
+      (recur (conj result head)
+             (rest tail)
+             (first tail))
+      result)))
+
+(defn- take-list-while
+  [predicate items]
+  (loop [result []
+         tail items
+         head (first items)]
+    (if (and (not (empty? tail))
+             (predicate? head))
+      (recur (conj result head)
+             (rest tail)
+             (first tail))
+      (apply list result))))
+
+
+(defn take-while
+  [predicate sequence]
+  (cond (nil? sequence) '()
+        (vector? sequence) (take-vector-while predicate sequence)
+        (list? sequence) (take-vector-while predicate sequence)
+        :else (take-while predicate
+                          (lazy-seq-value sequence))))
+
+
 (defn- take-from-vector
   "Like take but optimized for vectors"
   [n vector]
