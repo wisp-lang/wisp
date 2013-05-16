@@ -1,9 +1,10 @@
 (import [list list? count empty? first second third rest map vec
-         cons conj rest concat last butlast sort] "./sequence")
+         cons conj rest concat last butlast sort lazy-seq] "./sequence")
 (import [odd? dictionary keys nil? inc dec vector? string?
          number? boolean? object? dictionary?
          re-pattern re-matches re-find str subs char vals = ==] "./runtime")
-(import [symbol? symbol keyword? keyword meta with-meta name] "./ast")
+(import [symbol? symbol keyword? keyword meta with-meta name
+         gensym] "./ast")
 (import [split join] "./string")
 
 (defn push-back-reader
@@ -562,6 +563,19 @@
       (if (identical? form reader)
         (recur eof-is-error sentinel is-recursive)
         form))))
+
+(defn read*
+  [source uri]
+  (let [reader (push-back-reader source uri)
+        eof (gensym)]
+    (loop [forms []
+           form (read reader false eof false)]
+      (if (identical? form eof)
+        forms
+        (recur (conj forms form)
+               (read reader false eof false))))))
+
+
 
 (defn read-from-string
   "Reads one object from the string s"
