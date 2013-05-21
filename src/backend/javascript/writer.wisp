@@ -59,18 +59,18 @@
 (defn write-keyword-reference
   [form]
   (str "\"" (name form) "\""))
-    
+
 (defn write-keyword [form] (str "\"" "\uA789" (name form) "\""))
-  
+
 (defn write-symbol [form]
   (write (list 'symbol (namespace form) (name form))))
 
 (defn write-nil [form] "void(0)")
-  
+
 (defn write-number [form] form)
-  
+
 (defn write-boolean [form] (if (true? form) "true" "false"))
-  
+
 (defn write-string
   [form]
   (set! form (replace form (RegExp "\\\\" "g") "\\\\"))

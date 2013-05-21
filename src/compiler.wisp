@@ -227,6 +227,19 @@
                         (str "operator is not a procedure: " head)))
               (compile-invoke form)))))))
 
+(defn compile*
+  "compiles all forms"
+  [forms]
+  (reduce (fn [result form]
+            (str result
+                 (if (empty? result) "" ";\n\n")
+                 (compile (if (list? form)
+                            (with-meta (macroexpand form)
+                              (conj {:top true} (meta form)))
+                            form))))
+          ""
+          forms))
+
 (defn compile-program
   "compiles all expansions"
   [forms]
