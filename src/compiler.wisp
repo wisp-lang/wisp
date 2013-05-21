@@ -298,11 +298,16 @@
 
 ;; backend specific compiler hooks
 
+(def *line-break-pattern* #"(?m)\n(?=[^\n])")
+(defn indent
+  [code indentation]
+  (join indentation (split code *line-break-pattern*)))
+
 (defn compile-template
   "Compiles given template"
   [form]
   (let [indent-pattern #"\n *$"
-        line-break-patter (RegExp "\n" "g")
+
         get-indentation (fn [code] (or (re-find indent-pattern code) "\n"))]
     (loop [code ""
            parts (split (first form) "~{}")
@@ -312,13 +317,11 @@
          (str
           code
           (first parts)
-          (replace (str "" (first values))
-                    line-break-patter
-                    (get-indentation (first parts))))
+          (indent (str (first values))
+                  (get-indentation (first parts))))
          (rest parts)
          (rest values))
-         (str code (first parts))))))
-
+        (str code (first parts))))))
 
 (defn compile-def
   "Creates and interns or locates a global var with the name of symbol

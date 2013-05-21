@@ -1,5 +1,9 @@
 # History
 
+## 0.6.6
+
+  - Fix indentation in compile output to avoid trailing white-spaces.
+
 ## 0.6.5
 
   - Implement `identity` function.

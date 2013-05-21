@@ -88,6 +88,7 @@
   return a;
 }") "function with all variadic arguments")
 
+
 (assert (identical? (transpile '(fn
                                   ([] 0)
                                   ([x] x)))
@@ -97,7 +98,7 @@
       return 0;
     case 1:
       return x;
-    
+
     default:
       (function() { throw Error(\"Invalid arity\"); })()
   };
@@ -121,7 +122,7 @@
       return x;
     case 2:
       return x + y;
-    
+
     default:
       var rest = Array.prototype.slice.call(arguments, 1);
       return reduce(rest, sum, x);
