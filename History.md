@@ -3,6 +3,8 @@
 ## 0.6.6
 
   - Fix indentation in compile output to avoid trailing white-spaces.
+  - Fix compile output for `get` special form to allow `nil` as first
+    argument and add fallback argument support.
 
 ## 0.6.5
 

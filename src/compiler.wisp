@@ -219,7 +219,7 @@
        (syntax-quote? form) (compile-syntax-quoted (second form))
        (special? head) (execute-special head form)
        ;; Compile keyword invoke as a property access.
-       (keyword? head) (compile `(get (or ~(second form) 0) ~head))
+       (keyword? head) (compile `(get ~(second form) ~head))
        :else (do
               (if (not (or (symbol? head) (list? head)))
                 (throw (compiler-error
@@ -738,14 +738,24 @@
   [form]
   (compile-template (list "new ~{}" (compile form))))
 
-(defn compile-compound-accessor
+(defn compile-aget
   "Compiles compound property accessor"
   [form]
   (let [target (macroexpand (first form))
         attribute (macroexpand (second form))
+        not-found (third form)
         template (if (list? target) "(~{})[~{}]" "~{}[~{}]")]
-    (compile-template
-     (list template (compile target) (compile attribute)))))
+    (if not-found
+      (compile (list 'or
+                     (list 'get (first form) (second form))
+                     (macroexpand not-found)))
+      (compile-template
+       (list template (compile target) (compile attribute))))))
+
+(defn compile-get
+  [form]
+  (compile-aget (cons (list 'or (first form) 0)
+                      (rest form))))
 
 (defn compile-instance
   "Evaluates x and tests if it is an instance of the class
@@ -835,8 +845,8 @@
   (first form))
 
 (install-special 'set! compile-set)
-(install-special 'get compile-compound-accessor)
-(install-special 'aget compile-compound-accessor)
+(install-special 'get compile-get)
+(install-special 'aget compile-aget)
 (install-special 'def compile-def)
 (install-special 'if compile-if-else)
 (install-special 'do compile-do)

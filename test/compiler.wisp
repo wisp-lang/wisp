@@ -439,15 +439,15 @@
 (.log console "compiles compound accessor")
 
 
-(assert (identical? (transpile '(get a b)) "a[b]")
+(assert (identical? (transpile '(get a b)) "(a || 0)[b]")
         "(get a b) => a[b]")
 (assert (identical? (transpile '(aget arguments 1)) "arguments[1]")
-        "(aget arguments 1) => arguments[1]")
+        "(aget arguments 1) => (arguments || 0)[1]")
 (assert (identical? (transpile '(get (a b) (get c d)))
-                    "(a(b))[c[d]]")
-        "(get (a b) (get c d)) => a(b)[c[d]]")
+                    "((a(b)) || 0)[(c || 0)[d]]")
+        "(get (a b) (get c d)) => ((a(b)) || 0)[(c || 0)[d]]")
 (assert (identical? (transpile '(get (or t1 t2) p))
-                    "(t1 || t2)[p]"))
+                    "((t1 || t2) || 0)[p]"))
 
 (.log console "compiles instance?")
 
