@@ -1,5 +1,15 @@
 # History
 
+## 0.6.5
+
+  - Implement `identity` function.
+  - Factor out parts of `compiler` into backend specific `writer`.
+  - Implement `seq?` function.
+  - Implement `take-while` function.
+  - Various code maintainibily improvements.
+  - Add `read*` function for reading out multiple forms.
+  - Add `compile*` function for complining multiple forms.
+
 ## 0.6.4
 
   - Fix regression in REPL.
