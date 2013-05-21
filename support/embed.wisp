@@ -1,8 +1,8 @@
-(import [rest] "../lib/sequence")
-(import [str] "../lib/runtime")
-(import [transpile] "../lib/engine/browser")
-(import [read-from-string] "../lib/reader")
-(import [compile-program] "../lib/compiler")
+(import [rest] "wisp/sequence")
+(import [str] "wisp/runtime")
+(import [transpile] "wisp/engine/browser")
+(import [read-from-string] "wisp/reader")
+(import [compile-program] "wisp/compiler")
 
 (defn update-preview
   "updates preview"

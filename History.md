@@ -5,6 +5,8 @@
   - Fix indentation in compile output to avoid trailing white-spaces.
   - Fix compile output for `get` special form to allow `nil` as first
     argument and add fallback argument support.
+  - Stop tracking compiled JS in git.
+  - Change file layout to allow loading of core modules like: `wisp/runtime`.
 
 ## 0.6.5
 

@@ -21,52 +21,60 @@ test: test1
 test1:
 	$(WIPS_CURRENT) ./test/test.wisp $(FLAGS)
 
+clean:
+	rm -rf engine
+	rm -rf backend
+	touch null.js
+	rm *.js
+
 repl:
-	mkdir -p ./lib/
-	cat ./src/repl.wisp | $(WISP) > ./repl.js && mv ./repl.js ./lib/repl.js
+	cat ./src/repl.wisp | $(WISP) > ./repl.js
 
 reader:
-	mkdir -p ./lib/
-	cat ./src/reader.wisp | $(WISP) > ./reader.js && mv ./reader.js ./lib/reader.js
+	cat ./src/reader.wisp | $(WISP) > ./reader.js
 
 compiler:
-	mkdir -p ./lib/
-	cat ./src/compiler.wisp | $(WISP) > ./compiler.js && mv ./compiler.js ./lib/compiler.js
+	cat ./src/compiler.wisp | $(WISP) > ./compiler.js
 
 writer:
-	mkdir -p ./lib/backend/javascript/
-	cat ./src/backend/javascript/writer.wisp | $(WISP) > ./writer.js && mv ./writer.js ./lib/backend/javascript/writer.js
+	mkdir -p ./backend/javascript/
+	cat ./src/backend/javascript/writer.wisp | $(WISP) > ./backend/javascript/writer.js
 
 runtime:
-	mkdir -p ./lib/
-	cat ./src/runtime.wisp | $(WISP) > ./runtime.js && mv ./runtime.js ./lib/runtime.js
+	cat ./src/runtime.wisp | $(WISP) > ./runtime.js
 
 sequence:
-	mkdir -p ./lib/
-	cat ./src/sequence.wisp | $(WISP) > ./sequence.js && mv ./sequence.js ./lib/sequence.js
+	cat ./src/sequence.wisp | $(WISP) > ./sequence.js
 
 string:
-	mkdir -p ./lib/
-	cat ./src/string.wisp | $(WISP) > ./string.js && mv ./string.js ./lib/string.js
+	cat ./src/string.wisp | $(WISP) > ./string.js
 
 ast:
-	mkdir -p ./lib/
-	cat ./src/ast.wisp | $(WISP) > ./ast.js && mv ./ast.js ./lib/ast.js
+	cat ./src/ast.wisp | $(WISP) > ./ast.js
 
 wisp:
-	mkdir -p ./lib/
-	cat ./src/wisp.wisp | $(WISP) > ./wisp.js && mv ./wisp.js ./lib/wisp.js
+	cat ./src/wisp.wisp | $(WISP) > ./wisp.js
 
 node-engine:
-	mkdir -p ./lib/engine/
-	cat ./src/engine/node.wisp | $(WISP) > ./node.js && mv ./node.js ./lib/engine/node.js
+	mkdir -p ./engine/
+	cat ./src/engine/node.wisp | $(WISP) > ./engine/node.js
 
 browser-engine:
-	mkdir -p ./lib/engine/
-	cat ./src/engine/browser.wisp | $(WISP) > ./browser.js && mv ./browser.js ./lib/engine/browser.js
+	mkdir -p ./engine/
+	cat ./src/engine/browser.wisp | $(WISP) > ./engine/browser.js
 
 embed:
 	cat ./support/embed.wisp | $(WISP) > ./embed.js && mv ./embed.js ./support/embed.js
 
 browserify:
-	$(BROWSERIFY) --debug --exports require --entry ./support/embed.js > ./support/app.js
+	$(BROWSERIFY) --debug \
+                --require ./sequence:wisp/sequence \
+                --require ./string:wisp/string \
+                --require ./reader:wisp/reader \
+                --require ./ast:wisp/ast \
+                --require ./reader:wisp/reader \
+                --require ./compiler:wisp/compiler \
+                --require ./runtime:wisp/runtime \
+                --require ./engine/browser:wisp/engine/browser \
+                --exports require \
+                --entry ./support/embed.js > ./support/app.js
