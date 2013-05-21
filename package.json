@@ -35,6 +35,6 @@
   "scripts": {
     "prepublish": "make all",
     "postpublish": "sleep 10 & npm install",
-    "test": "make test"
+    "test": "make all && make test"
   }
 }
