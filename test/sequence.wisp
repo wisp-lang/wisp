@@ -1,7 +1,7 @@
 (import [cons conj list list? seq vec
          empty? count
          first second third rest last butlast
-         take drop
+         take drop repeat
          concat reverse sort
          map filter reduce] "../src/sequence")
 (import [str inc dec even? odd? vals =] "../src/runtime")
@@ -331,3 +331,8 @@
 (assert (= '(4 3 2 1) (sort (fn [a b] (> a b)) '(3 1 2 4))))
 (assert (= '("dear" "frient" "hello" "my")
             (sort '("hello" "my" "dear" "frient"))))
+
+(assert (= [7 7 7 7] (repeat 4 7)))
+(assert (= [] (repeat 0 7)))
+(assert (= [] (repeat -1 7)))
+(assert (= [7] (repeat 1 7)))

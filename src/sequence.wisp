@@ -401,3 +401,16 @@
           (list? items) (apply list (.sort (vec items) compare))
           (dictionary? items) (.sort (seq items) compare)
           :else (sort f (seq items)))))
+
+
+(defn repeat
+  "Returns a vector of given `n` length with of given `x`
+  items. Not compatible with clojure as it's not a lazy
+  and only finite repeats are supported"
+  [n x]
+  (loop [n n
+         result []]
+    (if (<= n 0)
+      result
+      (recur (dec n)
+             (conj result x)))))

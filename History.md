@@ -1,5 +1,11 @@
 # History
 
+## 0.6.7
+
+  - Implement `repeat` function that is similar to clojure's but
+    is not lazy and only supports finite options.
+  -
+
 ## 0.6.6
 
   - Fix indentation in compile output to avoid trailing white-spaces.
