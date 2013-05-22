@@ -2,7 +2,7 @@
 (import [meta with-meta symbol? symbol keyword? keyword namespace
          unquote? unquote-splicing? quote? syntax-quote? name gensym pr-str] "./ast")
 (import [empty? count list? list first second third rest cons conj
-         reverse reduce vec last
+         reverse reduce vec last repeat
          map filter take concat] "./sequence")
 (import [odd? dictionary? dictionary merge keys vals contains-vector?
          map-dictionary string? number? vector? boolean? subs re-find
@@ -1068,3 +1068,115 @@
              (recur (cons `(def ~(with-meta alias {:private true})
                              (~id (require ~path))) form)
                     (rest names)))))))))
+
+(defn expand-ns
+  "Sets *ns* to the namespace named by name (unevaluated), creating it
+  if needed. references can be zero or more of: (:refer-clojure ...)
+  (:require ...) (:use ...) (:import ...) (:load ...) (:gen-class)
+  with the syntax of refer-clojure/require/use/import/load/gen-class
+  respectively, except the arguments are unevaluated and need not be
+  quoted. (:gen-class ...), when supplied, defaults to :name
+  corresponding to the ns name, :main true, :impl-ns same as ns, and
+  :init-impl-ns true. All options of gen-class are
+  supported. The :gen-class directive is ignored when not
+  compiling. If :gen-class is not supplied, when compiled only an
+  nsname__init.class will be generated. If :refer-clojure is not used, a
+  default (refer 'clojure) is used. Use of ns is preferred to
+  individual calls to in-ns/require/use/import:
+
+  (ns foo.bar
+  (:refer-clojure :exclude [ancestors printf])
+  (:require (clojure.contrib sql combinatorics))
+  (:use (my.lib this that))
+  (:import (java.util Date Timer Random)
+  (java.sql Connection Statement)))"
+  [id & params]
+  (let [ns (str id)
+        ;; ns-root is used for resolving requirements
+        ;; relatively if they're under same root.
+        requirer (split ns \.)
+        doc (if (string? (first params))
+              (first params)
+              nil)
+        args (if doc (rest params) params)
+        parse-references (fn [forms]
+                           (reduce (fn [references form]
+                                     (set! (get references (name (first form)))
+                                           (vec (rest form)))
+                                     references)
+                                   {}
+                                   forms))
+        references (parse-references args)
+
+        id->path (fn id->path [id]
+                   (let [requirement (split (str id) \.)
+                         relative? (identical? (first requirer)
+                                               (first requirement))]
+                     (if relative?
+                       (loop [from requirer
+                              to requirement]
+                         (if (identical? (first from)
+                                         (first to))
+                           (recur (rest from) (rest to))
+                           (join \/
+                                 (concat [\.]
+                                         (repeat (dec (count from)) "..")
+                                         to))))
+                       (join \/ requirement))))
+
+        make-require (fn [from as name]
+                       (let [path (id->path from)
+                             requirement (if name
+                                           `(. (require ~path) ~(symbol nil (str \- name)))
+                                           `(require ~path))]
+                         (if as
+                           `(def ~as ~requirement)
+                           requirement)))
+
+        expand-requirement (fn [form]
+                             (let [from (first form)
+                                   as (and (identical? ':as (second form))
+                                             (third form))]
+                               (make-require from as)))
+
+        expand-use (fn [form]
+                     (let [from (first form)
+                           directives (apply dictionary (vec (rest form)))
+                           names (get directives ':only)
+                           renames (get directives ':rename)
+
+                           named-imports (and names
+                                              (map (fn [name] (make-require from name name))
+                                                   names))
+
+                           renamed-imports (and renames
+                                                (map (fn [pair]
+                                                       (make-require from
+                                                                     (second pair)
+                                                                     (first pair)))
+                                                     renames))]
+                       (assert (or names renames)
+                               (str "Only [my.lib :only [foo bar]] form & "
+                                    "[clojure.string :rename {replace str-replace} are supported"))
+                       (concat [] named-imports renamed-imports)))
+
+
+        requirements (map expand-requirement (or (:require references) []))
+        uses (apply concat (map expand-use (or (:use references) [])))]
+
+    (concat
+     (list 'do*
+           ;; Sets *ns* to the namespace named by name
+           `(def *ns* ~ns)
+           `(set! (.-namespace module) *ns*))
+     (if doc [`(set! (.-description module) ~doc)])
+     requirements
+     uses)))
+
+(install-macro 'ns expand-ns)
+
+(install-macro
+ 'print
+ (fn [& more]
+   "Prints the object(s) to the output for human consumption."
+   `(.log console ~@more)))

@@ -505,3 +505,7 @@
               (inc index)
               count)
        value))))
+
+(defn print
+  [& more]
+  (apply console.log more))

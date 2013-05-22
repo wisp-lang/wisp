@@ -502,3 +502,48 @@
 (assert (= (transpile '(defn- identity [x] x))
            "var identity = function identity(x) {\n  return x;\n}")
         "private functions")
+
+(.log console "test print macro")
+
+(assert (= (transpile '(print))
+           "console.log()"))
+(assert (= (transpile '(print foo))
+           "console.log(foo)"))
+(assert (= (transpile '(print foo bar))
+           "console.log(foo, bar)"))
+
+(.log console "test ns macro")
+
+(assert (= (transpile '(ns wisp.core
+                         (:refer-clojure :exclude [macroexpand-1])
+                         (:require [clojure.java.io]
+                                   [wisp.example.dependency :as dep]
+                                   [wisp.foo]
+                                   [clojure.string :as string]
+                                   [cljs.tagged-literals :as tags])
+                         (:use [clojure.string :only [split join]]
+                               [wisp.sequence :rename {concat append first car}]
+                               [wisp.ast :only [sym] :rename {keyword key}])
+                         (:use-macros [cljs.analyzer-macros :only [disallowing-recur]])))
+"var _ns_ = \"wisp.core\";
+module.namespace = _ns_;
+require(\"clojure/java/io\");
+var dep = require(\"./example/dependency\");
+require(\"./foo\");
+var string = require(\"clojure/string\");
+var tags = require(\"cljs/tagged-literals\");
+var split = (require(\"clojure/string\")).split;
+var join = (require(\"clojure/string\")).join;
+var append = (require(\"./sequence\")).concat;
+var car = (require(\"./sequence\")).first;
+var sym = (require(\"./ast\")).sym;
+var key = (require(\"./ast\")).keyword;"))
+
+(assert (= (transpile '(ns foo.bar))
+           (str "var _ns_ = \"foo.bar\";\n"
+                "module.namespace = _ns_;")))
+
+(assert (= (transpile '(ns foo.bar "my great lib"))
+           (str "var _ns_ = \"foo.bar\";\n"
+                "module.namespace = _ns_;\n"
+                "module.description = \"my great lib\";")))
