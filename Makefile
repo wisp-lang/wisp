@@ -12,7 +12,7 @@ else
 	WISP = ./node_modules/wisp/bin/wisp.js
 endif
 
-core: runtime sequence string ast reader compiler writer
+core: runtime sequence string ast reader compiler writer analyzer
 node: core wisp node-engine repl
 browser: core embed browser-engine browserify
 all: node browser
@@ -51,6 +51,9 @@ string:
 
 ast:
 	cat ./src/ast.wisp | $(WISP) > ./ast.js
+
+analyzer:
+	cat ./src/analyzer.wisp | $(WISP) > ./analyzer.js
 
 wisp:
 	cat ./src/wisp.wisp | $(WISP) > ./wisp.js
