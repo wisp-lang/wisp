@@ -16,6 +16,7 @@
     Relative requires forms are produced by resolving requirements to
     a defined ns name. If requirement does not shares root of ns name
     then absolute require forms are generated.
+  - Update travis-ci config to test on later node versions.
 
 ## 0.6.6
 
