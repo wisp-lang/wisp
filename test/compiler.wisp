@@ -502,3 +502,13 @@
 (assert (= (transpile '(defn- identity [x] x))
            "var identity = function identity(x) {\n  return x;\n}")
         "private functions")
+
+(.log console "test print macro")
+
+(assert (= (transpile '(print))
+           "console.log()"))
+(assert (= (transpile '(print foo))
+           "console.log(foo)"))
+(assert (= (transpile '(print foo bar))
+           "console.log(foo, bar)"))
+

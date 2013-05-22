@@ -1068,3 +1068,10 @@
              (recur (cons `(def ~(with-meta alias {:private true})
                              (~id (require ~path))) form)
                     (rest names)))))))))
+
+
+(install-macro
+ 'print
+ (fn [& more]
+   "Prints the object(s) to the output for human consumption."
+   `(.log console ~@more)))

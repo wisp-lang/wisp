@@ -4,7 +4,8 @@
 
   - Implement `repeat` function that is similar to clojure's but
     is not lazy and only supports finite options.
-  -
+  - Implement `(print foo bar)` function & macro that serves as a
+    shortcut for `(.log console foo bar)`.
 
 ## 0.6.6
 
