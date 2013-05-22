@@ -1160,9 +1160,12 @@
                                     "[clojure.string :rename {replace str-replace} are supported"))
                        (concat [] named-imports renamed-imports)))
 
-
-        requirements (map expand-requirement (or (:require references) []))
-        uses (apply concat (map expand-use (or (:use references) [])))]
+        require-forms (:require references)
+        use-forms (:use references)
+        requirements (if require-forms
+                       (map expand-requirement require-forms))
+        uses (if use-forms
+               (apply concat (map expand-use use-forms)))]
 
     (concat
      (list 'do*
