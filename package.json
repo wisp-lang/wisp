@@ -22,7 +22,7 @@
     "url": "http://opensource.org/licenses/BSD-3-Clause"
   }],
   "devDependencies": {
-    "browserify": "1.14.2",
+    "browserify": "2.14.1",
     "wisp": "0.6.5"
   },
   "engines": {
