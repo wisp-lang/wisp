@@ -1161,8 +1161,8 @@
                        (concat [] named-imports renamed-imports)))
 
 
-        requirements (map expand-requirement (:require references))
-        uses (apply concat (map expand-use (:use references)))]
+        requirements (map expand-requirement (or (:require references) []))
+        uses (apply concat (map expand-use (or (:use references) [])))]
 
     (concat
      (list 'do*
