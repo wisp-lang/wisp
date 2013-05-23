@@ -3,7 +3,7 @@
         [wisp.src.sequence :only [list]]
         [wisp.src.runtime :only [str =]]))
 
-(.log console "test join")
+(print "test join")
 
 (assert (= "" (join nil)))
 (assert (= "" (join "-" nil)))
@@ -30,7 +30,7 @@
 (assert (= (str [:a 1] [:b 2]) (join {:a 1 :b 2})))
 (assert (= (str [:a 1] "," [:b 2]) (join "," {:a 1 :b 2})))
 
-(.log console "test split")
+(print "test split")
 
 (assert (= [""] (split "" #"\s")))
 (assert (= ["hello"] (split "hello" #"world")))

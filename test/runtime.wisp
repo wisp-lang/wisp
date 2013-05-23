@@ -5,14 +5,14 @@
 (import [symbol] "../src/ast")
 
 
-(.log console "test dictionary?")
+(print "test dictionary?")
 
 (assert (not (dictionary? 2)) "2 is not dictionary")
 (assert (not (dictionary? [])) "[] is not dictionary")
 (assert (not (dictionary? '())) "() is not dictionary")
 (assert (dictionary? {}) "{} is dictionary")
 
-(.log console "test vector?")
+(print "test vector?")
 
 (assert (not (vector? 2)) "2 is not vector")
 (assert (not (vector? {})) "{} is not vector")
@@ -23,12 +23,12 @@
           '(1 2 3 4 5)
           `(1 ~@'(2 3) 4 ~@'(5))))
 
-(.log console "subs")
+(print "subs")
 
 (assert (= "lojure" (subs "Clojure" 1)))
 (assert (= "lo" (subs "Clojure" 1 3)))
 
-(.log console "special functions")
+(print "special functions")
 
 (assert (apply = [1]))
 (assert (apply = [1 1]))
@@ -132,7 +132,7 @@
 (assert (= false (apply or [nil nil nil nil nil nil nil nil nil false])))
 (assert (= 17 (apply or [nil nil nil nil nil nil nil nil nil nil nil nil nil 17 18])))
 
-(.log console "test =")
+(print "test =")
 
 (assert (apply = []))
 (assert (apply = [1 1]))

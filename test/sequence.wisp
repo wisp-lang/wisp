@@ -1,13 +1,12 @@
-(import [cons conj list list? seq vec
-         empty? count
-         first second third rest last butlast
-         take drop repeat
-         concat reverse sort
-         map filter reduce] "../src/sequence")
-(import [str inc dec even? odd? vals =] "../src/runtime")
+(ns wisp.test.sequence
+  (:use [wisp.src.sequence :only [cons conj list list? seq vec empty? count
+                                  first second third rest last butlast take
+                                  drop repeat concat reverse sort map filter
+                                  reduce]]
+        [wisp.src.runtime :only [str inc dec even? odd? vals =]]))
 
 
-(.log console "test empty?")
+(print "test empty?")
 
 (assert (empty? "") "\"\" is empty")
 (assert (empty? []) "[] is empty")
@@ -15,7 +14,7 @@
 (assert (empty? {}) "{} is empty")
 (assert (empty? '()) "'() is empty")
 
-(.log console "test count")
+(print "test count")
 
 (assert (= (count "") 0) "count 0 in \"\"")
 (assert (= (count "hello") 5) "count 5 in \"hello\"")
@@ -27,7 +26,7 @@
 (assert (= (count '()) 0) "count 0 in '()")
 (assert (= (count '(1 2)) 2) "count 2 in '(1 2)")
 
-(.log console "test first")
+(print "test first")
 
 (assert (= nil (first nil)))
 (assert (= nil (first "")))
@@ -39,7 +38,7 @@
 (assert (= nil (first {})))
 (assert (= [:a 1] (first {:a 1, :b 2})))
 
-(.log console "test second")
+(print "test second")
 
 (assert (= nil (second nil)))
 (assert (= nil (second "")))
@@ -55,7 +54,7 @@
 (assert (= nil (second {:a 1})))
 (assert (= [:b 2] (second {:a 1, :b 2})))
 
-(.log console "test third")
+(print "test third")
 
 (assert (= nil (third nil)))
 (assert (= nil (third "")))
@@ -71,7 +70,7 @@
 (assert (= nil (third {:a 1})))
 (assert (= [:c 3] (third {:a 1, :b 2, :c 3})))
 
-(.log console "test last")
+(print "test last")
 
 (assert (= nil (last nil)))
 (assert (= nil (last [])))
@@ -84,7 +83,7 @@
 (assert (= [:b 2] (last {:a 1, :b 2})))
 (assert (= nil (last {})))
 
-(.log console "test butlast")
+(print "test butlast")
 
 (assert (= nil (butlast nil)))
 
@@ -101,7 +100,7 @@
 (assert (= [[:a 1]] (butlast {:a 1, :b 2})))
 
 
-(.log console "test rest")
+(print "test rest")
 
 (assert (= [] (rest {:a 1})))
 (assert (= "" (rest "a")))
@@ -123,14 +122,14 @@
 (assert (= "ello" (rest "hello")))
 
 
-(.log console "test list?")
+(print "test list?")
 
 (assert (list? '()) "'() is list")
 (assert (not (list? 2)) "2 is not list")
 (assert (not (list? {})) "{} is not list")
 (assert (not (list? [])) "[] is not list")
 
-(.log console "test list quoting")
+(print "test list quoting")
 
 (assert (not (empty? '(1 2 3 4)))
         "non empty list returns false on empty?")
@@ -148,7 +147,7 @@
         "stringification returns list")
 
 
-(.log console "test cons")
+(print "test cons")
 
 (assert (not (empty? (cons 1 '()))) "cons creates non-empty list")
 (assert (not (empty? (cons 1 nil)) "cons onto nil is list of that item"))
@@ -161,7 +160,7 @@
 (assert (= (cons 1 (list 2 3)) (list 1 2 3))
         "cons returns new list prefixed with first argument")
 
-(.log console "test conj")
+(print "test conj")
 
 (assert (= '(1) (conj nil 1)))
 (assert (= '(2 1) (conj nil 1 2)))
@@ -192,7 +191,7 @@
 
 
 
-(.log console "test reverse")
+(print "test reverse")
 
 (assert (= (reverse '(1 2 3 4)) '(4 3 2 1))
         "reverse reverses order of items")
@@ -202,7 +201,7 @@
 
 
 
-(.log console "test list constructor")
+(print "test list constructor")
 
 (assert (not (empty? (list 1 2 3 4)))
         "non empty list returns false on empty?")
@@ -217,7 +216,7 @@
 (assert (empty? (list)) "list without arguments creates empty list")
 
 
-(.log console "test vec")
+(print "test vec")
 
 (assert (= [1 2 3] (vec '(1 2 3))))
 (assert (= [1 2 3] (vec [1 2 3])))
@@ -226,7 +225,7 @@
 (assert (= [\f \o \o] (vec "foo")))
 (assert (= [[:a 1] [:b 2]] (vec {:a 1 :b 2})))
 
-(.log console "test map")
+(print "test map")
 
 (assert (= '() (map inc nil)))
 (assert (= '() (map inc '())))
@@ -238,7 +237,7 @@
            (map (fn [pair] (apply str pair)) {:a 1 :b 2})))
 
 
-(.log console "test filter")
+(print "test filter")
 
 (assert (= '() (filter even? nil)))
 (assert (= '() (filter even? '())))
@@ -249,7 +248,7 @@
 (assert (= [[:b 2]] (filter (fn [pair] (even? (second pair))) {:a 1 :b 2})))
 
 
-(.log console "test reduce")
+(print "test reduce")
 
 (assert (= (reduce (fn [result v] (+ result v)) '(1 2 3 4)) 10)
         "initial value is optional")
@@ -273,7 +272,7 @@
 
 (assert (= (reduce (fn [result v] (+ result v)) [5]) 5))
 
-(.log console "test take")
+(print "test take")
 
 (assert (= '() (take 1 nil)))
 (assert (= '() (take 1 '())))
@@ -286,7 +285,7 @@
 (assert (= [[:a 1] [:b 2]] (take 2 {:a 1 :b 2 :c 3})))
 
 
-(.log console "test drop")
+(print "test drop")
 
 (assert (= '() (drop 1 nil) ))
 (assert (= '() (drop 1 '())))
@@ -300,7 +299,7 @@
 
 
 
-(.log console "test concat")
+(print "test concat")
 
 (assert (= '(1 2 3 4) (concat '(1 2) '(3 4))))
 (assert (= '(1 2 3 4 5) (concat '(1 2) '() '() '(3 4) '(5))))
@@ -314,7 +313,7 @@
            (concat [1] [2] '(3 4) [5 6 7] {:a 9 :b 10})))
 
 
-(.log console "test sort")
+(print "test sort")
 
 (assert (= '() (sort nil)))
 (assert (= '() (sort (fn [a b] (> a b)) nil)))
