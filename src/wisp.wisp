@@ -6,9 +6,8 @@
   (:use [module :only [Module]]
         [wisp.repl :only [start]]
         [wisp.runtime :only [str]]
-        [wisp.engine.node :only [transpile]]
-        [wisp.compiler :only [compile-program]]
-        [wisp.reader :only [read-from-string]]))
+        [wisp.compiler :only [compile*]]
+        [wisp.reader :only [read*]]))
 
 (defn- exit
   "Takes care of exiting node and printing erros if encounted"
@@ -32,7 +31,7 @@
        (fn on-read
          "Once input ends try to compile & write to output."
          []
-         (try (.write output (transpile source))
+         (try (.write output (compile* (read* source)))
            (catch error (exit error)))))
   (.on input :error exit)
   (.on output :error exit))
