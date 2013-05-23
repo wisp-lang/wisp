@@ -1,11 +1,15 @@
-(import [list list? count empty? first second third rest map vec
-         cons conj rest concat last butlast sort lazy-seq] "./sequence")
-(import [odd? dictionary keys nil? inc dec vector? string?
-         number? boolean? object? dictionary?
-         re-pattern re-matches re-find str subs char vals = ==] "./runtime")
-(import [symbol? symbol keyword? keyword meta with-meta name
-         gensym] "./ast")
-(import [split join] "./string")
+(ns wisp.reader
+  "Reader module provides functions for reading text input
+  as wisp data structures"
+  (:use [wisp.sequence :only [list list? count empty? first second third rest
+                              map vec cons conj rest concat last butlast sort
+                              lazy-seq]]
+        [wisp.runtime :only [odd? dictionary keys nil? inc dec vector? string?
+                             number? boolean? object? dictionary? re-pattern
+                             re-matches re-find str subs char vals =]]
+        [wisp.ast :only [symbol? symbol keyword? keyword meta with-meta name
+                         gensym]]
+        [wisp.string :only [split join]]))
 
 (defn push-back-reader
   "Creates a StringPushbackReader from a given string"
@@ -472,7 +476,7 @@
 (defn lambda-params [body]
   (let [names (sort (vals (lambda-params-hash body)))
         variadic (= (first names) (symbol "%&"))
-        n (if (and variadic (== (count names) 1))
+        n (if (and variadic (identical? (count names) 1))
               0
               (parseInt (rest (name (last names)))))
         params (loop [names []

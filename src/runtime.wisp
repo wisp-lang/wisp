@@ -1,4 +1,5 @@
-;; Define alias for the clojures alength.
+(ns wisp.runtime
+  "Core primitives required for runtime")
 
 (defn identity
   "Returns its argument."

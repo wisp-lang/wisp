@@ -1,5 +1,6 @@
-(import [nil? vector? fn? number? string? dictionary?
-         key-values str dec inc merge] "./runtime")
+(ns wisp.sequence
+  (:use [wisp.runtime :only [nil? vector? fn? number? string? dictionary?
+                             key-values str dec inc merge]]))
 
 ;; Implementation of list
 

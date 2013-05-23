@@ -1,12 +1,14 @@
-(import fs "fs")
-(import path "path")
-(import [Module] "module")
-
-(import [start] "./repl")
-(import [str] "./runtime")
-(import [transpile] "./engine/node")
-(import [compile-program] "./compiler")
-(import [read-from-string] "./reader")
+(ns wisp.wisp
+  "Wisp program that reads wisp code from stdin and prints
+  compiled javascript code into stdout"
+  (:require [fs :as fs]
+            [path :as path])
+  (:use [module :only [Module]]
+        [wisp.repl :only [start]]
+        [wisp.runtime :only [str]]
+        [wisp.engine.node :only [transpile]]
+        [wisp.compiler :only [compile-program]]
+        [wisp.reader :only [read-from-string]]))
 
 (defn- exit
   "Takes care of exiting node and printing erros if encounted"

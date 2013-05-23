@@ -1,11 +1,12 @@
-(import repl "repl")
-(import vm "vm")
-(import [transpile] "./engine/node")
-(import [read push-back-reader] "./reader")
-(import [subs =] "./runtime")
-(import [count list] "./sequence")
-(import [compile compile-program] "./compiler")
-(import [pr-str] "./ast")
+(ns wisp.repl
+  (:require [repl :as repl]
+            [vm :as vm])
+  (:use [wisp.engine.node :only [transpile]]
+        [wisp.reader :only [read push-back-reader]]
+        [wisp.runtime :only [subs =]]
+        [wisp.sequence :only [count list]]
+        [wisp.compiler :only [compile compile*]]
+        [wisp.ast :only [pr-str]]))
 
 (defn evaluate-code
   "Evaluates some text from REPL input. If multiple forms are
@@ -47,7 +48,7 @@
               ;body (ana/analyze env form)
               ;_ (when *debug* (println "ANALYZED:" (pr-str (:form body))))
               body form
-              code (compile-program (list body))
+              code (compile* (list body))
               _ (if context.*debug* (.log console "EMITTED:" (pr-str code)))
               value (.run-in-context vm code context uri)]
           {:value value :js code :form form})))

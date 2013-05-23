@@ -1,6 +1,7 @@
-(import [join split] "../src/string")
-(import [list] "../src/sequence")
-(import [str =] "../src/runtime")
+(ns wisp.test.string
+  (:use [wisp.src.string :only [join split]]
+        [wisp.src.sequence :only [list]]
+        [wisp.src.runtime :only [str =]]))
 
 (.log console "test join")
 

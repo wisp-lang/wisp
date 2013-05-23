@@ -1,8 +1,9 @@
-(import "./sequence")
-(import "./ast")
-(import "./runtime")
-(import "./string")
-(import "./reader")
-(import "./compiler")
+(ns wisp.test
+  (:require [wisp.test.sequence]
+            [wisp.test.ast]
+            [wisp.test.runtime]
+            [wisp.test.string]
+            [wisp.test.reader]
+            [wisp.test.compiler]))
 
-(.log console "\n\nAll tests passed!")
+(print "\n\nAll tests passed!")

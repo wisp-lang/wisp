@@ -1,5 +1,6 @@
-(import [str subs re-matches nil? string?] "./runtime")
-(import [vec empty?] "./sequence")
+(ns wisp.string
+  (:use [wisp.runtime :only [str subs re-matches nil? string?]]
+        [wisp.sequence :only [vec empty?]]))
 
 (defn split
   "Splits string on a regular expression.  Optional argument limit is

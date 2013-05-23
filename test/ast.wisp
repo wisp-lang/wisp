@@ -1,12 +1,13 @@
-(import [read-from-string] "../src/reader")
-(import [list] "../src/sequence")
-(import [str =] "../src/runtime")
-(import [name gensym symbol? symbol keyword? keyword
-         quote? quote syntax-quote? syntax-quote] "../src/ast")
+(ns wisp.test.ast
+  (:use [wisp.src.reader :only [read-from-string]]
+        [wisp.src.sequence :only [list]]
+        [wisp.src.runtime :only [str =]]
+        [wisp.src.ast :only [name gensym symbol? symbol keyword? keyword
+                             quote? quote syntax-quote? syntax-quote]]))
 
 (def read-string read-from-string)
 
-(.log console "test gensym")
+(print "test gensym")
 
 (assert (symbol? (gensym))
         "gensym generates symbol")
@@ -19,7 +20,7 @@
 (assert (not (identical? (name (gensym "p")) (name (gensym "p"))))
         "gensym generates unique symbol even if prefixed")
 
-(.log console "test quote?")
+(print "test quote?")
 
 (assert (quote? (read-string "'()")) "'() is quoted list")
 (assert (not (quote? (read-string "`()"))) "'() is not quoted list")
@@ -29,7 +30,7 @@
 (assert (not (quote? (read-string "foo"))) "foo symbol is not quoted")
 
 
-(.log console "test syntax-quote?")
+(print "test syntax-quote?")
 
 (assert (syntax-quote? (read-string "`()")) "`() is syntax quoted list")
 (assert (not (syntax-quote?
@@ -43,7 +44,8 @@
 (assert (not (syntax-quote?
               (read-string "foo"))) "foo symbol is not syntax quoted")
 
-(.log console "symbol tests")
+(print "symbol tests")
+
 
 (assert (symbol? (symbol "foo")))
 (assert (symbol? (symbol "/")))

@@ -1,7 +1,9 @@
-(import [list? sequential? first second count last map vec] "./sequence")
-(import [split join] "./string")
-(import [nil? vector? number? string? boolean? object? date? re-pattern?
-         dictionary? str inc subs =] "./runtime")
+(ns wisp.ast
+  (:use [wisp.sequence :only [list? sequential? first second count last map
+                              vec]]
+        [wisp.string :only [split join]]
+        [wisp.runtime :only [nil? vector? number? string? boolean? object?
+                             date? re-pattern? dictionary? str inc subs =]]))
 
 (defn with-meta
   "Returns identical value with given metadata associated to it."
