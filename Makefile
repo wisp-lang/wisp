@@ -14,7 +14,7 @@ endif
 
 core: runtime sequence string ast reader compiler writer analyzer
 node: core wisp node-engine repl
-browser: core embed browser-engine browserify
+browser: core browser-engine
 all: node browser
 test: test1
 
@@ -65,19 +65,3 @@ node-engine:
 browser-engine:
 	mkdir -p ./engine/
 	cat ./src/engine/browser.wisp | $(WISP) > ./engine/browser.js
-
-embed:
-	cat ./support/embed.wisp | $(WISP) > ./embed.js && mv ./embed.js ./support/embed.js
-
-browserify:
-	$(BROWSERIFY) --debug \
-                --require ./sequence:wisp/sequence \
-                --require ./string:wisp/string \
-                --require ./reader:wisp/reader \
-                --require ./ast:wisp/ast \
-                --require ./reader:wisp/reader \
-                --require ./compiler:wisp/compiler \
-                --require ./runtime:wisp/runtime \
-                --require ./engine/browser:wisp/engine/browser \
-                --exports require \
-                --entry ./support/embed.js > ./support/app.js

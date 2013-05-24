@@ -1,17 +1,23 @@
-(import [read-from-string] "./reader")
-(import [meta with-meta symbol? symbol keyword? keyword namespace
-         unquote? unquote-splicing? quote? syntax-quote? name gensym pr-str] "./ast")
-(import [empty? count list? list first second third rest cons conj
-         reverse reduce vec last repeat
-         map filter take concat] "./sequence")
-(import [odd? dictionary? dictionary merge keys vals contains-vector?
-         map-dictionary string? number? vector? boolean? subs re-find
-         true? false? nil? re-pattern? inc dec str char int = ==] "./runtime")
-(import [split join upper-case replace] "./string")
-(import [write-reference write-keyword-reference
-         write-keyword write-symbol write-nil
-         write-comment
-         write-number write-string write-number write-boolean] "./backend/javascript/writer")
+(ns wisp.compiler
+  "wisp language compiler"
+  (:use [wisp.reader :only [read-from-string]]
+        [wisp.ast :only [meta with-meta symbol? symbol keyword? keyword
+                         namespace unquote? unquote-splicing? quote?
+                         syntax-quote? name gensym pr-str]]
+        [wisp.sequence :only [empty? count list? list first second third
+                              rest cons conj reverse reduce vec last repeat
+                              map filter take concat]]
+        [wisp.runtime :only [odd? dictionary? dictionary merge keys vals
+                             contains-vector? map-dictionary string? number?
+                             vector? boolean? subs re-find true? false? nil?
+                             re-pattern? inc dec str char int = ==]]
+        [wisp.string :only [split join upper-case replace]]
+        [wisp.backend.javascript.writer :only [write-reference
+                                               write-keyword-reference
+                                               write-keyword write-symbol
+                                               write-nil write-comment
+                                               write-number write-string
+                                               write-number write-boolean]]))
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"

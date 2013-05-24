@@ -1,5 +1,12 @@
 # History
 
+## 0.7.0
+
+  - Migrate to imports via clojure compatible `ns` form instead custom
+    `import` forms used previously.
+  - Factor out interactive try tool into seperate project:
+    https://github.com/Gozala/try-wisp
+
 ## 0.6.7
 
   - Implement `repeat` function that is similar to clojure's but

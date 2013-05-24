@@ -1,12 +1,15 @@
-(import [symbol] "../src/ast")
-(import [list] "../src/sequence")
-(import [str =] "../src/runtime")
-(import [self-evaluating? compile macroexpand compile-program] "../src/compiler")
-(import [read-from-string] "../src/reader")
+(ns wisp.test.compiler
+  (:use [wisp.src.ast :only [symbol]]
+        [wisp.src.sequence :only [list]]
+        [wisp.src.runtime :only [str =]]
+        [wisp.src.compiler :only [self-evaluating? compile macroexpand
+                                  compile-program]]
+        [wisp.src.reader :only [read-from-string]]))
 
 (defn transpile [& forms] (compile-program forms))
 
-(.log console "self evaluating forms")
+(print "self evaluating forms")
+
 (assert (self-evaluating? 1) "number is self evaluating")
 (assert (self-evaluating? "string") "string is self evaluating")
 (assert (self-evaluating? true) "true is boolean => self evaluating")
@@ -20,7 +23,7 @@
 (assert (not (self-evaluating? (symbol "symbol"))) "symbol is not self evaluating")
 
 
-(.log console "compile primitive forms")
+(print "compile primitive forms")
 
 (assert (= (transpile '(def x)) "var x = void(0);\nexports.x = x")
         "def compiles properly")
@@ -30,7 +33,7 @@
                       "list(symbol(void(0), \"def\"), symbol(void(0), \"x\"), 1)")
         "quotes preserve lists")
 
-(.log console "private defs")
+(print "private defs")
 
 ;; Note need to actually read otherwise metadata is lost after
 ;; compilation.
@@ -41,7 +44,7 @@
 
 
 
-(.log console "compile invoke forms")
+(print "compile invoke forms")
 (assert (identical? (transpile '(foo)) "foo()")
         "function calls compile")
 (assert (identical? (transpile '(foo bar)) "foo(bar)")
@@ -52,7 +55,7 @@
                     "foo((bar(baz))(beep))")
         "nested function calls compile")
 
-(.log console "compile functions")
+(print "compile functions")
 
 
 (assert (identical? (transpile '(fn [x] x))
@@ -130,7 +133,7 @@
   return void(0);
 }") "function with overloads docs & metadata")
 
-(.log console "compile if special form")
+(print "compile if special form")
 
 
 
@@ -148,7 +151,7 @@
 
 
 
-(.log console "compile do special form")
+(print "compile do special form")
 
 
 
@@ -162,7 +165,7 @@
 
 
 
-(.log console "compile let special form")
+(print "compile let special form")
 
 
 
@@ -177,7 +180,7 @@
 
 
 
-(.log console "compile throw special form")
+(print "compile throw special form")
 
 
 
@@ -195,7 +198,7 @@
 
 
 
-(.log console "compile set! special form")
+(print "compile set! special form")
 
 
 
@@ -215,7 +218,7 @@
 
 
 
-(.log console "compile vectors")
+(print "compile vectors")
 
 
 
@@ -231,7 +234,7 @@
 
 
 
-(.log console "compiles try special form")
+(print "compiles try special form")
 
 
 
@@ -253,7 +256,7 @@
 
 
 
-(.log console "compile property / method access / call special forms")
+(print "compile property / method access / call special forms")
 
 
 
@@ -277,13 +280,13 @@
                     "\"/\".b().a()")
         "(.a (.b \"/\")) => \"/\".b().a()")
 
-(.log console "compile sugar for keyword based access")
+(print "compile sugar for keyword based access")
 
 (assert (identical? (transpile '(:foo bar))
                     "(bar || 0)[\"foo\"]"))
 
 
-(.log console "compile unquote-splicing forms")
+(print "compile unquote-splicing forms")
 
 (assert (identical? (transpile '`(1 ~@'(2 3)))
                     "concat(list(1), list(2, 3))")
@@ -302,7 +305,7 @@
 
 
 
-(.log console "compile references")
+(print "compile references")
 
 
 
@@ -339,7 +342,7 @@
 
 
 
-(.log console "compiles new special form")
+(print "compiles new special form")
 
 
 (assert (identical? (transpile '(new Foo)) "new Foo()")
@@ -351,7 +354,7 @@
 (assert (identical? (transpile '(Foo. a b)) "new Foo(a, b)")
         "(Foo. a b) => new Foo(a, b)")
 
-(.log console "compiles native special forms: and or + * - / not")
+(print "compiles native special forms: and or + * - / not")
 
 
 (assert (identical? (transpile '(and a b)) "a && b")
@@ -373,7 +376,7 @@
         "(not x) => !(x)")
 
 
-(.log console "compiles = == >= <= < > special forms")
+(print "compiles = == >= <= < > special forms")
 
 
 (assert (identical? (transpile '(= a b)) "isEqual(a, b)")
@@ -388,7 +391,7 @@
                     "arr.indexOf(el) >= 0")
         "(>= (.index-of arr el) 0) => arr.indexOf(el) >= 0")
 
-(.log console "compiles = - + == >= <= / * as functions")
+(print "compiles = - + == >= <= / * as functions")
 
 (assert (identical? (transpile '(apply and nums))
         "and.apply(and, nums)"))
@@ -415,7 +418,7 @@
 (assert (identical? (transpile '(apply - nums))
                     "subtract.apply(subtract, nums)"))
 
-(.log console "compiles dictionaries to js objects")
+(print "compiles dictionaries to js objects")
 
 (assert (identical? (transpile '{}) "{}")
         "empty hash compiles to empty object")
@@ -436,7 +439,7 @@
 }") "compile nested dictionaries")
 
 
-(.log console "compiles compound accessor")
+(print "compiles compound accessor")
 
 
 (assert (identical? (transpile '(get a b)) "(a || 0)[b]")
@@ -449,7 +452,7 @@
 (assert (identical? (transpile '(get (or t1 t2) p))
                     "((t1 || t2) || 0)[p]"))
 
-(.log console "compiles instance?")
+(print "compiles instance?")
 
 (assert (identical? (transpile '(instance? Object a))
                     "a instanceof Object")
@@ -459,7 +462,7 @@
         "(instance? (C D) (a b)) => a(b) instanceof C(D)")
 
 
-(.log console "compile loop")
+(print "compile loop")
 (assert (identical? (transpile '(loop [x 7] (if (f x) x (recur (b x)))))
 "(function loop(x) {
   var recur = loop;
@@ -503,7 +506,7 @@
            "var identity = function identity(x) {\n  return x;\n}")
         "private functions")
 
-(.log console "test print macro")
+(print "test print macro")
 
 (assert (= (transpile '(print))
            "console.log()"))
@@ -512,7 +515,7 @@
 (assert (= (transpile '(print foo bar))
            "console.log(foo, bar)"))
 
-(.log console "test ns macro")
+(print "test ns macro")
 
 (assert (= (transpile '(ns wisp.core
                          (:refer-clojure :exclude [macroexpand-1])

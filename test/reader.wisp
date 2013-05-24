@@ -6,7 +6,7 @@
 
 (def read-string read-from-string)
 
-(.log console "name fn")
+(print "name fn")
 
 (assert (identical? (name (read-string ":foo")) "foo")
         "name of :foo is foo")
@@ -19,60 +19,60 @@
 (assert (identical? (name (read-string "\"foo\"")) "foo")
         "name of \"foo\" is foo")
 
-(.log console "read simple list")
+(print "read simple list")
 
 (assert (= (read-string "(foo bar)")
            '(foo bar))
         "(foo bar) -> (foo bar)")
 
-(.log console "read comma is a whitespace")
+(print "read comma is a whitespace")
 
 (assert (= (read-string "(foo, bar)")
            '(foo bar))
         "(foo, bar) -> (foo bar)")
 
-(.log console "read numbers")
+(print "read numbers")
 
 (assert (= (read-string "(+ 1 2 0)")
            '(+ 1 2 0))
         "(+ 1 2 0) -> (+ 1 2 0)")
 
-(.log console "read keywords")
+(print "read keywords")
 (assert (= (read-string "(foo :bar)")
            '(foo :bar))
         "(foo :bar) -> (foo :bar)")
 
-(.log console "read quoted list")
+(print "read quoted list")
 (assert (= (read-string "'(foo bar)")
            '(quote (foo bar)))
         "'(foo bar) -> (quote (foo bar))")
 
-(.log console "read vector")
+(print "read vector")
 (assert (= (read-string "(foo [bar :baz 2])")
            '(foo [bar :baz 2]))
         "(foo [bar :baz 2]) -> (foo [bar :baz 2])")
 
-(.log console "read special symbols")
+(print "read special symbols")
 (assert (= (read-string "(true false nil)")
            '(true false nil))
         "(true false nil) -> (true false nil)")
 
-(.log console "read chars")
+(print "read chars")
 (assert (= (read-string "(\\x \\y \\z)")
            '("x" "y" "z"))
         "(\\x \\y \\z) -> (\"x\" \"y\" \"z\")")
 
-(.log console "read strings")
+(print "read strings")
 (assert (= (read-string "(\"hello world\" \"hi \\n there\")")
            '("hello world" "hi \n there"))
         "strings are read precisely")
 
-(.log console "read deref")
+(print "read deref")
 (assert (= (read-string "(+ @foo 2)")
            '(+ (deref foo) 2))
         "(+ @foo 2) -> (+ (deref foo) 2)")
 
-(.log console "read unquote")
+(print "read unquote")
 
 (assert (= (read-string "(~foo ~@bar ~(baz))")
            '((unquote foo)
@@ -85,7 +85,7 @@
            '((unquote-splicing (foo bar))))
         "(~@(foo bar)) -> ((unquote-splicing (foo bar)))")
 
-(.log console "read function")
+(print "read function")
 
 (assert (= (read-string "(defn List
                         \"List type\"
@@ -103,7 +103,7 @@
                this))
         "function read correctly")
 
-(.log console "lambda syntax")
+(print "lambda syntax")
 
 (assert (= (read-string "#(apply sum %&)")
            '(fn [& %&] (apply sum %&))))
@@ -114,7 +114,7 @@
 (assert (= (read-string "#(+ %1 % %& %5 %2)")
            '(fn [%1 %2 %3 %4 %5 & %&] (+ %1 %1 %& %5 %2))))
 
-(.log console "read comments")
+(print "read comments")
 (assert (= (read-string "; comment
                          (program)")
            '(program))
@@ -123,7 +123,7 @@
 (assert (= (read-string "(hello ;; world\n you)")
            '(hello you)))
 
-(.log console "clojurescript")
+(print "clojurescript")
 
 (assert (= 1 (reader/read-string "1")))
 (assert (= 2 (reader/read-string "#_nope 2")))
@@ -154,7 +154,7 @@
 (assert (= "escape chars \t \r \n \\ \" \b \f"
            (reader/read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\"")))
 
-(.log console "tagged literals")
+(print "tagged literals")
 
 
 ;; queue literals
@@ -169,7 +169,7 @@
 (assert (= '(UUID. "550e8400-e29b-41d4-a716-446655440000")
            (reader/read-string "#uuid \"550e8400-e29b-41d4-a716-446655440000\"")))
 
-(.log console "read unicode")
+(print "read unicode")
 
 (let [assets
       ["اختبار" ; arabic
@@ -208,7 +208,7 @@
                 (assert (= unicode read)
                         (str "Failed to read-string \"" unicode "\" from: " input))))))
 
-(.log console "unicode error cases")
+(print "unicode error cases")
 
 ; unicode error cases
 (let [unicode-errors

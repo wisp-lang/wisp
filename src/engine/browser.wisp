@@ -1,22 +1,16 @@
-(import [str] "../runtime")
-(import [rest] "../sequence")
-(import [read-from-string] "../reader")
-(import [compile-program] "../compiler")
-
-(defn transpile
-  [source uri]
-  (str (compile-program
-        ;; Wrap program body into a list in order to to read
-        ;; all of it.
-        (rest (read-from-string (str "(do " source ")") uri))) "\n"))
+(ns wisp.engine.browser
+  (:use [wisp.runtime :only [str]]
+        [wisp.sequence :only [rest]]
+        [wisp.reader :only [read-from-string]]
+        [wisp.compiler :only [compile*]]))
 
 (defn evaluate
-  [code url] (eval (transpile code url)))
+  [code url] (eval (compile* (read* code url))))
 
 ;; Running code does not provide access to this scope.
 (defn run
   [code url]
-  ((Function (transpile code url))))
+  ((Function (compile* (read* code url)))))
 
 ;; If we're not in a browser environment, we're finished with the public API.
 ;; return unless window?
