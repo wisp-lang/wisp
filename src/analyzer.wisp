@@ -1,9 +1,10 @@
-(import [symbol symbol? keyword? meta name namespace] "./ast")
-(import [seq? seq conj map every? interleave empty?
-         list* list first last rest count] "./sequence")
-(import [vector? dictionary? string? keys vals =
-         nil? merge] "./runtime")
-(import [split] "./string")
+(ns wisp.analyzer
+  (:use [wisp.ast :only [symbol symbol? keyword? meta name namespace]]
+        [wisp.sequence :only [seq? seq conj map every? interleave empty?
+                              list* list first last rest count]]
+        [wisp.runtime :only [vector? dictionary? string? keys vals
+                             = nil? merge]]
+        [wisp.string :only [split]]))
 
 (defn get-in
   "Returns the value in a nested associative structure,
