@@ -2,7 +2,7 @@
   (:use [wisp.src.sequence :only [cons conj list list? seq vec empty? count
                                   first second third rest last butlast take
                                   drop repeat concat reverse sort map filter
-                                  reduce]]
+                                  reduce assoc]]
         [wisp.src.runtime :only [str inc dec even? odd? vals =]]))
 
 
@@ -335,3 +335,9 @@
 (assert (= [] (repeat 0 7)))
 (assert (= [] (repeat -1 7)))
 (assert (= [7] (repeat 1 7)))
+
+(print "test assoc")
+
+(assert (= {:a :b} (assoc {} :a :b)))
+(assert (= {:a :b :c :d} (assoc {:a :b} :c :d)))
+(assert (= {:a :c} (assoc {:a :b} :a :c)))

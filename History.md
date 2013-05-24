@@ -1,5 +1,9 @@
 # History
 
+## 0.7.1
+
+  - Implement `assoc` function.
+
 ## 0.7.0
 
   - Migrate to imports via clojure compatible `ns` form instead custom
