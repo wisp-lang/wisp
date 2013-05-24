@@ -590,13 +590,12 @@ without such tradeoffs.
 ```clojure
 (defmacro ->
   [& operations]
-  (reduce-list
-   (rest operations)
+  (reduce
    (fn [form operation]
      (cons (first operation)
            (cons form (rest operation))))
-   (first operations)))
-
+   (first operations)
+   (rest operations)))
 
 (->
  (open target :keypress)
