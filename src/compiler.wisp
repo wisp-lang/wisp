@@ -1167,26 +1167,47 @@
 
 
 (defn compile-ns
-  "Sets *ns* to the namespace named by name (unevaluated), creating it
-  if needed. references can be zero or more of: (:refer-clojure ...)
-  (:require ...) (:use ...) (:import ...) (:load ...) (:gen-class)
-  with the syntax of refer-clojure/require/use/import/load/gen-class
-  respectively, except the arguments are unevaluated and need not be
-  quoted. (:gen-class ...), when supplied, defaults to :name
-  corresponding to the ns name, :main true, :impl-ns same as ns, and
-  :init-impl-ns true. All options of gen-class are
-  supported. The :gen-class directive is ignored when not
-  compiling. If :gen-class is not supplied, when compiled only an
-  nsname__init.class will be generated. If :refer-clojure is not used, a
-  default (refer 'clojure) is used. Use of ns is preferred to
-  individual calls to in-ns/require/use/import:
+  "Sets *ns* to the namespace named by name. Unlike clojure ns
+  wisp ns is a lot more minimalistic and supports only on way
+  of importing modules:
 
-  (ns foo.bar
-  (:refer-clojure :exclude [ancestors printf])
-  (:require (clojure.contrib sql combinatorics))
-  (:use (my.lib this that))
-  (:import (java.util Date Timer Random)
-  (java.sql Connection Statement)))"
+   (ns interactivate.core.main
+    \"interactive code editing\"
+    (:require [interactivate.host :refer [start-host!]]
+              [fs]
+              [wisp.backend.javascript.writer :as writer]
+              [wisp.sequence
+               :refer [first rest]
+               :rename {first car rest cadr}]))
+
+  First parameter `interactivate.core.main` is a name of the
+  namespace, in this case it'll represent module `./core/main`
+  from package `interactivate`, while this is not enforced in
+  any way it's recomended to replecate filesystem path.
+
+  Second string parameter is just a description of the module
+  and is completely optional.
+
+  Next (:require ...) form defines dependencies that will be
+  imported at runtime. Given example imports multiple modules:
+
+  1. First import will import `start-host!` function from the
+     `interactivate.host` module. Which will be loaded from the
+     `../host` location. That's because modules path is resolved
+     relative to a name, but only if they share same root.
+  2. Second form imports `fs` module and make it available under
+     the same name. Note that in this case it could have being
+     written without wrapping it into brackets.
+  3. Third form imports `wisp.backend.javascript.writer` module
+     from `wisp/backend/javascript/writer` and makes it available
+     via `writer` name.
+  4. Last and most advanced form imports `first` and `rest`
+     functions from the `wisp.sequence` module, although it also
+     renames them and there for makes available under different
+     `car` and `cdr` names.
+
+  While clojure has many other kind of reference forms they are
+  not recognized by wisp and there for will be ignored."
   [& form]
   (let [metadata (meta (analyze-ns form))
         id (str (:id metadata))
