@@ -1,12 +1,12 @@
 (ns wisp.repl
   (:require [repl :as repl]
-            [vm :as vm])
-  (:use [wisp.engine.node :only [transpile]]
-        [wisp.reader :only [read push-back-reader]]
-        [wisp.runtime :only [subs =]]
-        [wisp.sequence :only [count list]]
-        [wisp.compiler :only [compile compile*]]
-        [wisp.ast :only [pr-str]]))
+            [vm :as vm]
+            [wisp.engine.node :refer [transpile]]
+            [wisp.reader :refer [read push-back-reader]]
+            [wisp.runtime :refer [subs =]]
+            [wisp.sequence :refer [count list]]
+            [wisp.compiler :refer [compile compile*]]
+            [wisp.ast :refer [pr-str]]))
 
 (defn evaluate-code
   "Evaluates some text from REPL input. If multiple forms are

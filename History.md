@@ -1,5 +1,19 @@
 # History
 
+## 0.8.1
+
+  - Add `(debugger!)` form to generate `debugger;` statements.
+
+## 0.8.0
+
+  - Remove `:use` forms in favor of `:require`.
+  - Remove `import` macro in favor of `:require`.
+
+## 0.7.1
+
+  - Implement `assoc` function.
+  - Make `:use` form for imports obsolete by extending `:require`.
+
 ## 0.7.0
 
   - Migrate to imports via clojure compatible `ns` form instead custom

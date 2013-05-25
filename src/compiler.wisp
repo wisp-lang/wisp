@@ -1,23 +1,24 @@
 (ns wisp.compiler
   "wisp language compiler"
-  (:use [wisp.reader :only [read-from-string]]
-        [wisp.ast :only [meta with-meta symbol? symbol keyword? keyword
-                         namespace unquote? unquote-splicing? quote?
-                         syntax-quote? name gensym pr-str]]
-        [wisp.sequence :only [empty? count list? list first second third
-                              rest cons conj reverse reduce vec last repeat
-                              map filter take concat]]
-        [wisp.runtime :only [odd? dictionary? dictionary merge keys vals
-                             contains-vector? map-dictionary string? number?
-                             vector? boolean? subs re-find true? false? nil?
-                             re-pattern? inc dec str char int = ==]]
-        [wisp.string :only [split join upper-case replace]]
-        [wisp.backend.javascript.writer :only [write-reference
-                                               write-keyword-reference
-                                               write-keyword write-symbol
-                                               write-nil write-comment
-                                               write-number write-string
-                                               write-number write-boolean]]))
+  (:require [wisp.reader :refer [read-from-string]]
+            [wisp.ast :refer [meta with-meta symbol? symbol keyword? keyword
+                              namespace unquote? unquote-splicing? quote?
+                              syntax-quote? name gensym pr-str]]
+            [wisp.sequence :refer [empty? count list? list first second third
+                                   rest cons conj reverse reduce vec last
+                                   repeat map filter take concat seq?]]
+            [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
+                                  contains-vector? map-dictionary string?
+                                  number? vector? boolean? subs re-find true?
+                                  false? nil? re-pattern? inc dec str char
+                                  int = ==]]
+            [wisp.string :refer [split join upper-case replace]]
+            [wisp.backend.javascript.writer :refer [write-reference
+                                                    write-keyword-reference
+                                                    write-keyword write-symbol
+                                                    write-nil write-comment
+                                                    write-number write-string
+                                                    write-number write-boolean]]))
 
 (defn ^boolean self-evaluating?
   "Returns true if form is self evaluating"
@@ -1057,135 +1058,174 @@
                               "\n--------------\n")
                          ~uri)))))))
 
-(install-macro
- 'import
- (fn
-   "Helper macro for importing node modules"
-   [imports path]
-   (if (nil? path)
-     `(require ~imports)
-     (if (symbol? imports)
-       `(def ~(with-meta imports {:private true}) (require ~path))
-       (loop [form '() names imports]
-         (if (empty? names)
-           `(do* ~@form)
-           (let [alias (first names)
-                 id (symbol (str ".-" (name alias)))]
-             (recur (cons `(def ~(with-meta alias {:private true})
-                             (~id (require ~path))) form)
-                    (rest names)))))))))
 
-(defn expand-ns
-  "Sets *ns* to the namespace named by name (unevaluated), creating it
-  if needed. references can be zero or more of: (:refer-clojure ...)
-  (:require ...) (:use ...) (:import ...) (:load ...) (:gen-class)
-  with the syntax of refer-clojure/require/use/import/load/gen-class
-  respectively, except the arguments are unevaluated and need not be
-  quoted. (:gen-class ...), when supplied, defaults to :name
-  corresponding to the ns name, :main true, :impl-ns same as ns, and
-  :init-impl-ns true. All options of gen-class are
-  supported. The :gen-class directive is ignored when not
-  compiling. If :gen-class is not supplied, when compiled only an
-  nsname__init.class will be generated. If :refer-clojure is not used, a
-  default (refer 'clojure) is used. Use of ns is preferred to
-  individual calls to in-ns/require/use/import:
 
-  (ns foo.bar
-  (:refer-clojure :exclude [ancestors printf])
-  (:require (clojure.contrib sql combinatorics))
-  (:use (my.lib this that))
-  (:import (java.util Date Timer Random)
-  (java.sql Connection Statement)))"
-  [id & params]
-  (let [ns (str id)
-        ;; ns-root is used for resolving requirements
-        ;; relatively if they're under same root.
-        requirer (split ns \.)
-        doc (if (string? (first params))
-              (first params)
-              nil)
-        args (if doc (rest params) params)
-        parse-references (fn [forms]
-                           (reduce (fn [references form]
-                                     (set! (get references (name (first form)))
-                                           (vec (rest form)))
-                                     references)
-                                   {}
-                                   forms))
-        references (parse-references args)
 
-        id->path (fn id->path [id]
-                   (let [requirement (split (str id) \.)
-                         relative? (identical? (first requirer)
-                                               (first requirement))]
-                     (if relative?
-                       (loop [from requirer
-                              to requirement]
-                         (if (identical? (first from)
-                                         (first to))
-                           (recur (rest from) (rest to))
-                           (join \/
-                                 (concat [\.]
-                                         (repeat (dec (count from)) "..")
-                                         to))))
-                       (join \/ requirement))))
+;; NS
 
-        make-require (fn [from as name]
-                       (let [path (id->path from)
-                             requirement (if name
-                                           `(. (require ~path) ~(symbol nil (str \- name)))
-                                           `(require ~path))]
-                         (if as
-                           `(def ~as ~requirement)
-                           requirement)))
 
-        expand-requirement (fn [form]
-                             (let [from (first form)
-                                   as (and (identical? ':as (second form))
-                                             (third form))]
-                               (make-require from as)))
+(defn parse-references
+  "Takes part of namespace difinition and creates hash
+  of reference forms"
+  [forms]
+  (reduce (fn [references form]
+            ;; If not a vector than it's not a reference
+            ;; form that wisp understands so just skip it.
+            (if (seq? form)
+              (set! (get references (name (first form)))
+                    (vec (rest form))))
+            references)
+          {}
+          forms))
 
-        expand-use (fn [form]
-                     (let [from (first form)
-                           directives (apply dictionary (vec (rest form)))
-                           names (get directives ':only)
-                           renames (get directives ':rename)
+(defn parse-require
+  [form]
+  (let [;; require form may be either vector with id in the
+        ;; head or just an id symbol. normalizing to a vector
+        requirement (if (symbol? form) [form] (vec form))
+        id (first requirement)
+        ;; bunch of directives may follow require form but they
+        ;; all come in pairs. wisp supports following pairs:
+        ;; :as foo
+        ;; :refer [foo bar]
+        ;; :rename {foo bar}
+        ;; join these pairs in a hash for key based access.
+        params (apply dictionary (rest requirement))
 
-                           named-imports (and names
-                                              (map (fn [name] (make-require from name name))
-                                                   names))
+        imports (reduce (fn [imports name]
+                          (set! (get imports name)
+                                (or (get imports name) name))
+                          imports)
+                        (conj {} (get params ':rename))
+                        (get params ':refer))]
+    ;; results of analyzes are stored as metadata on a given
+    ;; form
+    (conj {:id id :imports imports} params)))
 
-                           renamed-imports (and renames
-                                                (map (fn [pair]
-                                                       (make-require from
-                                                                     (second pair)
-                                                                     (first pair)))
-                                                     renames))]
-                       (assert (or names renames)
-                               (str "Only [my.lib :only [foo bar]] form & "
-                                    "[clojure.string :rename {replace str-replace} are supported"))
-                       (concat [] named-imports renamed-imports)))
+(defn analyze-ns
+  [form]
+  (let [id (first form)
+        params (rest form)
+        ;; Optional docstring that follows name symbol
+        doc (if (string? (first params)) (first params))
+        ;; If second form is not a string than treat it
+        ;; as regular reference form
+        references (parse-references (if doc (rest params) params))]
+    (with-meta form {:id id
+                     :doc doc
+                     :require (if (:require references)
+                                (map parse-require (:require references)))})))
 
-        require-forms (:require references)
-        use-forms (:use references)
-        requirements (if require-forms
-                       (map expand-requirement require-forms))
-        uses (if use-forms
-               (apply concat (map expand-use use-forms)))]
+(defn id->ns
+  "Takes namespace identifier symbol and translates to new
+  simbol without . special characters
+  wisp.core -> wisp*core"
+  [id]
+  (symbol nil (join \* (split (str id) \.))))
 
+(defn name->field
+  "Takes a requirement name symbol and returns field
+  symbol.
+  foo -> -foo"
+  [name]
+  (symbol nil (str \- name)))
+
+(defn compile-import
+  [module]
+  (fn [form]
+    `(def ~(second form) (. ~module ~(name->field (first form))))))
+
+(defn compile-require
+  [requirer]
+  (fn [form]
+    (let [id (:id form)
+          requirement (id->ns (or (get form ':as) id))
+          path (resolve requirer id)
+          imports (:imports form)]
+      (concat ['do* `(def ~requirement (require ~path))]
+              (if imports (map (compile-import requirement) imports))))))
+
+(defn resolve
+  [from to]
+  (let [requirer (split (str from) \.)
+        requirement (split (str to) \.)
+        relative? (and (not (identical? (str from)
+                                        (str to)))
+                       (identical? (first requirer)
+                                   (first requirement)))]
+    (if relative?
+      (loop [from requirer
+             to requirement]
+        (if (identical? (first from)
+                        (first to))
+          (recur (rest from) (rest to))
+          (join \/
+                (concat [\.]
+                        (repeat (dec (count from)) "..")
+                        to))))
+      (join \/ requirement))))
+
+
+(defn compile-ns
+  "Sets *ns* to the namespace named by name. Unlike clojure ns
+  wisp ns is a lot more minimalistic and supports only on way
+  of importing modules:
+
+   (ns interactivate.core.main
+    \"interactive code editing\"
+    (:require [interactivate.host :refer [start-host!]]
+              [fs]
+              [wisp.backend.javascript.writer :as writer]
+              [wisp.sequence
+               :refer [first rest]
+               :rename {first car rest cadr}]))
+
+  First parameter `interactivate.core.main` is a name of the
+  namespace, in this case it'll represent module `./core/main`
+  from package `interactivate`, while this is not enforced in
+  any way it's recomended to replecate filesystem path.
+
+  Second string parameter is just a description of the module
+  and is completely optional.
+
+  Next (:require ...) form defines dependencies that will be
+  imported at runtime. Given example imports multiple modules:
+
+  1. First import will import `start-host!` function from the
+     `interactivate.host` module. Which will be loaded from the
+     `../host` location. That's because modules path is resolved
+     relative to a name, but only if they share same root.
+  2. Second form imports `fs` module and make it available under
+     the same name. Note that in this case it could have being
+     written without wrapping it into brackets.
+  3. Third form imports `wisp.backend.javascript.writer` module
+     from `wisp/backend/javascript/writer` and makes it available
+     via `writer` name.
+  4. Last and most advanced form imports `first` and `rest`
+     functions from the `wisp.sequence` module, although it also
+     renames them and there for makes available under different
+     `car` and `cdr` names.
+
+  While clojure has many other kind of reference forms they are
+  not recognized by wisp and there for will be ignored."
+  [& form]
+  (let [metadata (meta (analyze-ns form))
+        id (str (:id metadata))
+        doc (:doc metadata)
+        requirements (:require metadata)
+        ns (if doc {:id id :doc doc} {:id id})]
     (concat
-     (list 'do*
-           ;; Sets *ns* to the namespace named by name
-           `(def *ns* ~ns)
-           `(set! (.-namespace module) *ns*))
-     (if doc [`(set! (.-description module) ~doc)])
-     requirements
-     uses)))
+     ['do* `(def *ns* ~ns)]
+     (if requirements (map (compile-require id) requirements)))))
 
-(install-macro 'ns expand-ns)
+(install-macro 'ns compile-ns)
 
 (install-macro
  'print
  (fn [& more]
    "Prints the object(s) to the output for human consumption."
    `(.log console ~@more)))
+
+(install-macro
+ 'debugger!
+ (fn [] 'debugger))

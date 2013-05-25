@@ -1,8 +1,9 @@
-(import [symbol quote deref name keyword
-         unquote meta dictionary pr-str] "../src/ast")
-(import [dictionary nil? str =] "../src/runtime")
-(import [read-from-string] "../src/reader")
-(import [list] "../src/sequence")
+(ns wisp.test.reader
+  (:require [wisp.src.ast :refer [symbol quote deref name keyword
+                                  unquote meta dictionary pr-str]]
+            [wisp.src.runtime :refer [dictionary nil? str =]]
+            [wisp.src.reader :refer [read-from-string]]
+            [wisp.src.sequence :refer [list]]))
 
 (def read-string read-from-string)
 

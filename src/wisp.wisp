@@ -2,12 +2,12 @@
   "Wisp program that reads wisp code from stdin and prints
   compiled javascript code into stdout"
   (:require [fs :as fs]
-            [path :as path])
-  (:use [module :only [Module]]
-        [wisp.repl :only [start]]
-        [wisp.runtime :only [str]]
-        [wisp.compiler :only [compile*]]
-        [wisp.reader :only [read*]]))
+            [path :as path]
+            [module :refer [Module]]
+            [wisp.repl :refer [start]]
+            [wisp.runtime :refer [str]]
+            [wisp.compiler :refer [compile*]]
+            [wisp.reader :refer [read*]]))
 
 (defn- exit
   "Takes care of exiting node and printing erros if encounted"

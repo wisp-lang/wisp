@@ -1,10 +1,10 @@
 (ns wisp.test.compiler
-  (:use [wisp.src.ast :only [symbol]]
-        [wisp.src.sequence :only [list]]
-        [wisp.src.runtime :only [str =]]
-        [wisp.src.compiler :only [self-evaluating? compile macroexpand
-                                  compile-program]]
-        [wisp.src.reader :only [read-from-string]]))
+  (:require [wisp.src.ast :refer [symbol]]
+            [wisp.src.sequence :refer [list]]
+            [wisp.src.runtime :refer [str =]]
+            [wisp.src.compiler :refer [self-evaluating? compile macroexpand
+                                       compile-program]]
+            [wisp.src.reader :refer [read-from-string]]))
 
 (defn transpile [& forms] (compile-program forms))
 
@@ -517,36 +517,37 @@
 
 (print "test ns macro")
 
-(assert (= (transpile '(ns wisp.core
+(assert (= (transpile '(ns wisp.example.main
                          (:refer-clojure :exclude [macroexpand-1])
                          (:require [clojure.java.io]
                                    [wisp.example.dependency :as dep]
-                                   [wisp.foo]
-                                   [clojure.string :as string]
-                                   [cljs.tagged-literals :as tags])
-                         (:use [clojure.string :only [split join]]
-                               [wisp.sequence :rename {concat append first car}]
-                               [wisp.ast :only [sym] :rename {keyword key}])
+                                   [wisp.foo :as wisp.bar]
+                                   [clojure.string :as string :refer [join split]]
+                                   [wisp.sequence :refer [first rest] :rename {first car rest cdr}]
+                                   [wisp.ast :as ast :refer [symbol] :rename {symbol ast-symbol}])
                          (:use-macros [cljs.analyzer-macros :only [disallowing-recur]])))
-"var _ns_ = \"wisp.core\";
-module.namespace = _ns_;
-require(\"clojure/java/io\");
-var dep = require(\"./example/dependency\");
-require(\"./foo\");
+"var _ns_ = {
+  \"id\": \"wisp.example.main\"
+};
+var clojure_java_io = require(\"clojure/java/io\");;
+var dep = require(\"./dependency\");;
+var wisp_bar = require(\"./../foo\");;
 var string = require(\"clojure/string\");
-var tags = require(\"cljs/tagged-literals\");
-var split = (require(\"clojure/string\")).split;
-var join = (require(\"clojure/string\")).join;
-var append = (require(\"./sequence\")).concat;
-var car = (require(\"./sequence\")).first;
-var sym = (require(\"./ast\")).sym;
-var key = (require(\"./ast\")).keyword;"))
+var join = string.join;
+var split = string.split;;
+var wisp_sequence = require(\"./../sequence\");
+var car = wisp_sequence.first;
+var cdr = wisp_sequence.rest;;
+var ast = require(\"./../ast\");
+var astSymbol = ast.symbol;;"))
 
 (assert (= (transpile '(ns foo.bar))
-           (str "var _ns_ = \"foo.bar\";\n"
-                "module.namespace = _ns_;")))
+"var _ns_ = {
+  \"id\": \"foo.bar\"
+};"))
 
 (assert (= (transpile '(ns foo.bar "my great lib"))
-           (str "var _ns_ = \"foo.bar\";\n"
-                "module.namespace = _ns_;\n"
-                "module.description = \"my great lib\";")))
+"var _ns_ = {
+  \"id\": \"foo.bar\",
+  \"doc\": \"my great lib\"
+};"))

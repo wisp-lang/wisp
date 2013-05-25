@@ -1,9 +1,9 @@
 (ns wisp.engine.node
-  (:use [fs :only [read-file-sync]]
-        [wisp.sequence :only [rest]]
-        [wisp.runtime :only [str]]
-        [wisp.reader :only [read*]]
-        [wisp.compiler :only [compile*]]))
+  (:require [fs :refer [read-file-sync]]
+            [wisp.sequence :refer [rest]]
+            [wisp.runtime :refer [str]]
+            [wisp.reader :refer [read*]]
+            [wisp.compiler :refer [compile*]]))
 
 (set! global.**verbose** (<= 0 (.indexOf process.argv :--verbose)))
 

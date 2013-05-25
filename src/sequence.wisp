@@ -1,6 +1,6 @@
 (ns wisp.sequence
-  (:use [wisp.runtime :only [nil? vector? fn? number? string? dictionary?
-                             key-values str dec inc merge]]))
+  (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
+                                  key-values str dec inc merge dictionary]]))
 
 ;; Implementation of list
 
@@ -347,6 +347,14 @@
             (lazy-seq?)) (conj-list sequence items)
         (dictionary? sequence) (merge sequence (apply merge items))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
+
+(defn assoc
+  [source & key-values]
+  ;(assert (even? (count key-values)) "Wrong number of arguments")
+  ;(assert (and (not (seq? source))
+  ;             (not (vector? source))
+  ;             (object? source)) "Can only assoc on dictionaries")
+  (conj source (apply dictionary key-values)))
 
 (defn concat
   "Returns list representing the concatenation of the elements in the
