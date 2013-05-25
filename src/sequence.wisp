@@ -1,6 +1,6 @@
 (ns wisp.sequence
-  (:use [wisp.runtime :only [nil? vector? fn? number? string? dictionary?
-                             key-values str dec inc merge dictionary]]))
+  (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
+                                  key-values str dec inc merge dictionary]]))
 
 ;; Implementation of list
 

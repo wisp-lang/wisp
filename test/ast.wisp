@@ -1,9 +1,9 @@
 (ns wisp.test.ast
-  (:use [wisp.src.reader :only [read-from-string]]
-        [wisp.src.sequence :only [list]]
-        [wisp.src.runtime :only [str =]]
-        [wisp.src.ast :only [name gensym symbol? symbol keyword? keyword
-                             quote? quote syntax-quote? syntax-quote]]))
+  (:require [wisp.src.reader :refer [read-from-string]]
+            [wisp.src.sequence :refer [list]]
+            [wisp.src.runtime :refer [str =]]
+            [wisp.src.ast :refer [name gensym symbol? symbol keyword? keyword
+                                  quote? quote syntax-quote? syntax-quote]]))
 
 (def read-string read-from-string)
 

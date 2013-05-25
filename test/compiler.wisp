@@ -1,10 +1,10 @@
 (ns wisp.test.compiler
-  (:use [wisp.src.ast :only [symbol]]
-        [wisp.src.sequence :only [list]]
-        [wisp.src.runtime :only [str =]]
-        [wisp.src.compiler :only [self-evaluating? compile macroexpand
-                                  compile-program]]
-        [wisp.src.reader :only [read-from-string]]))
+  (:require [wisp.src.ast :refer [symbol]]
+            [wisp.src.sequence :refer [list]]
+            [wisp.src.runtime :refer [str =]]
+            [wisp.src.compiler :refer [self-evaluating? compile macroexpand
+                                       compile-program]]
+            [wisp.src.reader :refer [read-from-string]]))
 
 (defn transpile [& forms] (compile-program forms))
 

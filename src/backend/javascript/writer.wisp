@@ -1,11 +1,12 @@
 (ns wisp.backend.javascript.writer
   "Compiler backend for for writing JS output"
-  (:use [wisp.ast :only [name namespace symbol symbol? keyword?]]
-        [wisp.sequence :only [list first rest list? vec map count last
-                              reduce empty?]]
-        [wisp.runtime :only [true? nil? string? number? vector? dictionary?
-                             boolean? re-pattern? re-find dec subs]]
-        [wisp.string :only [replace join split upper-case]]))
+  (:require [wisp.ast :refer [name namespace symbol symbol? keyword?]]
+            [wisp.sequence :refer [list first rest list? vec map count last
+                                   reduce empty?]]
+            [wisp.runtime :refer [true? nil? string? number? vector?
+                                  dictionary? boolean? re-pattern?
+                                  re-find dec subs]]
+            [wisp.string :refer [replace join split upper-case]]))
 
 ;; Actual code
 

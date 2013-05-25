@@ -1,8 +1,8 @@
 (ns wisp.engine.browser
-  (:use [wisp.runtime :only [str]]
-        [wisp.sequence :only [rest]]
-        [wisp.reader :only [read-from-string]]
-        [wisp.compiler :only [compile*]]))
+  (:require [wisp.runtime :refer [str]]
+            [wisp.sequence :refer [rest]]
+            [wisp.reader :refer [read-from-string]]
+            [wisp.compiler :refer [compile*]]))
 
 (defn evaluate
   [code url] (eval (compile* (read* code url))))

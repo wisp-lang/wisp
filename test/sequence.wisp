@@ -1,9 +1,9 @@
 (ns wisp.test.sequence
-  (:use [wisp.src.sequence :only [cons conj list list? seq vec empty? count
-                                  first second third rest last butlast take
-                                  drop repeat concat reverse sort map filter
-                                  reduce assoc]]
-        [wisp.src.runtime :only [str inc dec even? odd? vals =]]))
+  (:require [wisp.src.sequence :refer [cons conj list list? seq vec empty?
+                                       count first second third rest last
+                                       butlast take drop repeat concat reverse
+                                       sort map filter reduce assoc]]
+            [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
 
 
 (print "test empty?")

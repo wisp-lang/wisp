@@ -1,8 +1,8 @@
-(import [dictionary? vector? subs str
-        and or
-         = == > >= < <= + - / *] "../src/runtime")
-(import [list concat] "../src/sequence")
-(import [symbol] "../src/ast")
+(ns wisp.test.runtime
+  (:require [wisp.src.runtime :refer [dictionary? vector? subs str
+                                      and or = == > >= < <= + - / *]]
+            [wisp.src.sequence :refer [list concat]]
+            [wisp.src.ast :refer [symbol]]))
 
 
 (print "test dictionary?")

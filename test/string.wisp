@@ -1,7 +1,7 @@
 (ns wisp.test.string
-  (:use [wisp.src.string :only [join split]]
-        [wisp.src.sequence :only [list]]
-        [wisp.src.runtime :only [str =]]))
+  (:require [wisp.src.string :refer [join split]]
+            [wisp.src.sequence :refer [list]]
+            [wisp.src.runtime :refer [str =]]))
 
 (print "test join")
 
