@@ -1097,10 +1097,7 @@
                                 (or (get imports name) name))
                           imports)
                         (conj {} (get params ':rename))
-                        ;; Temporalily support use so that
-                        ;; we don't have to revert back.
-                        (concat (get params ':refer)
-                                (get params ':only)))]
+                        (get params ':refer))]
     ;; results of analyzes are stored as metadata on a given
     ;; form
     (conj {:id id :imports imports} params)))
@@ -1116,8 +1113,6 @@
         references (parse-references (if doc (rest params) params))]
     (with-meta form {:id id
                      :doc doc
-                     :use (if (:use references)
-                            (map parse-require (:use references)))
                      :require (if (:require references)
                                 (map parse-require (:require references)))})))
 
@@ -1200,9 +1195,7 @@
         ns (if doc {:id id :doc doc} {:id id})]
     (concat
      ['do* `(def *ns* ~ns)]
-     (if requirements (map (compile-require id) requirements))
-     ;; Temporarily treat :use as require
-     (if (:use metadata) (map (compile-require id) (:use metadata))))))
+     (if requirements (map (compile-require id) requirements)))))
 
 (install-macro 'ns compile-ns)
 
