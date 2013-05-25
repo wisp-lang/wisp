@@ -451,6 +451,10 @@
         "(get (a b) (get c d)) => ((a(b)) || 0)[(c || 0)[d]]")
 (assert (identical? (transpile '(get (or t1 t2) p))
                     "((t1 || t2) || 0)[p]"))
+(assert (identical? (transpile '(aget object field))
+                    "object[field]"))
+(assert (identical? (transpile '(aget object 'field))
+                    "object.field"))
 
 (print "compiles instance?")
 

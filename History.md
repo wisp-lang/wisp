@@ -2,6 +2,7 @@
 
 ## 0.8.1
 
+  - Fix `aget` with for quoted attributes `(aget foo 'bar).
   - Move `instance?` form expander to a writer.
   - Add `(debugger!)` form to generate `debugger;` statements.
 

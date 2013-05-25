@@ -752,14 +752,27 @@
   [form]
   (let [target (macroexpand (first form))
         attribute (macroexpand (second form))
+        field? (and (quote? attribute)
+                    (symbol? (second attribute)))
+
         not-found (third form)
-        template (if (list? target) "(~{})[~{}]" "~{}[~{}]")]
+        member (if field?
+                 (second attribute)
+                 attribute)
+
+        target-template (if (list? target) "(~{})" "~{}")
+        attribute-template (if field?
+                             ".~{}"
+                             "[~{}]")
+        template (str target-template attribute-template)]
     (if not-found
       (compile (list 'or
                      (list 'get (first form) (second form))
                      (macroexpand not-found)))
       (compile-template
-       (list template (compile target) (compile attribute))))))
+       (list template
+             (compile target)
+             (compile member))))))
 
 (defn compile-get
   [form]
