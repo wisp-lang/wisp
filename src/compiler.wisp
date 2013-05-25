@@ -1058,23 +1058,6 @@
                               "\n--------------\n")
                          ~uri)))))))
 
-(install-macro
- 'import
- (fn
-   "Helper macro for importing node modules"
-   [imports path]
-   (if (nil? path)
-     `(require ~imports)
-     (if (symbol? imports)
-       `(def ~(with-meta imports {:private true}) (require ~path))
-       (loop [form '() names imports]
-         (if (empty? names)
-           `(do* ~@form)
-           (let [alias (first names)
-                 id (symbol (str ".-" (name alias)))]
-             (recur (cons `(def ~(with-meta alias {:private true})
-                             (~id (require ~path))) form)
-                    (rest names)))))))))
 
 
 
