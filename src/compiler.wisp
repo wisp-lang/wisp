@@ -6,7 +6,7 @@
                          syntax-quote? name gensym pr-str]]
         [wisp.sequence :only [empty? count list? list first second third
                               rest cons conj reverse reduce vec last repeat
-                              map filter take concat]]
+                              map filter take concat seq?]]
         [wisp.runtime :only [odd? dictionary? dictionary merge keys vals
                              contains-vector? map-dictionary string? number?
                              vector? boolean? subs re-find true? false? nil?
@@ -1075,7 +1075,119 @@
                              (~id (require ~path))) form)
                     (rest names)))))))))
 
-(defn expand-ns
+
+
+;; NS
+
+
+(defn parse-references
+  "Takes part of namespace difinition and creates hash
+  of reference forms"
+  [forms]
+  (reduce (fn [references form]
+            ;; If not a vector than it's not a reference
+            ;; form that wisp understands so just skip it.
+            (if (seq? form)
+              (set! (get references (name (first form)))
+                    (vec (rest form))))
+            references)
+          {}
+          forms))
+
+(defn parse-require
+  [form]
+  (let [;; require form may be either vector with id in the
+        ;; head or just an id symbol. normalizing to a vector
+        requirement (if (symbol? form) [form] (vec form))
+        id (first requirement)
+        ;; bunch of directives may follow require form but they
+        ;; all come in pairs. wisp supports following pairs:
+        ;; :as foo
+        ;; :refer [foo bar]
+        ;; :rename {foo bar}
+        ;; join these pairs in a hash for key based access.
+        params (apply dictionary (rest requirement))
+
+        imports (reduce (fn [imports name]
+                          (set! (get imports name)
+                                (or (get imports name) name))
+                          imports)
+                        (conj {} (get params ':rename))
+                        ;; Temporalily support use so that
+                        ;; we don't have to revert back.
+                        (concat (get params ':refer)
+                                (get params ':only)))]
+    ;; results of analyzes are stored as metadata on a given
+    ;; form
+    (conj {:id id :imports imports} params)))
+
+(defn analyze-ns
+  [form]
+  (let [id (first form)
+        params (rest form)
+        ;; Optional docstring that follows name symbol
+        doc (if (string? (first params)) (first params))
+        ;; If second form is not a string than treat it
+        ;; as regular reference form
+        references (parse-references (if doc (rest params) params))]
+    (with-meta form {:id id
+                     :doc doc
+                     :use (if (:use references)
+                            (map parse-require (:use references)))
+                     :require (if (:require references)
+                                (map parse-require (:require references)))})))
+
+(defn id->ns
+  "Takes namespace identifier symbol and translates to new
+  simbol without . special characters
+  wisp.core -> wisp*core"
+  [id]
+  (symbol nil (join \* (split (str id) \.))))
+
+(defn name->field
+  "Takes a requirement name symbol and returns field
+  symbol.
+  foo -> -foo"
+  [name]
+  (symbol nil (str \- name)))
+
+(defn compile-import
+  [module]
+  (fn [form]
+    `(def ~(second form) (. ~module ~(name->field (first form))))))
+
+(defn compile-require
+  [requirer]
+  (fn [form]
+    (let [id (:id form)
+          requirement (id->ns (or (get form ':as) id))
+          path (resolve requirer id)
+          imports (:imports form)]
+      (concat ['do* `(def ~requirement (require ~path))]
+              (if imports (map (compile-import requirement) imports))))))
+
+(defn resolve
+  [from to]
+  (let [requirer (split (str from) \.)
+        requirement (split (str to) \.)
+        relative? (and (not (identical? (str from)
+                                        (str to)))
+                       (identical? (first requirer)
+                                   (first requirement)))]
+    (if relative?
+      (loop [from requirer
+             to requirement]
+        (if (identical? (first from)
+                        (first to))
+          (recur (rest from) (rest to))
+          (join \/
+                (concat [\.]
+                        (repeat (dec (count from)) "..")
+                        to))))
+      (join \/ requirement))))
+
+
+(defn compile-ns
   "Sets *ns* to the namespace named by name (unevaluated), creating it
   if needed. references can be zero or more of: (:refer-clojure ...)
   (:require ...) (:use ...) (:import ...) (:load ...) (:gen-class)
@@ -1096,93 +1208,19 @@
   (:use (my.lib this that))
   (:import (java.util Date Timer Random)
   (java.sql Connection Statement)))"
-  [id & params]
-  (let [ns (str id)
-        ;; ns-root is used for resolving requirements
-        ;; relatively if they're under same root.
-        requirer (split ns \.)
-        doc (if (string? (first params))
-              (first params)
-              nil)
-        args (if doc (rest params) params)
-        parse-references (fn [forms]
-                           (reduce (fn [references form]
-                                     (set! (get references (name (first form)))
-                                           (vec (rest form)))
-                                     references)
-                                   {}
-                                   forms))
-        references (parse-references args)
-
-        id->path (fn id->path [id]
-                   (let [requirement (split (str id) \.)
-                         relative? (identical? (first requirer)
-                                               (first requirement))]
-                     (if relative?
-                       (loop [from requirer
-                              to requirement]
-                         (if (identical? (first from)
-                                         (first to))
-                           (recur (rest from) (rest to))
-                           (join \/
-                                 (concat [\.]
-                                         (repeat (dec (count from)) "..")
-                                         to))))
-                       (join \/ requirement))))
-
-        make-require (fn [from as name]
-                       (let [path (id->path from)
-                             requirement (if name
-                                           `(. (require ~path) ~(symbol nil (str \- name)))
-                                           `(require ~path))]
-                         (if as
-                           `(def ~as ~requirement)
-                           requirement)))
-
-        expand-requirement (fn [form]
-                             (let [from (first form)
-                                   as (and (identical? ':as (second form))
-                                             (third form))]
-                               (make-require from as)))
-
-        expand-use (fn [form]
-                     (let [from (first form)
-                           directives (apply dictionary (vec (rest form)))
-                           names (get directives ':only)
-                           renames (get directives ':rename)
-
-                           named-imports (and names
-                                              (map (fn [name] (make-require from name name))
-                                                   names))
-
-                           renamed-imports (and renames
-                                                (map (fn [pair]
-                                                       (make-require from
-                                                                     (second pair)
-                                                                     (first pair)))
-                                                     renames))]
-                       (assert (or names renames)
-                               (str "Only [my.lib :only [foo bar]] form & "
-                                    "[clojure.string :rename {replace str-replace} are supported"))
-                       (concat [] named-imports renamed-imports)))
-
-        require-forms (:require references)
-        use-forms (:use references)
-        requirements (if require-forms
-                       (map expand-requirement require-forms))
-        uses (if use-forms
-               (apply concat (map expand-use use-forms)))]
-
+  [& form]
+  (let [metadata (meta (analyze-ns form))
+        id (str (:id metadata))
+        doc (:doc metadata)
+        requirements (:require metadata)
+        ns (if doc {:id id :doc doc} {:id id})]
     (concat
-     (list 'do*
-           ;; Sets *ns* to the namespace named by name
-           `(def *ns* ~ns)
-           `(set! (.-namespace module) *ns*))
-     (if doc [`(set! (.-description module) ~doc)])
-     requirements
-     uses)))
+     ['do* `(def *ns* ~ns)]
+     (if requirements (map (compile-require id) requirements))
+     ;; Temporarily treat :use as require
+     (if (:use metadata) (map (compile-require id) (:use metadata))))))
 
-(install-macro 'ns expand-ns)
+(install-macro 'ns compile-ns)
 
 (install-macro
  'print

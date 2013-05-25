@@ -3,6 +3,7 @@
 ## 0.7.1
 
   - Implement `assoc` function.
+  - Make `:use` form for imports obsolete by extending `:require`.
 
 ## 0.7.0
 
