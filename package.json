@@ -23,7 +23,7 @@
   }],
   "devDependencies": {
     "browserify": "2.14.1",
-    "wisp": "0.7.1"
+    "wisp": "0.8.0"
   },
   "engines": {
     "node": ">=0.4.0"
