@@ -1,18 +1,30 @@
-# Wisp
+# wisp
 
-Wisp is a [homoiconic][homoiconicity] JavaScript dialect with [clojure] syntax,
-[s-expressions] and [macros]. Unlike [clojurescript], Wisp code compiles to
-human-readable JavaScript. The goal of Wisp is to compile to the JavaScript
-you would have written anyway. Think of Wisp as [markdown] for JS programing!
+Wisp is a [homoiconic][homoiconicity] JavaScript dialect with [clojure][]
+syntax, [s-expressions][] and [macros][]. Unlike [clojurescript][], wisp
+does not depends on JVM and is completely self-hosted. It compromises
+clojure's awesome data structures and embraces native JS data structures
+to be a better at cooperation with JS. Goal of wisp is to present a subset
+of clojure(script) language such that packages written in wisp can be
+consumed natively by wisp, clojure(script) and JS when compiled, without
+data marshalling or any code changes.
 
-[Homoiconic][homoiconicity] syntax and [macros] are the primary motivations!
+Wisp also does it's best to compile to a JS code that you would have written
+by hand. Think of wisp as [markdown] for JS programing!
+
+[Homoiconic][homoiconicity] syntax and [macros] are the primary features
+it can offer to a breader JS community.
 
 ![meta](http://upload.wikimedia.org/wikipedia/en/b/ba/DrawingHands.jpg)
 
 # Try
 
-You can try it before you buy it:
-http://jeditoolkit.com/wisp/
+You can try online tool that live compiles entered code to JS:
+http://jeditoolkit.com/try-wisp/
+
+You can also try interactive wisp editor that live evalutes entered
+wisp codes:
+http://jeditoolkit.com/interactivate-wisp
 
 # Install
 
@@ -25,12 +37,11 @@ http://jeditoolkit.com/wisp/
 
 
 Wisp is homoiconic JS dialect with a clojure syntax, s-expressions and
-macros. Wisp code compiles to a human readable javascript, which is one
-of they key differences from clojurescript.
+macros. Key difference from clojure(script) is that wisp embraces JS data
+structures but without sacrificing functional merits.
 
 
 ## Data structures
-
 
 
 #### nil
@@ -75,7 +86,7 @@ My name is wisp!"
 
 #### Characters
 
-Characters are syntatic sugar for JS single char strings
+Characters are syntatic sugar for strings of single character
 
 ```clojure
 \a  ;; => "a"
@@ -90,23 +101,28 @@ Keywords are symbolic identifiers that evaluate to themselves.
 ```
 
 Since in JS string constants fulfill the purpose of symbolic identifiers,
-keywords compile to equivalent JS strings.
+keywords compile to an equivalent strings in JS. This allows using
+keywords in both clojure(script) & JS idiomatic ways:
 
 ```clojure
 (window.addEventListener :load handler false)
 ```
 
-Keywords can also be invoked as functions, that desugars to associated
-value access in JS:
+Keywords can also be invoked as functions, although it's just a syntax sugar
+that compiles to property access in JS:
 
 ```clojure
-(:bar foo) ;; => foo["bar"]
+(:bar foo) ;; => (foo || 0)["bar"]
 ```
 
+Note that keywords in wisp are not real functions so they can't be composed
+or passed to a high order functions.
 
 #### Vectors
 
-Wisp vectors are JS arrays.
+Wisp vectors are plain JS arrays, but never the less all standard
+library functions are non-destructive and pure functional as it's in
+Clojure.
 
 ```clojure
 [ 1 2 3 4 ]
@@ -117,11 +133,11 @@ Note: Commas are whitespace & can be used if desired
 [ 1, 2, 3, 4]
 ```
 
+#### Dictionaries
 
-#### Maps
-
-Maps are hash maps, plain JS objects. Note that unlike in clojure, keys cannot
-be of arbitary types.
+Wisp does not has clojure like value to value maps by default, instead
+it has dictionairies, or rather plain JS objects, there for unlike in
+clojure, keys can not be of an arbitary types.
 
 ```clojure
 { "foo" bar :beep-bop "bop" 1 2 }
@@ -130,28 +146,37 @@ be of arbitary types.
 Commas are optional but can come handy for separating key value pairs.
 
 ```clojure
-{ a 1, b 2 }
+{ :a 1, :b 2 }
 ```
 
-*In a future JSONs syntax may be made compatible with map syntax.*
+Support for real Clojure like maps can be later made available via
+libraries. Idea of adding support of standard JSONs syntax is also
+being considered.
 
 
 #### Lists
 
-You can't have a lisp without lists! Wisp is homoiconic and its code is made
-up of lists representing expressions. The first item in the expression is a
-function, being invoked with rest items as arguments.
+What would be a lisp without lists right ?! Wisp is homoiconic and its
+code is made up of lists representing expressions. As in other lisps
+first item of the expression is an operator / function, that is passed
+rest of the list items.
 
 
 ```clojure
 (foo bar baz) ; => foo(bar, baz);
 ```
 
+In compiled JS it's quite unlikely to end up with lists as it's
+primarily serves it's purpose at compile time. Never the less lists
+are exposed by standard library and can be used, but we'll get back
+to this later.
+
 ## Conventions
 
-Wisp puts a lot of effort in making naming conventions transparent,
-by encouraging lisp conventions and then translating them to their
-equivalent JS conventions:
+Wisp makes it's best effort to compile to JS that one would write by
+hand, but it also trys to embrace idiomatic naming conventios of lisp.
+To make this possible wisp translates lisp name conventions to related
+JS conventions:
 
 ```clojure
 (dash-delimited)   ;; => dashDelimited
@@ -160,8 +185,9 @@ equivalent JS conventions:
 (list->vector)     ;; => listToVector
 ```
 
-As a side effect some names can be expressed in a few ways, although
-it's considered to be an advantage.
+Side effect of this is that same thing may be expressed in a few differnt
+ways, although it's unlikely to cause problems instead it should lead to
+very natural APIs from both JS and lisp perspective.
 
 ```clojure
 (parse-int x)
@@ -174,10 +200,10 @@ it's considered to be an advantage.
 
 ## Special forms
 
-There are some functions in wisp that are special, in the sense that
-they compile to JS expressions & cannot be passed around as regular
-functions. JS operators are represented in wisp as special forms
-
+There are some special operators in wisp, in a sense that
+they compile to JS expressions rather then function calls,
+although same named functions are also available in standard
+library to allow function composition.
 
 #### Arithmetic operations
 
@@ -239,6 +265,7 @@ Still if you need it you have it.
 ```clojure
 (set! a 1)
 ```
+Note that `!` suffic serves as an alert of causing side-effects.
 
 #### Conditionals
 
@@ -320,7 +347,8 @@ but in the future they will compile to comments associated with function.
 ```
 
 Wisp makes capturing of rest arguments a lot easier than JS. argument
-that follows special `&` symbol will capture all the rest args in array.
+that follows special `&` symbol will capture rest args in standar vector
+(array).
 
 ```clojure
 (fn [x & rest]
@@ -351,7 +379,18 @@ passed to it, it throws exception.
   ([x y] (- x y)))
 ```
 
+#### Loops
 
+The classic way to build a loop in a Lisp is a recursive call,
+and it’s in wisp as well. To do that it provides `loop` `recur`
+pair.
+
+```clojuerscript
+(loop [x 10]
+  (if (> x 1)
+    (print x)
+    (recur (- x 2))))
+```
 
 ## Other Special Forms
 
@@ -603,6 +642,81 @@ without such tradeoffs.
  (map get-input-text)
  (reduce render))
 ```
+
+## Export/Import modules
+
+### Export
+
+All the top level definition in a file are by default exported:
+
+```clojure
+(def foo bar)
+(defn greet [name] (str "hello " name))
+```
+
+Although it's still possible to define top level bindings without
+exporting them via ^:private matada:
+
+```clojure
+(def ^:private foo bar)
+```
+
+For functions there is even syntax sugar:
+
+```js
+(defn- greet [name] (str "hello " name))
+```
+
+
+### Import
+
+Module importing is done via `ns` special form that is manually
+named. Unlike `ns` in clojure in wisp it's super minimalistic and
+supports only one essential way of importing modules:
+
+```clojure
+(ns interactivate.core.main
+  "interactive code editing"
+  (:require [interactivate.host :refer [start-host!]]
+            [fs]
+            [wisp.backend.javascript.writer :as writer]
+            [wisp.sequence
+             :refer [first rest]
+             :rename {first car rest cadr}]))
+```
+
+Let's go through the above example to get a complete picture on
+how modules can be imported:
+
+First parameter `interactivate.core.main` is a name of the
+module / namespace, in this case it represent's module
+`./core/main` under the package `interactivate`. While this is
+not enforced in any way it's recomended to replecate filesystem
+path's in name.
+
+Second string parameter is just a description of the module
+and is completely optional.
+
+Next `(:require ...)` form defines dependencies that will be
+imported at runtime. Given example imports multiple modules:
+
+  1. First import will import `start-host!` function from the
+     `interactivate.host` module. Which will be loaded from the
+     `../host` location. That's because modules path is resolved
+     relative to a name, but only if they share same root.
+  2. Second form imports `fs` module and make it available under
+     the same name. Note that in this case it could have being
+     written without wrapping it into brackets.
+  3. Third form imports `wisp.backend.javascript.writer` module
+     from `wisp/backend/javascript/writer` and makes it available
+     via `writer` name.
+  4. Last and most advanced form imports `first` and `rest`
+     functions from the `wisp.sequence` module, although it also
+     renames them and there for makes available under different
+     `car` and `cdr` names.
+
+While clojure has many other kind of reference forms they are
+not recognized by wisp and there for will be ignored.
 
 
 [homoiconicity]:http://en.wikipedia.org/wiki/Homoiconicity

@@ -1,5 +1,10 @@
 # History
 
+## 0.8.0
+
+  - Remove `:use` forms in favor of `:require`.
+  - Remove `import` macro in favor of `:require`.
+
 ## 0.7.1
 
   - Implement `assoc` function.
