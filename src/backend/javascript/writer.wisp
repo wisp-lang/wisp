@@ -1,11 +1,11 @@
 (ns wisp.backend.javascript.writer
   "Compiler backend for for writing JS output"
   (:require [wisp.ast :refer [name namespace symbol symbol? keyword?]]
-            [wisp.sequence :refer [list first rest list? vec map count last
-                                   reduce empty?]]
+            [wisp.sequence :refer [list first second third rest list?
+                                   vec map count last reduce empty?]]
             [wisp.runtime :refer [true? nil? string? number? vector?
                                   dictionary? boolean? re-pattern?
-                                  re-find dec subs]]
+                                  re-find dec subs =]]
             [wisp.string :refer [replace join split upper-case]]))
 
 ;; Actual code
@@ -148,6 +148,13 @@
                               (compile (cons 'set! form)))))))
 
 
+(defn write-instance?
+  "Evaluates x and tests if it is an instance of the class
+  c. Returns true or false"
+  [form]
+  (write-template "~{} instanceof ~{}"
+                  (write (second form))
+                  (write (first form))))
 (defn write
   "compiles given form"
   [form]

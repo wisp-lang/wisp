@@ -16,6 +16,7 @@
             [wisp.backend.javascript.writer :refer [write-reference
                                                     write-keyword-reference
                                                     write-keyword write-symbol
+                                                    write-instance?
                                                     write-nil write-comment
                                                     write-number write-string
                                                     write-number write-boolean]]))
@@ -764,15 +765,6 @@
   (compile-aget (cons (list 'or (first form) 0)
                       (rest form))))
 
-(defn compile-instance
-  "Evaluates x and tests if it is an instance of the class
-  c. Returns true or false"
-  [form]
-  (compile-template (list "~{} instanceof ~{}"
-                          (compile (macroexpand (second form)))
-                          (compile (macroexpand (first form))))))
-
-
 (defn compile-not
   "Returns true if x is logical false, false otherwise."
   [form]
@@ -865,7 +857,7 @@
 (install-special '. compile-property)
 (install-special 'apply compile-apply)
 (install-special 'new compile-new)
-(install-special 'instance? compile-instance)
+(install-special 'instance? write-instance?)
 (install-special 'not compile-not)
 (install-special 'loop compile-loop)
 (install-special 'raw* compile-raw)

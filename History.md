@@ -2,6 +2,7 @@
 
 ## 0.8.1
 
+  - Move `instance?` form expander to a writer.
   - Add `(debugger!)` form to generate `debugger;` statements.
 
 ## 0.8.0
