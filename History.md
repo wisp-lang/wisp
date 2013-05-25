@@ -1,5 +1,9 @@
 # History
 
+## 0.8.1
+
+  - Add `(debugger!)` form to generate `debugger;` statements.
+
 ## 0.8.0
 
   - Remove `:use` forms in favor of `:require`.

@@ -1225,3 +1225,7 @@
  (fn [& more]
    "Prints the object(s) to the output for human consumption."
    `(.log console ~@more)))
+
+(install-macro
+ 'debugger!
+ (fn [] 'debugger))
