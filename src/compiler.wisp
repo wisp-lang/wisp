@@ -601,11 +601,12 @@
 
 (defn compile-invoke
   [form]
-  (compile-template
-   ;; Wrap functions returned by expressions into parenthesis.
-   (list (if (list? (first form)) "(~{})(~{})" "~{}(~{})")
-         (compile (first form))
-         (compile-group (rest form)))))
+  (let [callee (macroexpand (first form))
+        template (if (list? callee) "(~{})(~{})" "~{}(~{})")]
+    (compile-template
+     (list template
+           (compile callee)
+           (compile-group (rest form))))))
 
 (defn compile-group
   [form wrap]
