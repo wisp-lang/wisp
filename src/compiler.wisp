@@ -105,7 +105,11 @@
 (defn execute-special
   "Expands special form"
   [name form]
-  ((get **specials** name) form))
+  (let [write (get **specials** name)
+        metadata (meta form)
+        expansion (map (fn [form] form) form)]
+    (write (with-meta form metadata))))
+
 
 
 (defn opt [argument fallback]
@@ -229,7 +233,7 @@
        (syntax-quote? form) (compile-syntax-quoted (second form))
        (special? head) (execute-special head form)
        ;; Compile keyword invoke as a property access.
-       (keyword? head) (compile `(get ~(second form) ~head))
+       (keyword? head) (compile (macroexpand `(get ~(second form) ~head)))
        :else (do
               (if (not (or (symbol? head) (list? head)))
                 (throw (compiler-error
@@ -765,10 +769,6 @@
              (compile target)
              (compile member))))))
 
-(defn compile-get
-  [form]
-  (compile-aget (cons (list 'or (first form) 0)
-                      (rest form))))
 
 (defn compile-not
   "Returns true if x is logical false, false otherwise."
@@ -849,7 +849,6 @@
   (first form))
 
 (install-special 'set! compile-set)
-(install-special 'get compile-get)
 (install-special 'aget compile-aget)
 (install-special 'def compile-def)
 (install-special 'if compile-if-else)
@@ -1288,6 +1287,14 @@
                                         "`\n" error)))
            accessor? target
            :else `(~target ~@args)))))
+
+(install-macro
+ 'get
+ (fn
+   ([object field]
+    `(aget (or ~object 0) ~field))
+   ([object field fallback]
+    `(or (aget (or ~object 0) ~field ~fallback)))))
 
 (install-macro
  'def

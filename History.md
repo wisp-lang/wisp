@@ -2,6 +2,8 @@
 
 ## 0.8.1
 
+  - Rewrite `get` as macro compiling to `aget` forms.
+  - Make re-pattern writer.
   - Alias `compile*` as `compile-program`.
   - Implement `.` operator as a macro.
   - Fix `aget` with for quoted attributes `(aget foo 'bar).
