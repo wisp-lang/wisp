@@ -120,7 +120,20 @@
 
 (def write-vector (write-error "Vectors are not supported"))
 (def write-dictionary (write-error "Dictionaries are not supported"))
-(def write-pattern (write-error "Regular expressions are not supported"))
+
+(defn- escape-pattern [pattern]
+  (set! pattern (join "/" (split pattern "\\/")))
+  (set! pattern (join "\\/" (split pattern "/")))
+  pattern)
+
+(defn write-re-pattern
+  [form]
+  (let [flags (str (if form.multiline "m" "")
+                   (if form.ignoreCase "i" "")
+                   (if form.sticky "y" ""))
+        pattern form.source]
+    (str \/ (escape-pattern pattern) \/ flags)))
+
 
 (defn compile-comment
   [form]

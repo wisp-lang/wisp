@@ -22,6 +22,14 @@
 (assert (not (self-evaluating? self-evaluating?)) "fn is not self evaluating")
 (assert (not (self-evaluating? (symbol "symbol"))) "symbol is not self evaluating")
 
+(print "re-pattern")
+
+(assert (= "/foo/" (transpile #"foo")))
+(assert (= "/foo/m" (transpile #"(?m)foo")))
+(assert (= "/foo/i" (transpile #"(?i)foo")))
+(assert (= "/^$/" (transpile #"^$")))
+(assert (= "/\\/./" (transpile #"/.")))
+
 
 (print "compile primitive forms")
 

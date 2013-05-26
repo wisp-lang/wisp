@@ -14,6 +14,7 @@
                                   int = ==]]
             [wisp.string :refer [split join upper-case replace]]
             [wisp.backend.javascript.writer :refer [write-reference
+                                                    write-re-pattern
                                                     write-if
                                                     write-keyword-reference
                                                     write-keyword write-symbol
@@ -182,7 +183,7 @@
     (string? form) (write-string form)
     (boolean? form) (write-boolean form)
     (nil? form) (write-nil form)
-    (re-pattern? form) (compile-re-pattern form)
+    (re-pattern? form) (write-re-pattern form)
     (vector? form) (compile (apply-form 'vector
                                         (apply list form)
                                         quoted?))
@@ -866,10 +867,6 @@
 (install-special 'raw* compile-raw)
 (install-special 'comment write-comment)
 
-
-(defn compile-re-pattern
-  [form]
-  (str form))
 
 (defn install-native
   "Creates an adapter for native operator"
