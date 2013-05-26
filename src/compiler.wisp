@@ -14,6 +14,7 @@
                                   int = ==]]
             [wisp.string :refer [split join upper-case replace]]
             [wisp.backend.javascript.writer :refer [write-reference
+                                                    write-if
                                                     write-keyword-reference
                                                     write-keyword write-symbol
                                                     write-instance?
@@ -248,18 +249,7 @@
           ""
           forms))
 
-(defn compile-program
-  "compiles all expansions"
-  [forms]
-  (reduce (fn [result form]
-            (str result
-                 (if (empty? result) "" ";\n\n")
-                 (compile (if (list? form)
-                            (with-meta (macroexpand form)
-                              (conj {:top true} (meta form)))
-                            form))))
-          ""
-          forms))
+(def compile-program compile*)
 
 (defn macroexpand-1
   "If form represents a macro form, returns its expansion,
@@ -1301,3 +1291,14 @@
                                         "`\n" error)))
            accessor? target
            :else `(~target ~@args)))))
+
+(install-macro
+ 'def
+ (fn [id value]
+   (let [metadata (meta id)
+         export? (not (:private metadata))]
+     (if export?
+       `(do* (def* ~id ~value)
+             (set! (aget exports (quote ~id))
+                   ~value))
+       `(def* ~id ~value)))))
