@@ -52,7 +52,7 @@
 (assert (identical? (transpile '(foo bar baz)) "foo(bar, baz)")
         "function calls with multi arg compile")
 (assert (identical? (transpile '(foo ((bar baz) beep)))
-                    "foo((bar(baz))(beep))")
+                    "foo(bar(baz)(beep))")
         "nested function calls compile")
 
 (print "compile functions")
@@ -271,7 +271,7 @@
                     "bar.isFoo")
         "property access compiles naming conventions")
 (assert (identical? (transpile '(.-location (.open window url)))
-                    "(window.open(url)).location")
+                    "window.open(url).location")
         "compound property access and method call")
 (assert (identical? (transpile '(.slice (.splice arr 0)))
                     "arr.splice(0).slice()")
@@ -364,7 +364,7 @@
 (assert (identical? (transpile '(and a (or b c))) "a && (b || c)")
         "(and a (or b c)) => a && (b || c)")
 (assert (identical?
-        "(a > b) && (c > d) ?\n  x :\n  y"
+        "((a > b) && (c > d)) ?\n  x :\n  y"
         (transpile '(if (and (> a b) (> c d)) x y))))
 
 (assert (identical?
@@ -495,7 +495,7 @@
 "(function loop(x, y) {
   var recur = loop;
   while (recur === loop) {
-    recur = x > y ?
+    recur = (x > y) ?
     x :
     (x = x + 1, y = y - 1, loop);
   };

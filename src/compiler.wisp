@@ -360,18 +360,31 @@
   nil and false constitute logical falsity, and everything else
   constitutes logical truth, and those meanings apply throughout."
   [form]
-  (let [condition (macroexpand (first form))
-        then-expression (macroexpand (second form))
-        else-expression (macroexpand (third form))]
+  (let [test (macroexpand (first form))
+        consequent (macroexpand (second form))
+        alternate (macroexpand (third form))
+
+        test-template (if (special-expression? test)
+                        "(~{})"
+                        "~{}")
+        consequent-template (if (special-expression? consequent)
+                              "(~{})"
+                              "~{}")
+        alternate-template (if (special-expression? alternate)
+                             "(~{})"
+                             "~{}")
+
+        nested-condition? (and (list? alternate)
+                               (= 'if (first alternate)))]
     (compile-template
       (list
-        (if (and (list? else-expression)
-                 (= (first else-expression) 'if))
-          "~{} ?\n  ~{} :\n~{}"
-          "~{} ?\n  ~{} :\n  ~{}")
-        (compile condition)
-        (compile then-expression)
-        (compile else-expression)))))
+       (str test-template " ?\n  "
+            consequent-template " :\n"
+            (if nested-condition? "" "  ")
+            alternate-template)
+        (compile test)
+        (compile consequent)
+        (compile alternate)))))
 
 (defn compile-dictionary
   "Compiles dictionary to JS object"
@@ -602,7 +615,9 @@
 (defn compile-invoke
   [form]
   (let [callee (macroexpand (first form))
-        template (if (list? callee) "(~{})(~{})" "~{}(~{})")]
+        template (if (special-expression? callee)
+                   "(~{})(~{})"
+                   "~{}(~{})")]
     (compile-template
      (list template
            (compile callee)
@@ -710,33 +725,16 @@
                    finally-exprs
                    (rest exprs)))))))
 
-(defn compile-property
-  "(. object method arg1 arg2)
-
-  The '.' special form that can be considered to be a method call,
-  operator"
-  [form]
-  ;; (. object method arg1 arg2) -> (object.method arg1 arg2)
-  ;; (. object -property) -> object.property
-  (if (identical? (aget (name (second form)) 0) "-")
-    (compile-template
-      (list (if (list? (first form)) "(~{}).~{}" "~{}.~{}")
-            (compile (macroexpand (first form)))
-            (compile (macroexpand (symbol (subs (name (second form)) 1))))))
-    (compile-template
-      (list "~{}.~{}(~{})"
-            (compile (macroexpand (first form)))    ;; object name
-            (compile (macroexpand (second form)))   ;; method name
-            (compile-group (rest (rest form)))))))  ;; args
 
 (defn compile-apply
   [form]
   (compile
+   (macroexpand
     (list '.
           (first form)
           'apply
           (first form)
-          (second form))))
+          (second form)))))
 
 (defn compile-new
   "(new Classname args*)
@@ -760,7 +758,9 @@
                  (second attribute)
                  attribute)
 
-        target-template (if (list? target) "(~{})" "~{}")
+        target-template (if (special-expression? target)
+                          "(~{})"
+                          "~{}")
         attribute-template (if field?
                              ".~{}"
                              "[~{}]")
@@ -868,7 +868,6 @@
 (install-special 'throw compile-throw)
 (install-special 'vector compile-vector)
 (install-special 'try compile-try)
-(install-special '. compile-property)
 (install-special 'apply compile-apply)
 (install-special 'new compile-new)
 (install-special 'instance? write-instance?)
@@ -948,6 +947,50 @@
       (compiler-error
         form
         (str (first form) " form requires at least two operands")))))
+
+(defn special-expression?
+  [form]
+  (and (list? form)
+       (get **operators** (first form))))
+
+(def **operators**
+  {:and :logical-expression
+   :or :logical-expression
+   :not :logical-expression
+   ;; Arithmetic
+   :+ :arithmetic-expression
+   :- :arithmetic-expression
+   :* :arithmetic-expression
+   "/" :arithmetic-expression
+   :mod :arithmetic-expression
+   :not= :comparison-expression
+   :== :comparison-expression
+   :=== :comparison-expression
+   :identical? :comparison-expression
+   :> :comparison-expression
+   :>= :comparison-expression
+   :> :comparison-expression
+   :<= :comparison-expression
+
+   ;; Binary operators
+   :bit-not :binary-expression
+   :bit-or :binary-expression
+   :bit-xor :binary-expression
+   :bit-not :binary-expression
+   :bit-shift-left :binary-expression
+   :bit-shift-right :binary-expression
+   :bit-shift-right-zero-fil :binary-expression
+
+   :if :conditional-expression
+   :set :assignment-expression
+
+   :fn :function-expression
+   :try :try-expression})
+
+(def **statements**
+  {:try :try-expression
+   :aget :member-expression})
+
 
 ;; Arithmetic Operators
 (install-native '+ '+ nil 0)
@@ -1235,3 +1278,26 @@
 (install-macro
  'debugger!
  (fn [] 'debugger))
+
+(install-macro
+ '.
+ (fn [object field & args]
+   (let [error-field (if (not (symbol? field))
+                       (str "Member expression `" field "` must be a symbol"))
+         field-name (str field)
+         accessor? (identical? \- (first field-name))
+
+         error-accessor (if (and accessor?
+                                 (not (empty? args)))
+                          "Accessor form must conatin only two members")
+         member (if accessor?
+                  (symbol nil (rest field-name))
+                  field)
+
+         target `(aget ~object (quote ~member))
+         error (or error-field error-accessor)]
+     (cond error (throw (TypeError (str "Unsupported . form: `"
+                                        `(~object ~field ~@args)
+                                        "`\n" error)))
+           accessor? target
+           :else `(~target ~@args)))))
