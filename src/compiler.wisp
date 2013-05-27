@@ -6,7 +6,7 @@
                               syntax-quote? name gensym pr-str]]
             [wisp.sequence :refer [empty? count list? list first second third
                                    rest cons conj reverse reduce vec last
-                                   repeat map filter take concat seq?]]
+                                   repeat map filter take concat seq seq?]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
@@ -242,7 +242,7 @@
      ;; () -> (list)
      (empty? form) (compile-invoke '(list))
      (quote? form) (compile-quoted (second form))
-     (syntax-quote? form) (compile-syntax-quoted (second form))
+     ;(syntax-quote? form) (compile-syntax-quoted (second form))
      (special? operator) (compile-special form)
      ;; Calling a keyword compiles to getting value from given
      ;; object associted with that key:
@@ -253,6 +253,7 @@
          (list? operator)) (compile-invoke form)
      :else (compiler-error form
                            (str "operator is not a procedure: " head)))))
+
 
 (defn compile*
   "compiles all forms"
@@ -1319,3 +1320,66 @@
              (set! (aget exports (quote ~id))
                    ~value))
        `(def* ~id ~value)))))
+
+(defn syntax-quote- [form]
+  (cond ;(specila? form) (list 'quote form)
+        (symbol? form) (list 'quote form)
+        (keyword? form) (list 'quote form)
+        (or (number? form)
+            (string? form)
+            (boolean? form)
+            (nil? form)
+            (re-pattern? form)) form
+
+        (unquote? form) (second form)
+        (unquote-splicing? form) (reader-error "Illegal use of `~@` expression, can only be present in a list")
+
+        (empty? form) form
+        (dictionary? form) (list 'apply
+                                 'dictionary
+                                 (cons '.concat
+                                       (sequence-expand (apply concat (seq form)))))
+                                 ;(list 'seq (cons 'concat
+                                 ;                  (sequence-expand (apply concat
+                                 ;                                          (seq form))))))
+        ;; If a vctor form expand all sub-forms:
+        ;; [(unquote a) b (unquote-splicing c)] -> [(a) (syntax-quote b) c]
+        ;; and concatinate them
+        ;; togather: [~a b ~@c] -> (concat a `b c)
+        (vector? form) (cons '.concat (sequence-expand form))
+                       ;(list 'vec (cons 'concat (sequence-expand form)))
+                       ;(list 'apply
+                       ;      'vector
+                       ;      (list 'seq (cons 'concat
+                       ;                        (sequence-expand form))))
+
+        (list? form) (if (empty? form)
+                       (cons 'list nil)
+                       (list 'apply
+                             'list
+                             (cons '.concat (sequence-expand form))))
+                       ;(list 'seq
+                       ;      (cons 'concat (sequence-expand form)))
+        :else (reader-error "Unknown Collection type")))
+
+(defn unquote-splicing-expand
+  [form]
+  (if (vector? form)
+    form
+    (list 'vec form)))
+
+(defn sequence-expand
+  "Takes sequence of forms and expands them:
+
+  ((unquote a)) -> ([a])
+  ((unquote-splicing a) -> (a)
+  (a) -> ([(quote b)])
+  ((unquote a) b (unquote-splicing a)) -> ([a] [(quote b)] c)"
+  [forms]
+  (map (fn [form]
+         (cond (unquote? form) [(second form)]
+               (unquote-splicing? form) (unquote-splicing-expand (second form))
+               :else [(syntax-quote- form)])) forms))
+
+
+(install-macro 'syntax-quote syntax-quote-)

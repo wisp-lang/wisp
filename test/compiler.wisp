@@ -296,15 +296,16 @@
 
 (print "compile unquote-splicing forms")
 
+
 (assert (identical? (transpile '`(1 ~@'(2 3)))
-                    "concat(list(1), list(2, 3))")
+                    "list.apply(list, [1].concat(vec(list(2, 3))))")
         "list unquote-splicing compiles")
 (assert (identical? (transpile '`())
                     "list()")
          "empty list unquotes to empty list")
 
 (assert (identical? (transpile '`[1 ~@[2 3]])
-                    "vec(concat([1], [2, 3]))")
+                    "[1].concat([2, 3])")
         "vector unquote-splicing compiles")
 
 (assert (identical? (transpile '`[])
