@@ -1247,7 +1247,7 @@
                    ~value))
        `(def* ~id ~value)))))
 
-(defn syntax-quote- [form]
+(defn syntax-quote [form]
   (cond ;(specila? form) (list 'quote form)
         (symbol? form) (list 'quote form)
         (keyword? form) (list 'quote form)
@@ -1287,6 +1287,7 @@
                        ;(list 'seq
                        ;      (cons 'concat (sequence-expand form)))
         :else (reader-error "Unknown Collection type")))
+(def syntax-quote-expand syntax-quote)
 
 (defn unquote-splicing-expand
   [form]
@@ -1305,7 +1306,8 @@
   (map (fn [form]
          (cond (unquote? form) [(second form)]
                (unquote-splicing? form) (unquote-splicing-expand (second form))
-               :else [(syntax-quote- form)])) forms))
+               :else [(syntax-quote-expand form)])) forms))
 
 
-(install-macro 'syntax-quote syntax-quote-)
+
+(install-macro 'syntax-quote syntax-quote)
