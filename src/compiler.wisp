@@ -236,7 +236,7 @@
   [form]
   (let [head (first form)]
     (cond
-     (empty? form) (compile-object form true)
+     (empty? form) (compile-invoke '(list))
      (quote? form) (compile-object (second form) true)
      (syntax-quote? form) (compile-syntax-quoted (second form))
      (special? head) (execute-special head form)
