@@ -170,11 +170,6 @@
      (empty? form) (compile-invoke '(list))
      (quote? form) (compile-quoted (second form))
      (special? operator) (compile-special form)
-     ;; Calling a keyword compiles to getting value from given
-     ;; object associted with that key:
-     ;; (:foo bar) -> (get bar :foo)
-     (keyword? operator) (compile (macroexpand `(get ~(second form)
-                                                     ~operator)))
      (or (symbol? operator)
          (list? operator)) (compile-invoke form)
      :else (compiler-error form
@@ -206,6 +201,10 @@
       (cond
        (special? op) form
        (macro? op) (execute-macro op (rest form))
+       ;; Calling a keyword compiles to getting value from given
+       ;; object associted with that key:
+       ;; (:foo bar) -> (get bar :foo)
+       (keyword? op) (list 'get (second form) op)
        (and (symbol? op)
             (not (identical? id ".")))
        ;; (.substring s 2 5) => (. s substring 2 5)
