@@ -128,15 +128,14 @@
   "Same as apply-form, but respect unquoting"
   [fn-name form]
   (cons fn-name ;; ast.prepend ???
-        (map
-          (fn [e]
-              (if (unquote? e)
-                  (second e)
-                  (if (and (list? e)
-                           (keyword? (first e)))
-                      (list 'syntax-quote (second e))
-                      (list 'syntax-quote e))))
-          form)))
+        (map (fn [e]
+               (if (unquote? e)
+                 (second e)
+                 (if (and (list? e)
+                          (keyword? (first e)))
+                   (list 'syntax-quote (second e))
+                   (list 'syntax-quote e))))
+             form)))
 
 (defn split-splices "" [form fn-name]
   (defn make-splice "" [form]
@@ -220,26 +219,33 @@
   "compiles given form"
   [form]
   (cond
-   (self-evaluating? form) (compile-object form)
    (symbol? form) (write-reference form)
    (keyword? form) (write-keyword-reference form)
+
+   (number? form) (write-number form)
+   (string? form) (write-string form)
+   (boolean? form) (write-boolean form)
+   (nil? form) (write-nil form)
+   (re-pattern? form) (write-re-pattern form)
+
    (vector? form) (compile-object form)
    (dictionary? form) (compile-object form)
-   (list? form)
-    (let [head (first form)]
-      (cond
-       (empty? form) (compile-object form true)
-       (quote? form) (compile-object (second form) true)
-       (syntax-quote? form) (compile-syntax-quoted (second form))
-       (special? head) (execute-special head form)
-       ;; Compile keyword invoke as a property access.
-       (keyword? head) (compile (macroexpand `(get ~(second form) ~head)))
-       :else (do
-              (if (not (or (symbol? head) (list? head)))
-                (throw (compiler-error
-                        form
-                        (str "operator is not a procedure: " head)))
-              (compile-invoke form)))))))
+   (list? form) (compile-list form)))
+
+(defn compile-list
+  [form]
+  (let [head (first form)]
+    (cond
+     (empty? form) (compile-object form true)
+     (quote? form) (compile-object (second form) true)
+     (syntax-quote? form) (compile-syntax-quoted (second form))
+     (special? head) (execute-special head form)
+     ;; Compile keyword invoke as a property access.
+     (keyword? head) (compile (macroexpand `(get ~(second form) ~head)))
+     (or (symbol? head)
+         (list? head)) (compile-invoke form)
+     :else (throw (compiler-error form
+                                  (str "operator is not a procedure: " head))))))
 
 (defn compile*
   "compiles all forms"
