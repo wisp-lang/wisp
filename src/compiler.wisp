@@ -102,10 +102,10 @@
        (get **specials** name)
        true))
 
-(defn execute-special
+(defn compile-special
   "Expands special form"
-  [name form]
-  (let [write (get **specials** name)
+  [form]
+  (let [write (get **specials** (first form))
         metadata (meta form)
         expansion (map (fn [form] form) form)]
     (write (with-meta form metadata))))
@@ -116,16 +116,16 @@
   (if (or (nil? argument) (empty? argument)) fallback (first argument)))
 
 (defn apply-form
-  "Take a form that has a list of children and make a form that
-  applies the children to the function `fn-name`"
-  [fn-name form quoted?]
-  (cons fn-name
-        (if quoted?
-            (map (fn [e] (list 'quote e)) form) form)
-            form))
+  "Take a forms and produce a form that is application of
+  quoted forms over `operator`.
+
+  concat -> (a b c) -> (concat (quote a) (quote b) (quote c))"
+  [operation forms]
+  (cons operation (map (fn [form] (list 'quote form)) forms)))
 
 (defn apply-unquoted-form
-  "Same as apply-form, but respect unquoting"
+  "Same as apply-form, but respects unquoting
+  concat -> (a (unquote b)) -> (concat (syntax-quote a) b)"
   [fn-name form]
   (cons fn-name ;; ast.prepend ???
         (map (fn [e]
@@ -137,7 +137,9 @@
                    (list 'syntax-quote e))))
              form)))
 
-(defn split-splices "" [form fn-name]
+(defn split-splices
+  ""
+  [form fn-name]
   (defn make-splice "" [form]
     (if (or (self-evaluating? form)
             (symbol? form))
@@ -170,44 +172,11 @@
         n (count slices)]
     (cond (identical? n 0) (list fn-name)
           (identical? n 1) (first slices)
-          :default (apply-form append-name slices))))
+          :else (cons append-name slices))))
 
 
 ;; compiler
 
-(defn compile-object
-  ""
-  [form quoted?]
-  ;; TODO: Add regexp to the list.
-  (cond
-    (keyword? form) (write-keyword form)
-    (symbol? form) (write-symbol form)
-    (number? form) (write-number form)
-    (string? form) (write-string form)
-    (boolean? form) (write-boolean form)
-    (nil? form) (write-nil form)
-    (re-pattern? form) (write-re-pattern form)
-    (vector? form) (compile (apply-form 'vector
-                                        (apply list form)
-                                        quoted?))
-    (list? form) (compile (apply-form 'list
-                                      form
-                                      quoted?))
-    (dictionary? form) (compile-dictionary
-                        (if quoted?
-                          (map-dictionary form (fn [x] (list 'quote x)))
-                          form))))
-
-(defn compile-quoted-primitive
-  [form]
-  (cond
-    (keyword? form) (write-keyword form)
-    (symbol? form) (write-symbol form)
-    (number? form) (write-number form)
-    (string? form) (write-string form)
-    (boolean? form) (write-boolean form)
-    (nil? form) (write-nil form)
-    (re-pattern? form) (write-re-pattern form)))
 
 (defn compile-syntax-quoted-vector
   [form]
@@ -224,7 +193,7 @@
    (vector? form) (compile-syntax-quoted-vector form)
    ; Disable dictionary form as we can't fully support it yet.
    ; (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
-   :else (compile-quoted-primitive form)))
+   :else (compile-quoted form)))
 
 (defn compile
   "compiles given form"
@@ -239,13 +208,28 @@
    (nil? form) (write-nil form)
    (re-pattern? form) (write-re-pattern form)
 
-   (vector? form) (compile-object form)
-   (dictionary? form) (compile-object form)
+   (vector? form) (compile-special (cons 'vector form))
+   (dictionary? form) (compile-dictionary form)
    (list? form) (compile-list form)))
 
 (defn compile-quoted
   [form]
-  (compile-object form true))
+  (cond (vector? form) (compile (apply-form 'vector
+                                            (apply list form)
+                                            true))
+        (list? form) (compile (apply-form 'list
+                                          form
+                                          true))
+        (dictionary? form) (compile-dictionary
+                            (map-dictionary form (fn [x] (list 'quote x))))
+        (keyword? form) (write-keyword form)
+        (symbol? form) (write-symbol form)
+        (number? form) (write-number form)
+        (string? form) (write-string form)
+        (boolean? form) (write-boolean form)
+        (nil? form) (write-nil form)
+        (re-pattern? form) (write-re-pattern form)
+        :else (throw (compiler-error form "form not supported"))))
 
 (defn compile-list
   [form]
@@ -254,7 +238,7 @@
      (empty? form) (compile-invoke '(list))
      (quote? form) (compile-quoted (second form))
      (syntax-quote? form) (compile-syntax-quoted (second form))
-     (special? head) (execute-special head form)
+     (special? head) (compile-special form)
      ;; Compile keyword invoke as a property access.
      (keyword? head) (compile (macroexpand `(get ~(second form) ~head)))
      (or (symbol? head)
