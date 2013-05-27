@@ -168,12 +168,12 @@
 
 
 (defn syntax-quote-split
-  [append-name operator form]
+  [concat-name operator form]
   (let [slices (split-splices operator form)
         n (count slices)]
     (cond (identical? n 0) (list operator)
           (identical? n 1) (first slices)
-          :else (cons append-name slices))))
+          :else (cons concat-name slices))))
 
 
 ;; compiler
@@ -209,7 +209,7 @@
    (nil? form) (write-nil form)
    (re-pattern? form) (write-re-pattern form)
 
-   (vector? form) (compile-special (cons 'vector form))
+   (vector? form) (compile-vector form)
    (dictionary? form) (compile-dictionary form)
    (list? form) (compile-list form)))
 
@@ -236,20 +236,21 @@
 
 (defn compile-list
   [form]
-  (let [head (first form)]
+  (let [operator (first form)]
     (cond
      ;; Empty list compiles to list construction:
      ;; () -> (list)
      (empty? form) (compile-invoke '(list))
      (quote? form) (compile-quoted (second form))
      (syntax-quote? form) (compile-syntax-quoted (second form))
-     (special? head) (compile-special form)
+     (special? operator) (compile-special form)
      ;; Calling a keyword compiles to getting value from given
      ;; object associted with that key:
      ;; (:foo bar) -> (get bar :foo)
-     (keyword? head) (compile (macroexpand `(get ~(second form) ~head)))
-     (or (symbol? head)
-         (list? head)) (compile-invoke form)
+     (keyword? operator) (compile (macroexpand `(get ~(second form)
+                                                     ~operator)))
+     (or (symbol? operator)
+         (list? operator)) (compile-invoke form)
      :else (compiler-error form
                            (str "operator is not a procedure: " head)))))
 
@@ -276,28 +277,29 @@
     (let [op (first form)
           id (if (symbol? op) (name op))]
       (cond
-        (special? op) form
-        (macro? op) (execute-macro op (rest form))
-        (and (symbol? op)
-             (not (identical? id ".")))
-          ;; (.substring s 2 5) => (. s substring 2 5)
-          (if (identical? (first id) ".")
-            (if (< (count form) 2)
-              (throw (Error
-                "Malformed member expression, expecting (.member target ...)"))
-              (cons '.
-                    (cons (second form)
-                          (cons (symbol (subs id 1))
-                                (rest (rest form))))))
+       (special? op) form
+       (macro? op) (execute-macro op (rest form))
+       (and (symbol? op)
+            (not (identical? id ".")))
+       ;; (.substring s 2 5) => (. s substring 2 5)
+       (if (identical? (first id) ".")
+         (if (< (count form) 2)
+           (throw (Error
+                   "Malformed member expression, expecting (.member target ...)"))
+           (cons '.
+                 (cons (second form)
+                       (cons (symbol (subs id 1))
+                             (rest (rest form))))))
 
-            ;; (StringBuilder. "foo") => (new StringBuilder "foo")
-            (if (identical? (last id) ".")
-              (cons 'new
-                    (cons (symbol (subs id 0 (dec (count id))))
-                          (rest form)))
-              form))
-        :else form))
-      form))
+         ;; (StringBuilder. "foo") => (new StringBuilder "foo")
+         (if (identical? (last id) ".")
+           (cons 'new
+                 (cons (symbol (subs id 0 (dec (count id))))
+                       (rest form)))
+           form))
+       ;;  (keyword? op) (list 'get (second form) op)
+       :else form))
+    form))
 
 (defn macroexpand
   "Repeatedly calls macroexpand-1 on form until it no longer
