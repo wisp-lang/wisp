@@ -120,81 +120,8 @@
   quoted forms over `operator`.
 
   concat -> (a b c) -> (concat (quote a) (quote b) (quote c))"
-  [operation forms]
-  (cons operation (map (fn [form] (list 'quote form)) forms)))
-
-(defn apply-unquoted-form
-  "Same as apply-form, but respects unquoting
-  concat -> (a (unquote b)) -> (concat (syntax-quote a) b)"
-  [fn-name form]
-  (cons fn-name ;; ast.prepend ???
-        (map (fn [e]
-               (if (unquote? e)
-                 (second e)
-                 (if (and (list? e)
-                          (keyword? (first e)))
-                   (list 'syntax-quote (second e))
-                   (list 'syntax-quote e))))
-             form)))
-
-(defn make-splice
-  [operator form]
-  (if (or (self-evaluating? form)
-          (symbol? form))
-    (apply-unquoted-form operator (list form))
-    (apply-unquoted-form operator form)))
-
-(defn split-splices
-  [operator form]
-  (loop [nodes form
-         slices '()
-         acc '()]
-    (if (empty? nodes)
-      (reverse
-       (if (empty? acc)
-         slices
-         (cons (make-splice operator (reverse acc)) slices)))
-      (let [node (first nodes)]
-        (if (unquote-splicing? node)
-          (recur (rest nodes)
-                 (cons (second node)
-                       (if (empty? acc)
-                         slices
-                         (cons (make-splice operator (reverse acc)) slices)))
-                 '())
-          (recur (rest nodes)
-                 slices
-                 (cons node acc)))))))
-
-
-(defn syntax-quote-split
-  [concat-name operator form]
-  (let [slices (split-splices operator form)
-        n (count slices)]
-    (cond (identical? n 0) (list operator)
-          (identical? n 1) (first slices)
-          :else (cons concat-name slices))))
-
-
-;; compiler
-
-
-(defn compile-syntax-quoted-vector
-  [form]
-  (let [concat-form (syntax-quote-split 'concat 'vector form)]
-    (compile (if (> (count concat-form) 1)
-              (list 'vec concat-form)
-              concat-form))))
-
-(defn compile-syntax-quoted
-  ""
-  [form]
-  (cond
-   (list? form) (compile (syntax-quote-split 'concat 'list form))
-   (vector? form) (compile-syntax-quoted-vector form)
-   ; Disable dictionary form as we can't fully support it yet.
-   ; (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
-   :else (compile-quoted form)))
+  [operator forms]
+  (cons operator (map (fn [form] (list 'quote form)) forms)))
 
 (defn compile
   "compiles given form"
@@ -242,7 +169,6 @@
      ;; () -> (list)
      (empty? form) (compile-invoke '(list))
      (quote? form) (compile-quoted (second form))
-     ;(syntax-quote? form) (compile-syntax-quoted (second form))
      (special? operator) (compile-special form)
      ;; Calling a keyword compiles to getting value from given
      ;; object associted with that key:
