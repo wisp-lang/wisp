@@ -137,40 +137,41 @@
                    (list 'syntax-quote e))))
              form)))
 
+(defn make-splice
+  [operator form]
+  (if (or (self-evaluating? form)
+          (symbol? form))
+    (apply-unquoted-form operator (list form))
+    (apply-unquoted-form operator form)))
+
 (defn split-splices
-  ""
-  [form fn-name]
-  (defn make-splice "" [form]
-    (if (or (self-evaluating? form)
-            (symbol? form))
-        (apply-unquoted-form fn-name (list form))
-        (apply-unquoted-form fn-name form)))
+  [operator form]
   (loop [nodes form
          slices '()
          acc '()]
-   (if (empty? nodes)
-       (reverse
-        (if (empty? acc)
-            slices
-            (cons (make-splice (reverse acc)) slices)))
-       (let [node (first nodes)]
+    (if (empty? nodes)
+      (reverse
+       (if (empty? acc)
+         slices
+         (cons (make-splice operator (reverse acc)) slices)))
+      (let [node (first nodes)]
         (if (unquote-splicing? node)
-            (recur (rest nodes)
-                   (cons (second node)
-                         (if (empty? acc)
-                             slices
-                             (cons (make-splice (reverse acc)) slices)))
-                   '())
-            (recur (rest nodes)
-                   slices
-                   (cons node acc)))))))
+          (recur (rest nodes)
+                 (cons (second node)
+                       (if (empty? acc)
+                         slices
+                         (cons (make-splice operator (reverse acc)) slices)))
+                 '())
+          (recur (rest nodes)
+                 slices
+                 (cons node acc)))))))
 
 
 (defn syntax-quote-split
-  [append-name fn-name form]
-  (let [slices (split-splices form fn-name)
+  [append-name operator form]
+  (let [slices (split-splices operator form)
         n (count slices)]
-    (cond (identical? n 0) (list fn-name)
+    (cond (identical? n 0) (list operator)
           (identical? n 1) (first slices)
           :else (cons append-name slices))))
 
@@ -180,7 +181,7 @@
 
 (defn compile-syntax-quoted-vector
   [form]
-  (let [concat-form (syntax-quote-split 'concat 'vector (apply list form))]
+  (let [concat-form (syntax-quote-split 'concat 'vector form)]
     (compile (if (> (count concat-form) 1)
               (list 'vec concat-form)
               concat-form))))
@@ -214,12 +215,14 @@
 
 (defn compile-quoted
   [form]
-  (cond (vector? form) (compile (apply-form 'vector
-                                            (apply list form)
-                                            true))
-        (list? form) (compile (apply-form 'list
-                                          form
-                                          true))
+  ;; If collection (list, vector, dictionary) is quoted it
+  ;; compiles to collection with it's items quoted. Compile
+  ;; primitive types compile to themsef. Note that symbol
+  ;; typicyally compiles to reference, and keyword to string
+  ;; but if they're quoted they actually do compile to symbol
+  ;; type and keyword type.
+  (cond (vector? form) (compile (apply-form 'vector form))
+        (list? form) (compile (apply-form 'list form))
         (dictionary? form) (compile-dictionary
                             (map-dictionary form (fn [x] (list 'quote x))))
         (keyword? form) (write-keyword form)
@@ -235,11 +238,15 @@
   [form]
   (let [head (first form)]
     (cond
+     ;; Empty list compiles to list construction:
+     ;; () -> (list)
      (empty? form) (compile-invoke '(list))
      (quote? form) (compile-quoted (second form))
      (syntax-quote? form) (compile-syntax-quoted (second form))
      (special? head) (compile-special form)
-     ;; Compile keyword invoke as a property access.
+     ;; Calling a keyword compiles to getting value from given
+     ;; object associted with that key:
+     ;; (:foo bar) -> (get bar :foo)
      (keyword? head) (compile (macroexpand `(get ~(second form) ~head)))
      (or (symbol? head)
          (list? head)) (compile-invoke form)
