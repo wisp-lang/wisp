@@ -229,7 +229,7 @@
         (boolean? form) (write-boolean form)
         (nil? form) (write-nil form)
         (re-pattern? form) (write-re-pattern form)
-        :else (throw (compiler-error form "form not supported"))))
+        :else (compiler-error form "form not supported")))
 
 (defn compile-list
   [form]
@@ -243,8 +243,8 @@
      (keyword? head) (compile (macroexpand `(get ~(second form) ~head)))
      (or (symbol? head)
          (list? head)) (compile-invoke form)
-     :else (throw (compiler-error form
-                                  (str "operator is not a procedure: " head))))))
+     :else (compiler-error form
+                           (str "operator is not a procedure: " head)))))
 
 (defn compile*
   "compiles all forms"
@@ -934,10 +934,9 @@
   [form]
   (if (or (empty? (rest form))
           (empty? (rest (rest form))))
-    (throw
-      (compiler-error
-        form
-        (str (first form) " form requires at least two operands")))))
+    (compiler-error
+     form
+     (str (first form) " form requires at least two operands"))))
 
 (defn special-expression?
   [form]
