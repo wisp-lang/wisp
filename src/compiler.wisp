@@ -198,6 +198,17 @@
                           (map-dictionary form (fn [x] (list 'quote x)))
                           form))))
 
+(defn compile-quoted-primitive
+  [form]
+  (cond
+    (keyword? form) (write-keyword form)
+    (symbol? form) (write-symbol form)
+    (number? form) (write-number form)
+    (string? form) (write-string form)
+    (boolean? form) (write-boolean form)
+    (nil? form) (write-nil form)
+    (re-pattern? form) (write-re-pattern form)))
+
 (defn compile-syntax-quoted-vector
   [form]
   (let [concat-form (syntax-quote-split 'concat 'vector (apply list form))]
@@ -213,7 +224,7 @@
    (vector? form) (compile-syntax-quoted-vector form)
    ; Disable dictionary form as we can't fully support it yet.
    ; (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
-   :else (compile-object form)))
+   :else (compile-quoted-primitive form)))
 
 (defn compile
   "compiles given form"
@@ -232,12 +243,16 @@
    (dictionary? form) (compile-object form)
    (list? form) (compile-list form)))
 
+(defn compile-quoted
+  [form]
+  (compile-object form true))
+
 (defn compile-list
   [form]
   (let [head (first form)]
     (cond
      (empty? form) (compile-invoke '(list))
-     (quote? form) (compile-object (second form) true)
+     (quote? form) (compile-quoted (second form))
      (syntax-quote? form) (compile-syntax-quoted (second form))
      (special? head) (execute-special head form)
      ;; Compile keyword invoke as a property access.
