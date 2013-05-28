@@ -115,13 +115,6 @@
 (defn opt [argument fallback]
   (if (or (nil? argument) (empty? argument)) fallback (first argument)))
 
-(defn apply-form
-  "Take a forms and produce a form that is application of
-  quoted forms over `operator`.
-
-  concat -> (a b c) -> (concat (quote a) (quote b) (quote c))"
-  [operator forms]
-  (cons operator (map (fn [form] (list 'quote form)) forms)))
 
 (defn compile
   "compiles given form"
@@ -140,6 +133,8 @@
    (dictionary? form) (compile-dictionary form)
    (list? form) (compile-list form)))
 
+(defn make-quoted [form] (list 'quote form))
+
 (defn compile-quoted
   [form]
   ;; If collection (list, vector, dictionary) is quoted it
@@ -148,10 +143,10 @@
   ;; typicyally compiles to reference, and keyword to string
   ;; but if they're quoted they actually do compile to symbol
   ;; type and keyword type.
-  (cond (vector? form) (compile (apply-form 'vector form))
-        (list? form) (compile (apply-form 'list form))
+  (cond (vector? form) (compile-vector (map make-quoted form))
+        (list? form) (compile-invoke (cons 'list (map make-quoted form)))
         (dictionary? form) (compile-dictionary
-                            (map-dictionary form (fn [x] (list 'quote x))))
+                            (map-dictionary form make-quoted))
         (keyword? form) (write-keyword form)
         (symbol? form) (write-symbol form)
         (number? form) (write-number form)
@@ -173,7 +168,7 @@
      (or (symbol? operator)
          (list? operator)) (compile-invoke form)
      :else (compiler-error form
-                           (str "operator is not a procedure: " head)))))
+                           (str "operator is not a procedure: " form)))))
 
 
 (defn compile*
@@ -562,7 +557,7 @@
   [form wrap]
   (if wrap
     (str "(" (compile-group form) ")")
-    (join ", " (vec (map compile (map  macroexpand form))))))
+    (join ", " (vec (map compile (map macroexpand form))))))
 
 (defn compile-do
   "Evaluates the expressions in order and returns the value of the last.
@@ -800,10 +795,11 @@
 (install-special 'try compile-try)
 (install-special 'apply compile-apply)
 (install-special 'new compile-new)
-(install-special 'instance? write-instance?)
 (install-special 'not compile-not)
 (install-special 'loop compile-loop)
 (install-special 'raw* compile-raw)
+
+(install-special 'instance? write-instance?)
 (install-special 'comment write-comment)
 
 
@@ -1247,8 +1243,7 @@
        `(def* ~id ~value)))))
 
 (defn syntax-quote [form]
-  (cond ;(specila? form) (list 'quote form)
-        (symbol? form) (list 'quote form)
+  (cond (symbol? form) (list 'quote form)
         (keyword? form) (list 'quote form)
         (or (number? form)
             (string? form)
@@ -1260,31 +1255,29 @@
         (unquote-splicing? form) (reader-error "Illegal use of `~@` expression, can only be present in a list")
 
         (empty? form) form
+
+        ;;
         (dictionary? form) (list 'apply
                                  'dictionary
                                  (cons '.concat
-                                       (sequence-expand (apply concat (seq form)))))
-                                 ;(list 'seq (cons 'concat
-                                 ;                  (sequence-expand (apply concat
-                                 ;                                          (seq form))))))
-        ;; If a vctor form expand all sub-forms:
-        ;; [(unquote a) b (unquote-splicing c)] -> [(a) (syntax-quote b) c]
-        ;; and concatinate them
-        ;; togather: [~a b ~@c] -> (concat a `b c)
+                                       (sequence-expand (apply concat
+                                                               (seq form)))))
+        ;; If a vector form expand all sub-forms and concatinate
+        ;; them togather:
+        ;;
+        ;; [~a b ~@c] -> (.concat [a] [(quote b)] c)
         (vector? form) (cons '.concat (sequence-expand form))
-                       ;(list 'vec (cons 'concat (sequence-expand form)))
-                       ;(list 'apply
-                       ;      'vector
-                       ;      (list 'seq (cons 'concat
-                       ;                        (sequence-expand form))))
 
+        ;; If a list form expand all the sub-forms and apply
+        ;; concationation to a list constructor:
+        ;;
+        ;; (~a b ~@c) -> (apply list (.concat [a] [(quote b)] c))
         (list? form) (if (empty? form)
                        (cons 'list nil)
                        (list 'apply
                              'list
                              (cons '.concat (sequence-expand form))))
-                       ;(list 'seq
-                       ;      (cons 'concat (sequence-expand form)))
+
         :else (reader-error "Unknown Collection type")))
 (def syntax-quote-expand syntax-quote)
 
@@ -1305,8 +1298,7 @@
   (map (fn [form]
          (cond (unquote? form) [(second form)]
                (unquote-splicing? form) (unquote-splicing-expand (second form))
-               :else [(syntax-quote-expand form)])) forms))
-
-
+               :else [(syntax-quote-expand form)]))
+       forms))
 
 (install-macro 'syntax-quote syntax-quote)
