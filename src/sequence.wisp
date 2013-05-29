@@ -428,3 +428,20 @@
   [predicate sequence]
   (.every (vec sequence) #(predicate %)))
 
+
+(defn partition
+  ([n coll] (partition n n coll))
+  ([n step coll] (partition n step [] coll))
+  ([n step pad coll]
+   (loop [result []
+          items (seq coll)]
+     (let [chunk (take n items)
+           size (count chunk)]
+       (cond (identical? size n) (recur (conj result chunk)
+                                        (drop step items)
+                                        (take n items))
+             (identical? 0 size) result
+             (> n (+ size (count pad))) result
+             :else (conj result
+                         (take n (vec (concat chunk
+                                              pad)))))))))

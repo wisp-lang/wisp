@@ -2,6 +2,7 @@
 
 ## 0.8.1
 
+  - Implement `partition` high order function.
   - Implement `every?` function.
   - Rewrite `get` as macro compiling to `aget` forms.
   - Make re-pattern writer.

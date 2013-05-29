@@ -2,7 +2,8 @@
   (:require [wisp.src.sequence :refer [cons conj list list? seq vec empty?
                                        count first second third rest last
                                        butlast take drop repeat concat reverse
-                                       sort map filter reduce assoc every?]]
+                                       sort map filter reduce assoc every?
+                                       partition]]
             [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
 
 
@@ -349,3 +350,17 @@
 (assert (every? even? '(2 4 6 8)))
 (assert (not (every? even? '(2 4 5))))
 
+(print "test partition")
+
+
+(assert (= [[1 2] [3 4] [5 6] [7 8]]
+           (partition 2 [1 2 3 4 5 6 7 8 9])))
+
+(assert (= [[1 2 3] [3 4 5] [5 6 7] [7 8 9]]
+           (partition 3 2 [1 2 3 4 5 6 7 8 9])))
+
+(assert (= [[1 2 3 4 5] [3 4 5 6 7] [5 6 7 8 :a]]
+           (partition 5 2 [:a :b :c :d] [1 2 3 4 5 6 7 8])))
+
+(assert (= [[1 2 3] [3 4 5] [5 6 7] [7 8 :a]]
+           (partition 3 2 [:a :b :c :d] [1 2 3 4 5 6 7 8])))
