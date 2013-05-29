@@ -6,7 +6,8 @@
                               syntax-quote? name gensym pr-str]]
             [wisp.sequence :refer [empty? count list? list first second third
                                    rest cons conj reverse reduce vec last
-                                   repeat map filter take concat seq seq?]]
+                                   butlast repeat map filter take concat seq
+                                   seq?]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
@@ -656,16 +657,6 @@
                    (rest exprs)))))))
 
 
-(defn compile-apply
-  [form]
-  (compile
-   (macroexpand
-    (list '.
-          (first form)
-          'apply
-          (first form)
-          (second form)))))
-
 (defn compile-new
   "(new Classname args*)
   Compiles new special form. The args, if any, are evaluated
@@ -793,7 +784,6 @@
 (install-special 'throw compile-throw)
 (install-special 'vector compile-vector)
 (install-special 'try compile-try)
-(install-special 'apply compile-apply)
 (install-special 'new compile-new)
 (install-special 'not compile-not)
 (install-special 'loop compile-loop)
@@ -1302,3 +1292,11 @@
        forms))
 
 (install-macro 'syntax-quote syntax-quote)
+
+(defn apply-macro
+  [f & params]
+  (let [prefix (vec (butlast params))]
+    (if (empty? prefix)
+      `(.apply ~f nil ~@params)
+      `(.apply ~f nil (.concat ~prefix ~(last params))))))
+(install-macro 'apply apply-macro)
