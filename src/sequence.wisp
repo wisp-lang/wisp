@@ -423,3 +423,8 @@
       result
       (recur (dec n)
              (conj result x)))))
+
+(defn every?
+  [predicate sequence]
+  (.every (vec sequence) #(predicate %)))
+

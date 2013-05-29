@@ -2,7 +2,7 @@
   (:require [wisp.src.sequence :refer [cons conj list list? seq vec empty?
                                        count first second third rest last
                                        butlast take drop repeat concat reverse
-                                       sort map filter reduce assoc]]
+                                       sort map filter reduce assoc every?]]
             [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
 
 
@@ -341,3 +341,11 @@
 (assert (= {:a :b} (assoc {} :a :b)))
 (assert (= {:a :b :c :d} (assoc {:a :b} :c :d)))
 (assert (= {:a :c} (assoc {:a :b} :a :c)))
+
+(print "test every?")
+
+(assert (every? even? [2 4 6 8]))
+(assert (not (every? even? [2 4 6 8 9])))
+(assert (every? even? '(2 4 6 8)))
+(assert (not (every? even? '(2 4 5))))
+

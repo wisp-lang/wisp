@@ -2,6 +2,7 @@
 
 ## 0.8.1
 
+  - Implement `every?` function.
   - Rewrite `get` as macro compiling to `aget` forms.
   - Make re-pattern writer.
   - Alias `compile*` as `compile-program`.
