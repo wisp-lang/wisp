@@ -3,7 +3,7 @@
                                        count first second third rest last
                                        butlast take drop repeat concat reverse
                                        sort map filter reduce assoc every?
-                                       partition]]
+                                       some partition]]
             [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
 
 
@@ -350,6 +350,15 @@
 (assert (every? even? '(2 4 6 8)))
 (assert (not (every? even? '(2 4 5))))
 
+(print "test some")
+
+(assert (= false (some even? [])))
+(assert (= false (some even? ())))
+(assert (= false (some even? [1 3 5 7])))
+(assert (= false (some even? '(1 3 5 7))))
+(assert (some even? [1 2 3]))
+(assert (some even? '(1 2 3)))
+
 (print "test partition")
 
 
@@ -364,3 +373,4 @@
 
 (assert (= [[1 2 3] [3 4 5] [5 6 7] [7 8 :a]]
            (partition 3 2 [:a :b :c :d] [1 2 3 4 5 6 7 8])))
+
