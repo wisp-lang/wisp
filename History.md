@@ -2,6 +2,7 @@
 
 ## 0.8.1
 
+  - Implement `interleave` high order function.
   - Implement `some` high order function.
   - Implement `partition` high order function.
   - Implement `every?` function.

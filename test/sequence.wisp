@@ -3,7 +3,7 @@
                                        count first second third rest last
                                        butlast take drop repeat concat reverse
                                        sort map filter reduce assoc every?
-                                       some partition]]
+                                       some partition interleave]]
             [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
 
 
@@ -374,3 +374,57 @@
 (assert (= [[1 2 3] [3 4 5] [5 6 7] [7 8 :a]]
            (partition 3 2 [:a :b :c :d] [1 2 3 4 5 6 7 8])))
 
+(print "test interleave")
+
+(assert (= [1 4 2 5 3 6]
+           (interleave [1 2 3]
+                       [4 5 6])))
+
+(assert (= [1 4 2 5 3 6]
+           (interleave [1 2 3]
+                       '(4 5 6))))
+
+
+(assert (= [1 4 2 5 3 6]
+           (interleave '(1 2 3)
+                       [4 5 6])))
+
+(assert (= [1 4 2 5 3 6]
+           (interleave [1 2 3 3.5]
+                       [4 5 6])))
+
+(assert (= [1 4 2 5 3 6]
+           (interleave [1 2 3]
+                       [4 5 6 7])))
+
+(assert (= []
+           (interleave [1 2 3]
+                       [])))
+
+(assert (= []
+           (interleave []
+                       [4 5 6])))
+
+(assert (= []
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [])))
+(assert (= '(1 4 8)
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [8])))
+
+(assert (= '(1 4 8 2 5 9)
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [8 9])))
+
+(assert (= '(1 4 8 2 5 9 3 6 10)
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [8 9 10])))
+
+(assert (= '(1 4 8 2 5 9 3 6 10)
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [8 9 10 11])))

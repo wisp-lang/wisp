@@ -457,3 +457,24 @@
              :else (conj result
                          (take n (vec (concat chunk
                                               pad)))))))))
+
+(defn interleave
+  ([ax bx]
+   (loop [cx []
+          ax ax
+          bx bx]
+     (if (or (empty? ax)
+             (empty? bx))
+       (seq cx)
+       (recur (conj cx
+                    (first ax)
+                    (first bx))
+              (rest ax)
+              (rest bx)))))
+  ([& sequences]
+   (loop [result []
+          sequences sequences]
+     (if (some empty? sequences)
+       result
+       (recur (concat result (map first sequences))
+              (map rest sequences))))))
