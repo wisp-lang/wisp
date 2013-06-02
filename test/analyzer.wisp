@@ -640,3 +640,66 @@
                                :form 'content
                                :meta nil
                                :info nil}]}}))
+
+(assert (= (analyze {} '(def x 1))
+           {:op :def
+            :env {}
+            :form '(def x 1)
+            :doc nil
+            :var {:op :var
+                  :env {}
+                  :form 'x
+                  :meta nil
+                  :info nil}
+            :init {:op :constant
+                   :type :number
+                   :env {}
+                   :form 1}
+            :tag nil
+            :dinamyc nil
+            :export nil}))
+
+(assert (= (analyze {:top true} '(def x 1))
+           {:op :def
+            :env {:top true}
+            :form '(def x 1)
+            :doc nil
+            :var {:op :var
+                  :env {:top true}
+                  :form 'x
+                  :meta nil
+                  :info nil}
+            :init {:op :constant
+                   :type :number
+                   :env {:top true}
+                   :form 1}
+            :tag nil
+            :dinamyc nil
+            :export true}))
+
+(assert (= (analyze {:top true} '(def x (foo bar))
+           {:op :def
+            :env {:top true}
+            :form '(def x 1)
+            :doc nil
+            :var {:op :var
+                  :env {:top true}
+                  :form 'x
+                  :meta nil
+                  :info nil}
+            :init {:op :invoke
+                   :env {:top true}
+                   :form '(foo bar)
+                   :tag nil
+                   :callee {:op :var
+                            :form 'foo
+                            :env {:top true}
+                            :meta nil
+                            :info nil}
+                   :params [{:op :var
+                             :form 'bar
+                             :env {:top true}
+                             :meta nil
+                             :info nil}]}
+            :dinamyc nil
+            :export true})))

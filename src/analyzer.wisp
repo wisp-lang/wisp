@@ -144,44 +144,43 @@
      :property property}))
 (install-special :aget analyze-aget)
 
+(defn parse-def
+  ([symbol] {:symbol symbol})
+  ([symbol init] {:symbol symbol :init init})
+  ([symbol doc init] {:symbol symbol
+                      :doc doc
+                      :init init}))
+
 (defn analyze-def
   [env form _]
-  (let [pfn (fn
-              ([_ sym] {:sym sym})
-              ([_ sym init] {:sym sym :init init})
-              ([_ sym doc init] {:sym sym :doc doc :init init}))
+  (let [params (apply parse-def (vec (rest form)))
+        symbol (:symbol params)
+        metadata (meta symbol)
 
-        args (apply pfn (vec form))
-        sym (:sym args)
-        sym-metadata (meta sym)
+        export? (and (:top env)
+                     (not (:private metadata)))
 
-        export? (and (:top sym-metadata)
-                     (not (:private sym-metadata)))
-
-        tag (:tag sym-metadata)
-        protocol (:protocol sym-metadata)
-        dynamic (:dynamic sym-metadata)
+        tag (:tag metadata)
+        protocol (:protocol metadata)
+        dynamic (:dynamic metadata)
         ns-name (:name (:ns env))
 
-        name (:name (resolve-var (dissoc env :locals) sym))
+        ;name (:name (resolve-var (dissoc env :locals) sym))
 
-        init-expr (if (not (nil? (args :init)))
-                    (analyze env (:init args) sym))
+        init (analyze env (:init params) symbol)
+        variable (analyze env symbol)
 
-        fn-var? (and init-expr
-                     (= :fn (:op init-expr)))
-
-        doc (or (:doc args)
-                (:doc sym-metadata))]
+        doc (or (:doc params)
+                (:doc metadata))]
     {:op :def
      :env env
      :form form
-     :name name
      :doc doc
-     :init init-expr
+     :var variable
+     :init init
      :tag tag
-     :dynamic true
-     :export true}))
+     :dynamic dynamic
+     :export export?}))
 (install-special :def analyze-def)
 
 (defn analyze-do
