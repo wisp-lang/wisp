@@ -2,6 +2,7 @@
 
 ## 0.8.1
 
+  - Remove support for third non-standard argument for `aget`.
   - Implement `interleave` high order function.
   - Implement `some` high order function.
   - Implement `partition` high order function.

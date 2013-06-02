@@ -674,7 +674,6 @@
         field? (and (quote? attribute)
                     (symbol? (second attribute)))
 
-        not-found (third form)
         member (if field?
                  (second attribute)
                  attribute)
@@ -686,14 +685,10 @@
                              ".~{}"
                              "[~{}]")
         template (str target-template attribute-template)]
-    (if not-found
-      (compile (list 'or
-                     (list 'get (first form) (second form))
-                     (macroexpand not-found)))
-      (compile-template
-       (list template
-             (compile target)
-             (compile member))))))
+    (compile-template
+     (list template
+           (compile target)
+           (compile member)))))
 
 
 (defn compile-not
@@ -1219,7 +1214,7 @@
    ([object field]
     `(aget (or ~object 0) ~field))
    ([object field fallback]
-    `(or (aget (or ~object 0) ~field ~fallback)))))
+    `(or (aget (or ~object 0) ~field) ~fallback))))
 
 (install-macro
  'def
