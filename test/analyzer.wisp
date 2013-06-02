@@ -528,3 +528,53 @@
                                  :type :keyword
                                  :form ':end
                                  :env {}}}}))
+
+
+(assert (= (analyze {} '(set! foo bar))
+           {:op :set!
+            :target {:op :var
+                     :env {}
+                     :form 'foo
+                     :meta nil
+                     :info nil}
+            :value {:op :var
+                    :env {}
+                    :form 'bar
+                    :meta nil
+                    :info nil}}))
+
+(assert (= (analyze {} '(set! *registry* {}))
+           {:op :set!
+            :target {:op :var
+                     :env {}
+                     :form '*registry*
+                     :meta nil
+                     :info nil}
+            :value {:op :dictionary
+                    :env {}
+                    :form {}
+                    :keys []
+                    :values []
+                    :hash? true}}))
+
+(assert (= (analyze {} '(set! (.-log console) print))
+           {:op :set!
+            :target {:op :member-expression
+                     :env {}
+                     :form '(aget console 'log)
+                     :computed false
+                     :target {:op :var
+                              :env {}
+                              :form 'console
+                              :meta nil
+                              :info nil}
+                     :property {:op :var
+                                :env {}
+                                :form 'log
+                                :meta nil
+                                :info nil}}
+            :value {:op :var
+                    :env {}
+                    :form 'print
+                    :meta nil
+                    :info nil}}))
