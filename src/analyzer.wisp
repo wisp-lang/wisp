@@ -187,11 +187,10 @@
 (defn analyze-do
   [op env form]
   (let [expressions (rest form)
-        block (analyze-block env expressions)]
-    {:op :do
-     :env env
-     :form form
-     :expressions block}))
+        body (analyze-block env expressions)]
+    (conj body {:op :do
+                :env env
+                :form form})))
 (install-special :do analyze-do)
 
 (defn analyze-binding

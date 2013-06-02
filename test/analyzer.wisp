@@ -578,3 +578,65 @@
                     :form 'print
                     :meta nil
                     :info nil}}))
+
+(assert (= (analyze {} '(do
+                          (read content)
+                          (print "read")
+                          (write content)))
+           {:op :do
+            :env {}
+            :form '(do
+                     (read content)
+                     (print "read")
+                     (write content))
+            :statements [{:op :invoke
+                          :env {}
+                          :form '(read content)
+                          :tag nil
+                          :callee {:op :var
+                                   :env {}
+                                   :form 'read
+                                   :meta nil
+                                   :info nil}
+                          :params [{:op :var
+                                    :env {}
+                                    :form 'content
+                                    :meta nil
+                                    :info nil}]}
+                         {:op :invoke
+                          :env {}
+                          :form '((aget console 'log) "read")
+                          :tag nil
+                          :callee {:op :member-expression
+                                   :computed false
+                                   :env {}
+                                   :form '(aget console 'log)
+                                   :target {:op :var
+                                            :env {}
+
+                                            :form 'console
+                                            :meta nil
+                                            :info nil}
+                                   :property {:op :var
+                                              :env {}
+                                              :form 'log
+                                              :meta nil
+                                              :info nil}}
+                          :params [{:op :constant
+                                    :env {}
+                                    :form "read"
+                                    :type :string}]}]
+            :result {:op :invoke
+                     :env {}
+                     :form '(write content)
+                     :tag nil
+                     :callee {:op :var
+                              :env {}
+                              :form 'write
+                              :meta nil
+                              :info nil}
+                     :params [{:op :var
+                               :env {}
+                               :form 'content
+                               :meta nil
+                               :info nil}]}}))
