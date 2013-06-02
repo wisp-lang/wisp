@@ -1,291 +1,373 @@
 (ns wisp.analyzer
-  (:use [wisp.ast :only [symbol symbol? keyword? meta name namespace]]
-        [wisp.sequence :only [seq? seq conj map every? interleave empty?
-                              list* list first last rest count]]
-        [wisp.runtime :only [vector? dictionary? string? keys vals
-                             = nil? merge]]
-        [wisp.string :only [split]]))
+  (:require [wisp.ast :refer [meta with-meta symbol? keyword?
+                              quote? symbol]]
+            [wisp.sequence :refer [list? list conj partition seq
+                                   empty? map vec every? concat
+                                   first second third rest last
+                                   butlast interleave cons count]]
+            [wisp.compiler :refer [macroexpand]]
+            [wisp.runtime :refer [nil? dictionary? vector? keys
+                                  vals string? number? boolean?
+                                  date? re-pattern? =]]))
 
-(defn get-in
-  "Returns the value in a nested associative structure,
-  where ks is a sequence of keys. Returns nil if the key
-  is not present, or the not-found value if supplied."
-  [dictionary keys not-found]
-  (loop [target dictionary
-         sentinel {}
-         keys keys]
-    (if (empty? keys)
-      target
-      (let [result (get target (first keys) sentinel)]
-        (if (identical? result sentinel)
-          not-found
-          (recur result sentinel (rest keys)))))))
-
-(defn empty-env [ns]
-  "Utility function that creates empty namespaces"
-  {:ns ns;(@namespaces *cljs-ns*)
-   :namespaces {}
-   :context :statement
-   :locals {}})
-
-(defn- local-binding [env form]
-  (get (:locals env) form))
-
-(defn core-name?
-  "Is sym visible from core in the current compilation namespace?"
-  [env sym]
-  false)
-
-(defn resolve-ns-alias [env name]
-  (let [sym (symbol name)]
-    (get (:requires (:ns env)) sym sym)))
-
-(defn resolve-existing-var [env form]
-  (if (= (namespace form) "js")
-    {:name form :ns 'js}
-    (let [namespaces (:namespaces env)
-          s (str form)
-          binding (local-binding env form)]
-      (cond
-       binding binding
-       ;; Attempt to resolve symbol in the namespace it's from
-       (namespace form) (let [ns (namespace form)
-                              ns (if (= "clojure.core" ns) "cljs.core" ns)
-                              full-ns (resolve-ns-alias env ns)
-                              id (symbol (name form))]
-       ;                   (confirm-var-exists env full-ns id)
-                          (merge (get-in namespaces [full-ns :defs id])
-                                 {:name (symbol (str full-ns) (str (name form)))
-                                  :ns full-ns}))
-
-       ; Attempt to resolve java thingy
-       ;(and (not (= ".." s))
-       ;     (< 1 (count (split s ".")))) (let [prefix (symbol (first (split s ".")))
-       ;                                        suffix (symbol (second (split s "." 2)))
-       ;                                        binding (local-binding env prefix)]
-       ;                                    (if binding
-       ;                                      {:name (symbol (str (:name binding) suffix))}
-       ;                                      (do
-       ;                                        (confirm-var-exists env prefix suffix)
-       ;                                        (merge (get-in @namespaces [prefix :defs suffix])
-       ;                                               {:name (if (= "" (name prefix))
-       ;                                                        suffix
-       ;                                                        (symbol (str prefix) (str suffix)))
-       ;                                                :ns prefix}))))
-
-       ;; Attempt to resolve by module env namespace
-       ;(get-in @namespaces
-       ;        [(:name (:ns env)) :uses form]) (let [ns (:name (:ns env))
-       ;                                              full-ns (get-in @namespaces
-       ;                                                              [ns :uses form])]
-       ;                                         (merge
-       ;                                          (get-in @namespaces [full-ns :defs form])
-       ;                                          {:name (symbol (str full-ns) (str form))
-       ;                                           :ns ns}))
-
-       ;; Attempt to resolve by imports ?
-       ;(get-in @namespaces [(:name (:ns env)) :imports sym]) (recur env
-       ;                                                             (get-in @namespaces
-       ;                                                                     [(:name (:ns env))
-       ;                                                                      :imports
-       ;                                                                      form]))
-
-       :else (let [full-ns (if (core-name? env form)
-                             'cljs.core
-                             (:name (:ns env)))]
-               ;(confirm-var-exists env full-ns form)
-               (merge (get-in namespaces [full-ns :defs form])
-                      {:name (symbol (str full-ns) (str form))
-                       :ns full-ns}))))))
-
-(defn special?
-  [op]
-  (or (= op 'if)
-      (= op 'def)
-      (= op 'fn*)
-      (= op 'do)
-      (= op 'let*)
-      (= op 'loop*)
-      (= op 'letfn*)
-      (= op 'throw)
-      (= op 'try*)
-      (= op 'recur)
-      (= op 'new)
-      (= op 'set!)
-      (= op 'ns)
-      (= op 'deftype*)
-      (= op 'defrecord*)
-      (= op '.)
-      (= op 'js*)
-      (= op '&)
-      (= op 'quote)))
-
-(defn analyze-seq
-  [env form name]
-  (let [env (conj env {:line
-                       (or (:line (meta form))
-                           (:line env))})]
-    (let [op (first form)]
-      (assert (not (nil? op)) "Can't call nil")
-      (let [expansion (macroexpand form)]
-        (if (special? op)
-          (parse op env form name)
-          (parse-invoke env form))))))
-
-(defn- method-call? [form]
-  (= (first form) \.))
-
-(defn- instantiation? [form]
-  (= (last form) \.))
-
-(defn- get-ns-exclude [env sym]
-  (get (:excludes (:ns env)) sym))
-
-(defn- get-ns-name [env]
-  (:name (:ns env)))
-
-(defn- get-macro-uses [env sym]
-  (get (:uses-macros (:ns env)) sym))
-
-(defn macro-sym? [env sym]
-  (let [namespaces (:namespaces env)
-        local (local-binding env sym)
-        ns-id (get-ns-name env)]
-    (not (or local ;locals shadow macros
-             (and (or (get-ns-exclude env sym)
-                      (get-in namespaces [ns-id :excludes sym]))
-                  (not (or (get-macro-uses env sym)
-                           (get-in namespaces [ns-id :uses-macros sym]))))))))
-
-(defn get-expander [sym env]
-  ;; TODO: Finish
-  (let [op (and (macro-sym? env sym)
-                (resolve-existing-var (empty-env) sym))]
-    (if (and op (:macro op))
-      ;; TODO: Get rid of eval
-      (js/eval (str (cljs.compiler/munge (:name op)))))))
-
-(defn sugar?
-  [op]
-  (let [id (str op)]
-  (or (identical? (first id) \.)
-      (identical? (last id) \.))))
-
-(defn macro? [op]
-  false)
-
-(defn desugar-1
- [form]
- (let [id (str form)
-        params (rest form)
-        metadata (meta form)]
-    (cond
-     (method-call? id) (with-meta
-                         (list* '. (first param) (symbol (subs id 1)) (rest params))
-                         metadata)
-     (instantiation? id) (with-meta
-                           (list* 'new
-                                  (symbol (subs opname 0 (dec (count opname))))
-                                  params)
-                           metadata)
-     :else form)))
-
-
-
-(defn macroexpand-1 [form]
-  (let [op (first form)]
-    (cond (special? op) form
-          (sugar? op) (desugar-1 form)
-          (macro? op) (apply (get-expander op)
-                             form
-                             (rest form))
-          :else form)))
-
-(defn macroexpand
-  "Repeatedly calls macroexpand-1 on form until it no longer
-  represents a macro form, then returns it.  Note neither
-  macroexpand-1 nor macroexpand expand macros in subforms."
-  [form]
-  (loop [form form
-         expansion (macroexpand-1 form)]
-    (if (identical? form expansion)
-      form
-      (recur expansion (macroexpand-1 expansion)))))
-
-
+(defn conj-meta
+  [value metadata]
+  (with-meta value
+    (conj metadata (meta value))))
 
 (defn analyze-symbol
   "Finds the var associated with sym"
-  [env symbol]
-  (let [result {:env env :form symbol}
-        locals (:locals env)
-        local (get locals symbol)]
-    (conj result {:op :var
-                  :info (if local
-                          local
-                          (resolve-existing-var env symbol))})))
+  [env form]
+  {:op :var
+   :env env
+   :form form
+   :meta (meta form)
+   :info (get (:locals env) form)})
 
-;; TODO: for now we just define *reader-ns-name* so that code below
-;; wil pass. In a future we should just use `module.id` or name
-;; defined under ns form.
-(def ^:private *reader-ns-name* 'clojure.reader/reader)
 (defn analyze-keyword
   [env form]
-  ;; When not at the REPL, *ns-sym* is not set so the reader did not
-  ;; know the namespace of the keyword
-  {:op :constant :env env
-   :form (if (= (namespace form) (name *reader-ns-name*))
-           (keyword (name (:name (:ns env))) (name form))
-           form)})
+  {:op :constant
+   :type :keyword
+   :env env
+   :form form})
 
-(defn simple-key?
-  [x]
-  (or (string? x)
-      (keyword? x)))
+(def specials {})
 
-(defn analyze-dictionary
+(defn install-special
+  [name f]
+  (set! (get specials name) f))
+
+(defn analyze-if
+  [op env form]
+  (let [forms (rest form)
+        test (analyze env (first forms))
+        consequent (analyze env (second forms))
+        alternate (analyze env (third forms))]
+    {:env env
+     :op :if
+     :form form
+     :test test
+     :consequent consequent
+     :alternate alternate}))
+
+(install-special :if analyze-if)
+
+(defn analyze-throw
+  [op env form name]
+  (let [expression (analyze env (second form))]
+    {:env env
+     :op :throw
+     :form form
+     :throw expression}))
+
+(install-special :throw analyze-throw)
+
+(defn analyze-try
+  [op env form name]
+  (let [forms (vec (rest form))
+
+        ;; Finally
+        tail (last forms)
+        finalizer-form (if (and (list? tail)
+                                (= 'finally (first tail)))
+                         (rest tail))
+        finalizer (if finalizer-form
+                    (analyze-block env finalizer-form))
+
+        ;; catch
+        body-form (if finalizer
+                    (butlast forms)
+                    forms)
+
+        tail (last body-form)
+        handler-form (if (and (list? tail)
+                              (= 'catch (first tail)))
+                       (rest tail))
+        handler (if handler-form
+                  (conj {:name (analyze env
+                                        (first handler-form))}
+                        (analyze-block env (rest handler-form))))
+
+        ;; Try
+        body (if handler-form
+               (analyze-block env (butlast body-form))
+               (analyze-block env body-form))]
+    {:op :try*
+     :env env
+     :form form
+     :body body
+     :handler handler
+     :finalizer finalizer}))
+
+(install-special :try* analyze-try)
+
+(defn analyze-set!
+  [_ env form name]
+  (let [body (rest form)
+        left (first body)
+        right (second body)
+        target (cond (symbol? left) (analyze-symbol env left name)
+                     (list? left) (analyze-list env left name)
+                     :else left)
+         value (analyze env right)]
+    {:op :set!
+     :target target
+     :value value}))
+(install-special :set! analyze-set!)
+
+(defn analyze-new
+  [_ env form _]
+  (let [body (rest form)
+        constructor (analyze env (first body))
+        params (vec (map #(analyze env %) (rest body)))]
+    {:op :new
+     :env env
+     :form form
+     :constructor constructor
+     :params params}))
+(install-special :new analyze-new)
+
+(defn analyze-aget
+  [_ env form _]
+  (let [body (rest form)
+        target (analyze env (first body))
+        attribute (second body)
+        field (and (quote? attribute)
+                   (symbol? (second attribute))
+                   (second attribute))
+        property (analyze env (or field attribute))]
+    {:op :member-expression
+     :env env
+     :form form
+     :target target
+     :computed (not field)
+     :property property}))
+(install-special :aget analyze-aget)
+
+(defn analyze-def
+  [_ env form _]
+  (let [pfn (fn
+              ([_ sym] {:sym sym})
+              ([_ sym init] {:sym sym :init init})
+              ([_ sym doc init] {:sym sym :doc doc :init init}))
+
+        args (apply pfn (vec form))
+        sym (:sym args)
+        sym-metadata (meta sym)
+
+        export? (and (:top sym-metadata)
+                     (not (:private sym-metadata)))
+
+        tag (:tag sym-metadata)
+        protocol (:protocol sym-metadata)
+        dynamic (:dynamic sym-metadata)
+        ns-name (:name (:ns env))
+
+        name (:name (resolve-var (dissoc env :locals) sym))
+
+        init-expr (if (not (nil? (args :init)))
+                    (analyze env (:init args) sym))
+
+        fn-var? (and init-expr
+                     (= :fn (:op init-expr)))
+
+        doc (or (:doc args)
+                (:doc sym-metadata))]
+    {:op :def
+     :env env
+     :form form
+     :name name
+     :doc doc
+     :init init-expr
+     :tag tag
+     :dynamic true
+     :export true}))
+(install-special :def analyze-def)
+
+(defn analyze-do
+  [op env form]
+  (let [expressions (rest form)
+        block (analyze-block env expressions)]
+    {:op :do
+     :env env
+     :form form
+     :expressions block}))
+(install-special :do analyze-do)
+
+(defn analyze-binding
+  [form]
+  (let [name (first form)
+        init (analyze env (second form))
+        init-meta (meta init)
+        fn-meta (if (= (:op init-meta))
+                  {:fn-var true
+                   :variadic (:variadic init-meta)
+                   :max-fixed-arity (:max-fixed-arity init-meta)
+                   :method-params (map #(:params %)
+                                       (:methods init-meta))}
+                  {})
+        binding-meta {:name name
+                      :init init
+                      :tag (or (:tag (meta name))
+                               (:tag init-meta)
+                               (:tag (:info init-meta)))
+                      :local true
+                          :shadow (get (:locals env) name)}]
+    (assert (not (or namespace)
+                 (< 1 (count (split \. (str name))))))
+    (conj-meta form (conj binding-meta fn-meta))))
+
+(defn analyze-recur-frame
+  [form env recur-frame bindings]
+  (let [*recur-frames* (if recur-frame
+                         (cons recur-frame *recur-frames*)
+                         *recur-frames*)
+        *loop-lets* (cond is-loop (or *loop-lets* '())
+                          *loop-lets* (cons {:params bindings}
+                                            *loop-lets*))]
+    (analyze-block env form)))
+
+
+(defn analyze-let
+  "Takes let form and enhances it's metadata via analyzed
+  info:
+  '(let [x 1
+         y 2]
+    (+ x y)) ->
+  "
+  [env form is-loop]
+  (let [expressions (rest form)
+        bindings (first expressions)
+        body (rest expressions)
+
+        valid-bindings? (and (vector? bindings)
+                             (even? (count bindings)))
+
+        _ (assert valid-bindings?
+                  "bindings must be vector of even number of elements")
+
+        context (:context env)
+
+        defs (map analyze-binding bindings)
+
+        recur-frame (if is-loop
+                      {:params defs
+                       :flag {}})
+
+        expressions (analyze-recur-frame env
+                                         body
+                                         recur-frame
+                                         defs)]
+    (conj-meta form
+               {:op :let
+                :loop is-loop
+                :bindings bindings
+                :statements expressions
+                :ret ret})))
+
+(defn analyze-let*
+  [op env form _]
+  (analyze-let env form false))
+(install-special :let* analyze-let*)
+
+(defn analyze-loop*
+  [op env form _]
+  (analyze-let env form true))
+(install-special :loop* analyze-loop*)
+
+
+(defn analyze-recur
+  [op env form _]
+  (let [context (:context env)
+        expressions (vec (map #(analyze env %) (rest form)))]
+    (conj-meta form
+               {:op :recur
+                :expressions expressions})))
+(install-special :recur analyze-recur)
+
+(defn analyze-quote
+  [_ env form _]
+  {:op :constant
+   :env :env
+   :form (second form)})
+
+
+
+(defn analyze-block
+  "returns {:statements .. :ret ..}"
+  [env form]
+  (let [statements (seq (map #(analyze env %)
+                             (butlast form)))
+        result (if (<= (count form) 1)
+                 (analyze env (first form))
+                 (analyze env (last form)))]
+    {:env env
+     :statements (vec statements)
+     :result result}))
+
+
+(defn analyze-list
   [env form name]
-  (let [expr-env (conj env {:context :expr})
-        names (keys form)
-        simple-keys? (every? simple-key? names)
-        ks (disallowing-recur (vec (map #(analyze expr-env % name) names)))
-        vs (disallowing-recur (vec (map #(analyze expr-env % name) (vals form))))]
-    (analyze-wrap-meta {:op :map :env env :form form
-                        :keys ks :vals vs :simple-keys? simple-keys?
-                        :children (vec (interleave ks vs))}
-                       name)))
+  (let [expansion (macroexpand form)
+        operator (first expansion)
+        parse-special (get specials operator)]
+    (if parse-special
+      (parse-special operator env expansion name)
+      (parse-invoke env expansion))))
 
 (defn analyze-vector
   [env form name]
-  (let [expr-env (conj env {:context :expr})
-        items (disallowing-recur (vec (map #(analyze expr-env % name) form)))]
-    (analyze-wrap-meta {:op :vector :env env :form form :items items :children items} name)))
+  (let [items (vec (map #(analyze env % name) form))]
+    {:op :vector
+     :env env
+     :meta (meta form)
+     :form form
+     :items items}))
 
-(defn analyze-wrap-meta [expr name]
-  (let [form (:form expr)
-        metadata (meta form)
-        env (:env expr) ; take on expr's context
-        expr (if metadata (assoc-in expr [:env :context] :expr)) ; change expr to :expr
-        meta-expr (if metadata (analyze-map env metadata name))]
-    (if metadata
-      {:op :meta :env env :form form
-       :meta meta-expr :expr expr :children [meta-expr expr]}
-      expr)))
+(defn hash-key?
+  [form]
+  (or (string? form) (keyword? form)))
 
-(defn analyze-map
+(defn analyze-dictionary
   [env form name]
-  (let [expr-env (conj env {:context :expr})
-        simple-keys? (every? #(or (string? %) (keyword? %))
-                             (keys form))
-        ks (disallowing-recur (vec (map #(analyze expr-env % name) (keys form))))
-        vs (disallowing-recur (vec (map #(analyze expr-env % name) (vals form))))]
-    (analyze-wrap-meta {:op :map :env env :form form
-                        :keys ks :vals vs :simple-keys? simple-keys?
-                        :children (vec (interleave ks vs))}
-                       name)))
+  (let [hash? (every? hash-key? (keys form))
+        names (vec (map #(analyze env % name) (keys form)))
+        values (vec (map #(analyze env % name) (vals form)))]
+    {:op :dictionary
+     :env env
+     :form form
+     :keys names
+     :values values
+     :hash? hash?}))
 
-(defn analyze
-  "Given an environment, a map containing {:locals (mapping of names to bindings), :context
+(defn parse-invoke
+  [env form]
+  (let [callee (analyze env (first form))
+        params (vec (map #(analyze env %) (rest form)))]
+    {:op :invoke
+     :callee callee
+     :form form
+     :env env
+     :params params
+     :tag (or (:tag (:info callee))
+              (:tag (meta form)))}))
+
+(defn analyze-constant
+  [env form type]
+  {:op :constant
+   :type type
+   :env env
+   :form form
+   :type (cond (nil? form) :nil
+               (string? form) :string
+               (number? form) :number
+               (boolean? form) :boolean
+               (date? form) :date
+               (re-pattern? form) :re-pattern
+               (list? form) :list
+               :else :unknown)})
+
+(defn analyze  "Given an environment, a map containing {:locals (mapping of names to bindings), :context
   (one of :statement, :expr, :return), :ns (a symbol naming the
   compilation ns)}, and form, returns an expression object (a map
   containing at least :form, :op and :env keys). If expr has any (immediately)
@@ -293,16 +375,12 @@
   facilitate code walking without knowing the details of the op set."
   ([env form] (analyze env form nil))
   ([env form name]
-   ;; (load-core) TODO: Find out what that's for
-   (cond
-    (symbol? form) (analyze-symbol env form)
-    (keyword? form) (analyze-keyword env form)
-
-    (and (seq? form)
-         (not (empty? form))) (analyze-seq env form name)
-    ;(map? form) (analyze-map env form name)
-    (dictionary? form) (analyze-dictionary env form name)
-    (vector? form) (analyze-vector env form name)
-    ;(set? form) (analyze-set env form name)
-
-    :else {:op :constant :env env :form form})))
+   (cond (nil? form) (analyze-constant env form)
+         (symbol? form) (analyze-symbol env form)
+         (and (list? form)
+              (not (empty? form))) (analyze-list env form name)
+         (dictionary? form) (analyze-dictionary env form name)
+         (vector? form) (analyze-vector env form name)
+         ;(set? form) (analyze-set env form name)
+         (keyword? form) (analyze-keyword env form)
+         :else (analyze-constant env form))))
