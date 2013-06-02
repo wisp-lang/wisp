@@ -38,7 +38,7 @@
   (set! (get specials name) f))
 
 (defn analyze-if
-  [op env form]
+  [env form]
   (let [forms (rest form)
         test (analyze env (first forms))
         consequent (analyze env (second forms))
@@ -53,7 +53,7 @@
 (install-special :if analyze-if)
 
 (defn analyze-throw
-  [op env form name]
+  [env form name]
   (let [expression (analyze env (second form))]
     {:env env
      :op :throw
@@ -63,7 +63,7 @@
 (install-special :throw analyze-throw)
 
 (defn analyze-try
-  [op env form name]
+  [env form name]
   (let [forms (vec (rest form))
 
         ;; Finally
@@ -102,7 +102,7 @@
 (install-special :try* analyze-try)
 
 (defn analyze-set!
-  [_ env form name]
+  [env form name]
   (let [body (rest form)
         left (first body)
         right (second body)
@@ -116,7 +116,7 @@
 (install-special :set! analyze-set!)
 
 (defn analyze-new
-  [_ env form _]
+  [env form _]
   (let [body (rest form)
         constructor (analyze env (first body))
         params (vec (map #(analyze env %) (rest body)))]
@@ -128,7 +128,7 @@
 (install-special :new analyze-new)
 
 (defn analyze-aget
-  [_ env form _]
+  [env form _]
   (let [body (rest form)
         target (analyze env (first body))
         attribute (second body)
@@ -145,7 +145,7 @@
 (install-special :aget analyze-aget)
 
 (defn analyze-def
-  [_ env form _]
+  [env form _]
   (let [pfn (fn
               ([_ sym] {:sym sym})
               ([_ sym init] {:sym sym :init init})
@@ -185,7 +185,7 @@
 (install-special :def analyze-def)
 
 (defn analyze-do
-  [op env form]
+  [env form _]
   (let [expressions (rest form)
         body (analyze-block env expressions)]
     (conj body {:op :do
@@ -265,18 +265,18 @@
                 :ret ret})))
 
 (defn analyze-let*
-  [op env form _]
+  [env form _]
   (analyze-let env form false))
 (install-special :let* analyze-let*)
 
 (defn analyze-loop*
-  [op env form _]
+  [env form _]
   (analyze-let env form true))
 (install-special :loop* analyze-loop*)
 
 
 (defn analyze-recur
-  [op env form _]
+  [env form _]
   (let [context (:context env)
         expressions (vec (map #(analyze env %) (rest form)))]
     (conj-meta form
@@ -285,7 +285,7 @@
 (install-special :recur analyze-recur)
 
 (defn analyze-quote
-  [_ env form _]
+  [env form _]
   {:op :constant
    :env :env
    :form (second form)})
@@ -309,10 +309,10 @@
   [env form name]
   (let [expansion (macroexpand form)
         operator (first expansion)
-        parse-special (get specials operator)]
-    (if parse-special
-      (parse-special operator env expansion name)
-      (parse-invoke env expansion))))
+        analyze-special (get specials operator)]
+    (if analyze-special
+      (analyze-special env expansion name)
+      (analyze-invoke env expansion))))
 
 (defn analyze-vector
   [env form name]
@@ -339,7 +339,7 @@
      :values values
      :hash? hash?}))
 
-(defn parse-invoke
+(defn analyze-invoke
   [env form]
   (let [callee (analyze env (first form))
         params (vec (map #(analyze env %) (rest form)))]
