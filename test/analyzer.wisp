@@ -657,49 +657,51 @@
                    :form 1}
             :tag nil
             :dinamyc nil
-            :export nil}))
+            :export false}))
 
-(assert (= (analyze {:top true} '(def x 1))
+(assert (= (analyze {:parent {}} '(def x 1))
            {:op :def
-            :env {:top true}
+            :env {:parent {}}
             :form '(def x 1)
             :doc nil
             :var {:op :var
-                  :env {:top true}
+                  :env {:parent {}}
                   :form 'x
                   :meta nil
                   :info nil}
             :init {:op :constant
                    :type :number
-                   :env {:top true}
+                   :env {:parent {}}
                    :form 1}
             :tag nil
             :dinamyc nil
             :export true}))
 
-(assert (= (analyze {:top true} '(def x (foo bar))
+(assert (= (analyze {:parent {}} '(def x (foo bar)))
            {:op :def
-            :env {:top true}
-            :form '(def x 1)
+            :env {:parent {}}
+            :form '(def x (foo bar))
             :doc nil
+            :tag nil
             :var {:op :var
-                  :env {:top true}
+                  :env {:parent {}}
                   :form 'x
                   :meta nil
                   :info nil}
             :init {:op :invoke
-                   :env {:top true}
+                   :env {:parent {}}
                    :form '(foo bar)
                    :tag nil
                    :callee {:op :var
                             :form 'foo
-                            :env {:top true}
+                            :env {:parent {}}
                             :meta nil
                             :info nil}
                    :params [{:op :var
                              :form 'bar
-                             :env {:top true}
+                             :env {:parent {}}
                              :meta nil
                              :info nil}]}
             :dinamyc nil
-            :export true})))
+            :export true}))
+

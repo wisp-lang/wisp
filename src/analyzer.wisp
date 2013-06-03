@@ -157,7 +157,7 @@
         symbol (:symbol params)
         metadata (meta symbol)
 
-        export? (and (:top env)
+        export? (and (not (nil? (:parent env)))
                      (not (:private metadata)))
 
         tag (:tag metadata)
