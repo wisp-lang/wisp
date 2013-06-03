@@ -11,26 +11,21 @@
                                   date? re-pattern? even? =]]
             [wisp.string :refer [split]]))
 
-(defn conj-meta
-  [value metadata]
-  (with-meta value
-    (conj metadata (meta value))))
-
 (defn analyze-symbol
   "Finds the var associated with sym"
   [env form]
   {:op :var
-   :env env
    :form form
    :meta (meta form)
-   :info (get (:locals env) form)})
+   :info (get (:locals env) form)
+   :env env})
 
 (defn analyze-keyword
   [env form]
   {:op :constant
    :type :keyword
-   :env env
-   :form form})
+   :form form
+   :env env})
 
 (def specials {})
 
@@ -44,22 +39,22 @@
         test (analyze env (first forms))
         consequent (analyze env (second forms))
         alternate (analyze env (third forms))]
-    {:env env
-     :op :if
+    {:op :if
      :form form
      :test test
      :consequent consequent
-     :alternate alternate}))
+     :alternate alternate
+     :env env}))
 
 (install-special :if analyze-if)
 
 (defn analyze-throw
   [env form name]
   (let [expression (analyze env (second form))]
-    {:env env
-     :op :throw
+    {:op :throw
      :form form
-     :throw expression}))
+     :throw expression
+     :env env}))
 
 (install-special :throw analyze-throw)
 
@@ -94,11 +89,11 @@
                (analyze-block env (butlast body-form))
                (analyze-block env body-form))]
     {:op :try*
-     :env env
      :form form
      :body body
      :handler handler
-     :finalizer finalizer}))
+     :finalizer finalizer
+     :env env}))
 
 (install-special :try* analyze-try)
 
@@ -113,7 +108,9 @@
          value (analyze env right)]
     {:op :set!
      :target target
-     :value value}))
+     :value value
+     :form form
+     :env env}))
 (install-special :set! analyze-set!)
 
 (defn analyze-new
@@ -122,10 +119,10 @@
         constructor (analyze env (first body))
         params (vec (map #(analyze env %) (rest body)))]
     {:op :new
-     :env env
-     :form form
      :constructor constructor
-     :params params}))
+     :form form
+     :params params
+     :env env}))
 (install-special :new analyze-new)
 
 (defn analyze-aget
@@ -138,11 +135,12 @@
                    (second attribute))
         property (analyze env (or field attribute))]
     {:op :member-expression
-     :env env
+     :computed (not field)
      :form form
      :target target
-     :computed (not field)
-     :property property}))
+     :property property
+     :env env}
+    ))
 (install-special :aget analyze-aget)
 
 (defn parse-def
@@ -174,14 +172,14 @@
         doc (or (:doc params)
                 (:doc metadata))]
     {:op :def
-     :env env
      :form form
      :doc doc
      :var variable
      :init init
      :tag tag
      :dynamic dynamic
-     :export export?}))
+     :export export?
+     :env env}))
 (install-special :def analyze-def)
 
 (defn analyze-do
@@ -189,8 +187,8 @@
   (let [expressions (rest form)
         body (analyze-block env expressions)]
     (conj body {:op :do
-                :env env
-                :form form})))
+                :form form
+                :env env})))
 (install-special :do analyze-do)
 
 (defn analyze-binding
@@ -216,24 +214,10 @@
                      (< 1 (count (split \. (str name)))))))
     (conj binding-meta fn-meta)))
 
-(defn analyze-recur-frame
-  [env form recur-frame bindings is-loop]
-  (let [*recur-frames* (if recur-frame
-                         (cons recur-frame *recur-frames*)
-                         *recur-frames*)
-        *loop-lets* (cond is-loop (or *loop-lets* '())
-                          *loop-lets* (cons {:params bindings}
-                                            *loop-lets*))]
-    (analyze-block env form)))
-
 
 (defn analyze-let
   "Takes let form and enhances it's metadata via analyzed
-  info:
-  '(let [x 1
-         y 2]
-    (+ x y)) ->
-  "
+  info"
   [env form is-loop]
   (let [expressions (rest form)
         bindings (first expressions)
@@ -250,23 +234,22 @@
         locals (map #(analyze-binding env %)
                     (partition 2 bindings))
 
-        recur-frame (if is-loop
-                      {:params locals :flag {}})
+        params (or (if is-loop locals)
+                   (:params env))
 
-        expressions (analyze-recur-frame {:parent env
-                                          :locals locals}
-                                         body
-                                         recur-frame
-                                         locals
-                                         is-loop)]
+        scope (conj {:parent env
+                     :bindings locals}
+                    (if params {:params params}))
+
+        expressions (analyze-block scope body)]
 
     {:op :let
-     :env env
      :form form
      :loop is-loop
      :bindings locals
      :statements (:statements expressions)
-     :result (:result expressions)}))
+     :result (:result expressions)
+     :env env}))
 
 (defn analyze-let*
   [env form _]
@@ -275,27 +258,32 @@
 
 (defn analyze-loop*
   [env form _]
-  (analyze-let env form true))
+  (conj (analyze-let env form true)
+        {:op 'loop*}))
 (install-special :loop* analyze-loop*)
 
 
 (defn analyze-recur
   [env form _]
   (let [context (:context env)
-        expressions (vec (map #(analyze env %) (rest form)))]
+        params (:params env)
+        forms (vec (map #(analyze env %) (rest form)))]
+
+    (assert (identical? (count params)
+                        (count forms))
+            "Recurs with unexpected number of arguments")
 
     {:op :recur
-     :env env
      :form form
-     :expressions expressions}))
-
+     :env env
+     :params forms}))
 (install-special :recur analyze-recur)
 
 (defn analyze-quote
   [env form _]
   {:op :constant
-   :env :env
-   :form (second form)})
+   :form (second form)
+   :env :env})
 
 
 
@@ -307,9 +295,9 @@
         result (if (<= (count form) 1)
                  (analyze env (first form))
                  (analyze env (last form)))]
-    {:env env
-     :statements (vec statements)
-     :result result}))
+    {:statements (vec statements)
+     :result result
+     :env env}))
 
 
 (defn analyze-list
@@ -325,10 +313,10 @@
   [env form name]
   (let [items (vec (map #(analyze env % name) form))]
     {:op :vector
-     :env env
      :meta (meta form)
      :form form
-     :items items}))
+     :items items
+     :env env}))
 
 (defn hash-key?
   [form]
@@ -340,11 +328,11 @@
         names (vec (map #(analyze env % name) (keys form)))
         values (vec (map #(analyze env % name) (vals form)))]
     {:op :dictionary
-     :env env
+     :hash? hash?
      :form form
      :keys names
      :values values
-     :hash? hash?}))
+     :env env}))
 
 (defn analyze-invoke
   [env form]
@@ -353,16 +341,15 @@
     {:op :invoke
      :callee callee
      :form form
-     :env env
      :params params
      :tag (or (:tag (:info callee))
-              (:tag (meta form)))}))
+              (:tag (meta form)))
+     :env env}))
 
 (defn analyze-constant
   [env form type]
   {:op :constant
    :type type
-   :env env
    :form form
    :type (cond (nil? form) :nil
                (string? form) :string
@@ -371,7 +358,8 @@
                (date? form) :date
                (re-pattern? form) :re-pattern
                (list? form) :list
-               :else :unknown)})
+               :else :unknown)
+   :env env})
 
 (defn analyze  "Given an environment, a map containing {:locals (mapping of names to bindings), :context
   (one of :statement, :expr, :return), :ns (a symbol naming the

@@ -541,7 +541,9 @@
                     :env {}
                     :form 'bar
                     :meta nil
-                    :info nil}}))
+                    :info nil}
+            :form '(set! foo bar)
+            :env {}}))
 
 (assert (= (analyze {} '(set! *registry* {}))
            {:op :set!
@@ -555,7 +557,9 @@
                     :form {}
                     :keys []
                     :values []
-                    :hash? true}}))
+                    :hash? true}
+            :form '(set! *registry* {})
+            :env {}}))
 
 (assert (= (analyze {} '(set! (.-log console) print))
            {:op :set!
@@ -577,7 +581,9 @@
                     :env {}
                     :form 'print
                     :meta nil
-                    :info nil}}))
+                    :info nil}
+            :form '(set! (.-log console) print)
+            :env {}}))
 
 (assert (= (analyze {} '(do
                           (read content)
@@ -705,45 +711,49 @@
             :dinamyc nil
             :export true}))
 
-(let [locals [{:name 'x
-               :init {:op :constant
-                      :type :number
-                      :env {}
-                      :form 1}
-               :tag nil
-               :local true
-               :shadow nil}
-              {:name 'y
-               :init {:op :constant
-                      :type :number
-                      :env {}
-                      :form 2}
-               :tag nil
-               :local true
-               :shadow nil}]]
+(let [bindings [{:name 'x
+                 :init {:op :constant
+                        :type :number
+                        :env {}
+                        :form 1}
+                 :tag nil
+                 :local true
+                 :shadow nil}
+                {:name 'y
+                 :init {:op :constant
+                        :type :number
+                        :env {}
+                        :form 2}
+                 :tag nil
+                 :local true
+                 :shadow nil}]]
   (assert (= (analyze {} '(let* [x 1 y 2] (+ x y)))
              {:op :let
               :env {}
               :form '(let* [x 1 y 2] (+ x y))
               :loop false
-              :bindings locals
+              :bindings bindings
               :statements []
               :result {:op :invoke
                        :form '(+ x y)
-                       :env {:parent {} :locals locals}
+                       :env {:parent {}
+                             :bindings bindings}
                        :tag nil
                        :callee {:op :var
                                 :form '+
-                                :env {:parent {} :locals locals}
+                                :env {:parent {}
+                                      :bindings bindings}
                                 :meta nil
                                 :info nil}
                        :params [{:op :var
                                  :form 'x
-                                 :env {:parent {} :locals locals}
+                                 :env {:parent {}
+                                       :bindings bindings}
                                  :meta nil
                                  :info nil}
                                 {:op :var
                                  :form 'y
-                                 :env {:parent {} :locals locals}
+                                 :env {:parent {}
+                                       :bindings bindings}
                                  :meta nil
                                  :info nil}]}})))
