@@ -1,6 +1,6 @@
 (ns wisp.analyzer
   (:require [wisp.ast :refer [meta with-meta symbol? keyword?
-                              quote? symbol]]
+                              quote? symbol namespace name]]
             [wisp.sequence :refer [list? list conj partition seq
                                    empty? map vec every? concat
                                    first second third rest last
@@ -8,7 +8,8 @@
             [wisp.compiler :refer [macroexpand]]
             [wisp.runtime :refer [nil? dictionary? vector? keys
                                   vals string? number? boolean?
-                                  date? re-pattern? =]]))
+                                  date? re-pattern? even? =]]
+            [wisp.string :refer [split]]))
 
 (defn conj-meta
   [value metadata]
@@ -193,11 +194,11 @@
 (install-special :do analyze-do)
 
 (defn analyze-binding
-  [form]
+  [env form]
   (let [name (first form)
         init (analyze env (second form))
         init-meta (meta init)
-        fn-meta (if (= (:op init-meta))
+        fn-meta (if (= 'fn (:op init-meta))
                   {:fn-var true
                    :variadic (:variadic init-meta)
                    :max-fixed-arity (:max-fixed-arity init-meta)
@@ -210,13 +211,13 @@
                                (:tag init-meta)
                                (:tag (:info init-meta)))
                       :local true
-                          :shadow (get (:locals env) name)}]
-    (assert (not (or namespace)
-                 (< 1 (count (split \. (str name))))))
-    (conj-meta form (conj binding-meta fn-meta))))
+                      :shadow (get (:locals env) name)}]
+    (assert (not (or (namespace name)
+                     (< 1 (count (split \. (str name)))))))
+    (conj binding-meta fn-meta)))
 
 (defn analyze-recur-frame
-  [form env recur-frame bindings]
+  [env form recur-frame bindings is-loop]
   (let [*recur-frames* (if recur-frame
                          (cons recur-frame *recur-frames*)
                          *recur-frames*)
@@ -246,22 +247,26 @@
 
         context (:context env)
 
-        defs (map analyze-binding bindings)
+        locals (map #(analyze-binding env %)
+                    (partition 2 bindings))
 
         recur-frame (if is-loop
-                      {:params defs
-                       :flag {}})
+                      {:params locals :flag {}})
 
-        expressions (analyze-recur-frame env
+        expressions (analyze-recur-frame {:parent env
+                                          :locals locals}
                                          body
                                          recur-frame
-                                         defs)]
-    (conj-meta form
-               {:op :let
-                :loop is-loop
-                :bindings bindings
-                :statements expressions
-                :ret ret})))
+                                         locals
+                                         is-loop)]
+
+    {:op :let
+     :env env
+     :form form
+     :loop is-loop
+     :bindings locals
+     :statements (:statements expressions)
+     :result (:result expressions)}))
 
 (defn analyze-let*
   [env form _]
@@ -278,9 +283,12 @@
   [env form _]
   (let [context (:context env)
         expressions (vec (map #(analyze env %) (rest form)))]
-    (conj-meta form
-               {:op :recur
-                :expressions expressions})))
+
+    {:op :recur
+     :env env
+     :form form
+     :expressions expressions}))
+
 (install-special :recur analyze-recur)
 
 (defn analyze-quote

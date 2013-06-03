@@ -705,3 +705,45 @@
             :dinamyc nil
             :export true}))
 
+(let [locals [{:name 'x
+               :init {:op :constant
+                      :type :number
+                      :env {}
+                      :form 1}
+               :tag nil
+               :local true
+               :shadow nil}
+              {:name 'y
+               :init {:op :constant
+                      :type :number
+                      :env {}
+                      :form 2}
+               :tag nil
+               :local true
+               :shadow nil}]]
+  (assert (= (analyze {} '(let* [x 1 y 2] (+ x y)))
+             {:op :let
+              :env {}
+              :form '(let* [x 1 y 2] (+ x y))
+              :loop false
+              :bindings locals
+              :statements []
+              :result {:op :invoke
+                       :form '(+ x y)
+                       :env {:parent {} :locals locals}
+                       :tag nil
+                       :callee {:op :var
+                                :form '+
+                                :env {:parent {} :locals locals}
+                                :meta nil
+                                :info nil}
+                       :params [{:op :var
+                                 :form 'x
+                                 :env {:parent {} :locals locals}
+                                 :meta nil
+                                 :info nil}
+                                {:op :var
+                                 :form 'y
+                                 :env {:parent {} :locals locals}
+                                 :meta nil
+                                 :info nil}]}})))
