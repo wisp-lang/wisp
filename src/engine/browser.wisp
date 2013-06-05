@@ -1,7 +1,7 @@
 (ns wisp.engine.browser
   (:require [wisp.runtime :refer [str]]
             [wisp.sequence :refer [rest]]
-            [wisp.reader :refer [read-from-string]]
+            [wisp.reader :refer [read* read-from-string]]
             [wisp.compiler :refer [compile*]]))
 
 (defn evaluate

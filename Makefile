@@ -62,3 +62,9 @@ node-engine:
 browser-engine:
 	mkdir -p ./engine/
 	cat ./src/engine/browser.wisp | $(WISP) > ./engine/browser.js
+
+browser-embed: core browser-engine bundle-browser-engine
+bundle-browser-engine:
+	$(BROWSERIFY) --debug \
+                --exports require \
+                --entry ./engine/browser.js > ./browser-embed.js
