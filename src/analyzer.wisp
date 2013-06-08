@@ -12,7 +12,13 @@
             [wisp.string :refer [split]]))
 
 (defn analyze-symbol
-  "Finds the var associated with sym"
+  "Finds the var associated with symbol
+  Example:
+
+  (analyze-symbol {} 'foo) => {:op :var
+                               :form 'foo
+                               :info nil
+                               :env {}}"
   [env form]
   {:op :var
    :form form
@@ -20,6 +26,11 @@
    :env env})
 
 (defn analyze-keyword
+  "Example:
+  (analyze-keyword {} :foo) => {:op :constant
+                                :type :keyword
+                                :form ':foo
+                                :env {}}"
   [env form]
   {:op :constant
    :type :keyword
@@ -33,6 +44,22 @@
   (set! (get specials name) f))
 
 (defn analyze-if
+  "Example:
+  (analyze-if {} '(if monday? :yep :nope)) => {:op :if
+                                               :form '(if monday? :yep :nope)
+                                               :env {}
+                                               :test {:op :var
+                                                      :form 'monday?
+                                                      :info nil
+                                                      :env {}}
+                                               :consequent {:op :constant
+                                                            :form ':yep
+                                                            :type :keyword
+                                                            :env {}}
+                                               :alternate {:op :constant
+                                                           :form ':nope
+                                                           :type :keyword
+                                                           :env {}}}"
   [env form]
   (let [forms (rest form)
         test (analyze env (first forms))
@@ -48,6 +75,18 @@
 (install-special :if analyze-if)
 
 (defn analyze-throw
+  "Example:
+  (analyze-throw {} '(throw (Error :boom))) => {:op :throw
+                                                :form '(throw (Error :boom))
+                                                :throw {:op :invoke
+                                                        :callee {:op :var
+                                                                 :form 'Error
+                                                                 :info nil
+                                                                 :env {}}
+                                                        :params [{:op :constant
+                                                                  :type :keyword
+                                                                  :form ':boom
+                                                                  :env {}}]}}"
   [env form name]
   (let [expression (analyze env (second form))]
     {:op :throw
@@ -279,6 +318,10 @@
 (install-special :recur analyze-recur)
 
 (defn analyze-quote
+  "Examples:
+   (analyze-quote {} '(quote foo)) => {:op :constant
+                                       :form 'foo
+                                       :env env}"
   [env form _]
   {:op :constant
    :form (second form)
@@ -287,7 +330,42 @@
 
 
 (defn analyze-block
-  "returns {:statements .. :ret ..}"
+  "Examples:
+  (analyze-block {} '((foo bar))) => {:statements nil
+                                      :result {:op :invoke
+                                               :form '(foo bar)
+                                               :env {}
+                                               :callee {:op :var
+                                                        :form 'foo
+                                                        :info nil
+                                                        :env {}}
+                                               :params [{:op :var
+                                                         :form 'bar
+                                                         :info nil
+                                                         :env {}}]}
+  (analyze-block {} '((beep bz)
+                      (foo bar))) => {:statements [{:op :invoke
+                                                    :form '(beep bz)
+                                                    :env {}
+                                                    :callee {:op :var
+                                                             :form 'beep
+                                                             :info nil
+                                                             :env {}}
+                                                    :params [{:op :var
+                                                              :form 'bz
+                                                              :info nil
+                                                              :env {}}]}]
+                                      :result {:op :invoke
+                                               :form '(foo bar)
+                                               :env {}
+                                               :callee {:op :var
+                                                        :form 'foo
+                                                        :info nil
+                                                        :env {}}
+                                               :params [{:op :var
+                                                         :form 'bar
+                                                         :info nil
+                                                         :env {}}]}"
   [env form]
   (let [statements (if (> (count form) 1)
                      (vec (map #(analyze env %)
@@ -357,7 +435,8 @@
                :else :unknown)
    :env env})
 
-(defn analyze  "Given an environment, a map containing {:locals (mapping of names to bindings), :context
+(defn analyze
+  "Given an environment, a map containing {:locals (mapping of names to bindings), :context
   (one of :statement, :expr, :return), :ns (a symbol naming the
   compilation ns)}, and form, returns an expression object (a map
   containing at least :form, :op and :env keys). If expr has any (immediately)
