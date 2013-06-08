@@ -694,3 +694,133 @@
                                        :bindings bindings}
                                  :info nil}]}})))
 
+(let [bindings [{:name 'chars
+                 :init {:op :var
+                        :form 'stream
+                        :info nil
+                        :env {}}
+                 :tag nil
+                 :shadow nil
+                 :local true}
+                {:name 'result
+                 :init {:op :vector
+                        :items []
+                        :form []
+                        :env {}}
+                 :tag nil
+                 :shadow nil
+                 :local true}]]
+
+  (assert (= (analyze {} '(loop* [chars stream
+                                  result []]
+                                 (if (empty? chars)
+                                   :eof
+                                   (recur (rest chars)
+                                          (conj result (first chars))))))
+             {:op :loop*
+              :loop true
+              :form '(loop* [chars stream
+                             result []]
+                            (if (empty? chars) :eof
+                              (recur (rest chars)
+                                     (conj result (first chars)))))
+              :env {}
+              :bindings bindings
+              :statements []
+              :result {:op :if
+                       :form '(if (empty? chars)
+                                :eof
+                                (recur (rest chars)
+                                       (conj result (first chars))))
+                       :env {:parent {}
+                             :bindings bindings
+                             :params bindings}
+
+                       :test {:op :invoke
+                              :form '(empty? chars)
+                              :env {:parent {}
+                                    :bindings bindings
+                                    :params bindings}
+                              :tag nil
+                              :callee {:op :var
+                                       :env {:parent {}
+                                             :bindings bindings
+                                             :params bindings}
+                                       :form 'empty?
+                                       :info nil}
+                              :params [{:op :var
+                                        :form 'chars
+                                        :info nil
+                                        :env {:parent {}
+                                              :bindings bindings
+                                              :params bindings}}]}
+
+                       :consequent {:op :constant
+                                    :type :keyword
+                                    :env {:parent {}
+                                          :bindings bindings
+                                          :params bindings}
+                                    :form ':eof}
+
+                       :alternate {:op :recur
+                                   :form '(recur (rest chars)
+                                                 (conj result (first chars)))
+                                   :env {:parent {}
+                                         :bindings bindings
+                                         :params bindings}
+                                   :params [{:op :invoke
+                                             :tag nil
+                                             :form '(rest chars)
+                                             :env {:parent {}
+                                                   :bindings bindings
+                                                   :params bindings}
+                                             :callee {:op :var
+                                                      :form 'rest
+                                                      :info nil
+                                                      :env {:parent {}
+                                                            :bindings bindings
+                                                            :params bindings}}
+                                             :params [{:op :var
+                                                       :form 'chars
+                                                       :info nil
+                                                       :env {:parent {}
+                                                             :bindings bindings
+                                                             :params bindings}}]}
+                                            {:op :invoke
+                                             :tag nil
+                                             :form '(conj result (first chars))
+                                             :env {:parent {}
+                                                   :bindings bindings
+                                                   :params bindings}
+                                             :callee {:op :var
+                                                      :form 'conj
+                                                      :info nil
+                                                      :env {:parent {}
+                                                            :bindings bindings
+                                                            :params bindings}}
+                                             :params [{:op :var
+                                                       :form 'result
+                                                       :info nil
+                                                       :env {:parent {}
+                                                             :bindings bindings
+                                                             :params bindings}}
+                                                      {:op :invoke
+                                                       :tag nil
+                                                       :form '(first chars)
+                                                       :env {:parent {}
+                                                             :bindings bindings
+                                                             :params bindings}
+                                                       :callee {:op :var
+                                                                :form 'first
+                                                                :info nil
+                                                                :env {:parent {}
+                                                                      :bindings bindings
+                                                                      :params bindings}}
+                                                       :params [{:op :var
+                                                                 :form 'chars
+                                                                 :info nil
+                                                                 :env {:parent {}
+                                                                       :bindings bindings
+                                                                       :params bindings}}]}]}]}}})))
+
+

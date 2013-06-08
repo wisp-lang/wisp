@@ -258,7 +258,7 @@
 (defn analyze-loop*
   [env form _]
   (conj (analyze-let env form true)
-        {:op 'loop*}))
+        {:op :loop*}))
 (install-special :loop* analyze-loop*)
 
 
