@@ -16,7 +16,6 @@
   [env form]
   {:op :var
    :form form
-   :meta (meta form)
    :info (get (:locals env) form)
    :env env})
 
@@ -313,7 +312,6 @@
   [env form name]
   (let [items (vec (map #(analyze env % name) form))]
     {:op :vector
-     :meta (meta form)
      :form form
      :items items
      :env env}))

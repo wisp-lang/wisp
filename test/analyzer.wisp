@@ -50,21 +50,18 @@
            {:op :var
             :env {}
             :form 'foo
-            :meta nil
             :info nil}))
 
 (assert (= (analyze {} '[])
            {:op :vector
             :env {}
             :form '[]
-            :meta nil
             :items []}))
 
 (assert (= (analyze {} '[:foo bar "baz"])
            {:op :vector
             :env {}
             :form '[:foo bar "baz"]
-            :meta nil
             :items [{:op :constant
                      :type :keyword
                      :env {}
@@ -72,7 +69,6 @@
                     {:op :var
                      :env {}
                      :form 'bar
-                     :meta nil
                      :info nil}
                     {:op :constant
                      :type :string
@@ -96,8 +92,7 @@
             :values [{:op :var
                       :env {}
                       :form 'bar
-                      :info nil
-                      :meta nil}]
+                      :info nil}]
             :hash? true
             :env {}
             :form {:foo 'bar}}
@@ -114,7 +109,6 @@
             :callee {:op :var
                      :env {}
                      :form 'foo
-                     :meta nil
                      :info nil}
             :params []
             :tag nil
@@ -127,14 +121,11 @@
             :callee {:op :var
                      :env {}
                      :form 'foo
-                     :meta nil
                      :info nil}
             :params [{:op :var
                       :env {}
                       :form 'bar
-                      :meta nil
-                      :info nil
-                      }]
+                      :info nil}]
             :tag nil
             :form '(foo bar)
             :env {}}))
@@ -147,12 +138,10 @@
             :target {:op :var
                      :env {}
                      :form 'foo
-                     :meta nil
                      :info nil}
             :property {:op :var
                        :env {}
                        :form 'bar
-                       :meta nil
                        :info nil}}))
 
 (assert (= (analyze {} '(aget foo bar))
@@ -163,12 +152,10 @@
             :target {:op :var
                      :env {}
                      :form 'foo
-                     :meta nil
                      :info nil}
             :property {:op :var
                        :env {}
                        :form 'bar
-                       :meta nil
                        :info nil}}))
 
 (assert (= (analyze {} '(aget foo "bar"))
@@ -179,7 +166,6 @@
             :target {:op :var
                      :env {}
                      :form 'foo
-                     :meta nil
                      :info nil}
             :property {:op :constant
                        :env {}
@@ -194,7 +180,6 @@
             :target {:op :var
                      :env {}
                      :form 'foo
-                     :meta nil
                      :info nil}
             :property {:op :constant
                        :env {}
@@ -210,7 +195,6 @@
             :target {:op :var
                      :env {}
                      :form 'foo
-                     :meta nil
                      :info nil}
             :property {:op :invoke
                        :env {}
@@ -219,12 +203,10 @@
                        :callee {:op :var
                                 :form 'beep
                                 :env {}
-                                :meta nil
                                 :info nil}
                        :params [{:op :var
                                  :form 'bar
                                  :env {}
-                                 :meta nil
                                  :info nil}]}}))
 
 
@@ -235,12 +217,10 @@
             :test {:op :var
                    :env {}
                    :form 'x
-                   :meta nil
                    :info nil}
             :consequent {:op :var
                          :env {}
                          :form 'y
-                         :meta nil
                          :info nil}
             :alternate {:op :constant
                         :type :nil
@@ -258,12 +238,10 @@
                    :callee {:op :var
                             :env {}
                             :form 'even?
-                            :meta nil
                             :info nil}
                    :params [{:op :var
                              :env {}
                              :form 'n
-                             :meta nil
                              :info nil}]}
             :consequent {:op :invoke
                          :env {}
@@ -272,12 +250,10 @@
                          :callee {:op :var
                                   :env {}
                                   :form 'inc
-                                  :meta nil
                                   :info nil}
                          :params [{:op :var
                                    :env {}
                                    :form 'n
-                                   :meta nil
                                    :info nil}]}
             :alternate {:op :invoke
                         :env {}
@@ -286,12 +262,10 @@
                         :callee {:op :var
                                  :env {}
                                  :form '+
-                                 :meta nil
                                  :info nil}
                         :params [{:op :var
                                   :env {}
                                   :form 'n
-                                  :meta nil
                                   :info nil}
                                  {:op :constant
                                   :type :number
@@ -305,7 +279,6 @@
             :throw {:op :var
                     :env {}
                     :form 'error
-                    :meta nil
                     :info nil}}))
 
 (assert (= (analyze {} '(throw (Error "boom!")))
@@ -319,7 +292,6 @@
                     :callee {:op :var
                              :env {}
                              :form 'Error
-                             :meta nil
                              :info nil}
                     :params [{:op :constant
                               :type :string
@@ -333,7 +305,6 @@
             :constructor {:op :var
                           :env {}
                           :form 'Error
-                          :meta nil
                           :info nil}
             :params [{:op :constant
                       :type :string
@@ -353,12 +324,10 @@
                             :callee {:op :var
                                      :env {}
                                      :form 'read-string
-                                     :meta nil
                                      :info nil}
                             :params [{:op :var
                                       :env {}
                                       :form 'unicode-error
-                                      :meta nil
                                       :info nil}]}}
             :handler nil
             :finalizer nil}))
@@ -381,18 +350,15 @@
                             :callee {:op :var
                                      :env {}
                                      :form 'read-string
-                                     :meta nil
                                      :info nil}
                             :params [{:op :var
                                       :env {}
                                       :form 'unicode-error
-                                      :meta nil
                                       :info nil}]}}
             :handler {:env {}
                       :name {:op :var
                              :env {}
                              :form 'error
-                             :meta nil
                              :info nil}
                       :statements []
                       :result {:op :constant
@@ -419,12 +385,10 @@
                             :callee {:op :var
                                      :env {}
                                      :form 'read-string
-                                     :meta nil
                                      :info nil}
                             :params [{:op :var
                                       :env {}
                                       :form 'unicode-error
-                                      :meta nil
                                       :info nil}]}}
             :handler nil
             :finalizer {:env {}
@@ -460,18 +424,15 @@
                             :callee {:op :var
                                      :env {}
                                      :form 'read-string
-                                     :meta nil
                                      :info nil}
                             :params [{:op :var
                                       :env {}
                                       :form 'unicode-error
-                                      :meta nil
                                       :info nil}]}}
             :handler {:env {}
                       :name {:op :var
                              :env {}
                              :form 'error
-                             :meta nil
                              :info nil}
                       :statements [{:op :invoke
                                     :env {}
@@ -484,17 +445,14 @@
                                              :target {:op :var
                                                       :env {}
                                                       :form 'console
-                                                      :meta nil
                                                       :info nil}
                                              :property {:op :var
                                                         :env {}
                                                         :form 'log
-                                                        :meta nil
                                                         :info nil}}
                                     :params [{:op :var
                                               :env {}
                                               :form 'error
-                                              :meta nil
                                               :info nil}]}]
                       :result {:op :constant
                                :type :keyword
@@ -513,12 +471,10 @@
                                                         :env {}
 
                                                         :form 'console
-                                                        :meta nil
                                                         :info nil}
                                                :property {:op :var
                                                           :env {}
                                                           :form 'log
-                                                          :meta nil
                                                           :info nil}}
                                       :params [{:op :constant
                                                 :env {}
@@ -535,12 +491,10 @@
             :target {:op :var
                      :env {}
                      :form 'foo
-                     :meta nil
                      :info nil}
             :value {:op :var
                     :env {}
                     :form 'bar
-                    :meta nil
                     :info nil}
             :form '(set! foo bar)
             :env {}}))
@@ -550,7 +504,6 @@
             :target {:op :var
                      :env {}
                      :form '*registry*
-                     :meta nil
                      :info nil}
             :value {:op :dictionary
                     :env {}
@@ -570,17 +523,14 @@
                      :target {:op :var
                               :env {}
                               :form 'console
-                              :meta nil
                               :info nil}
                      :property {:op :var
                                 :env {}
                                 :form 'log
-                                :meta nil
                                 :info nil}}
             :value {:op :var
                     :env {}
                     :form 'print
-                    :meta nil
                     :info nil}
             :form '(set! (.-log console) print)
             :env {}}))
@@ -602,12 +552,10 @@
                           :callee {:op :var
                                    :env {}
                                    :form 'read
-                                   :meta nil
                                    :info nil}
                           :params [{:op :var
                                     :env {}
                                     :form 'content
-                                    :meta nil
                                     :info nil}]}
                          {:op :invoke
                           :env {}
@@ -621,12 +569,10 @@
                                             :env {}
 
                                             :form 'console
-                                            :meta nil
                                             :info nil}
                                    :property {:op :var
                                               :env {}
                                               :form 'log
-                                              :meta nil
                                               :info nil}}
                           :params [{:op :constant
                                     :env {}
@@ -639,12 +585,10 @@
                      :callee {:op :var
                               :env {}
                               :form 'write
-                              :meta nil
                               :info nil}
                      :params [{:op :var
                                :env {}
                                :form 'content
-                               :meta nil
                                :info nil}]}}))
 
 (assert (= (analyze {} '(def x 1))
@@ -655,7 +599,6 @@
             :var {:op :var
                   :env {}
                   :form 'x
-                  :meta nil
                   :info nil}
             :init {:op :constant
                    :type :number
@@ -673,7 +616,6 @@
             :var {:op :var
                   :env {:parent {}}
                   :form 'x
-                  :meta nil
                   :info nil}
             :init {:op :constant
                    :type :number
@@ -692,7 +634,6 @@
             :var {:op :var
                   :env {:parent {}}
                   :form 'x
-                  :meta nil
                   :info nil}
             :init {:op :invoke
                    :env {:parent {}}
@@ -701,12 +642,10 @@
                    :callee {:op :var
                             :form 'foo
                             :env {:parent {}}
-                            :meta nil
                             :info nil}
                    :params [{:op :var
                              :form 'bar
                              :env {:parent {}}
-                             :meta nil
                              :info nil}]}
             :dinamyc nil
             :export true}))
@@ -743,17 +682,15 @@
                                 :form '+
                                 :env {:parent {}
                                       :bindings bindings}
-                                :meta nil
                                 :info nil}
                        :params [{:op :var
                                  :form 'x
                                  :env {:parent {}
                                        :bindings bindings}
-                                 :meta nil
                                  :info nil}
                                 {:op :var
                                  :form 'y
                                  :env {:parent {}
                                        :bindings bindings}
-                                 :meta nil
                                  :info nil}]}})))
+
