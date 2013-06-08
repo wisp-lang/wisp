@@ -345,9 +345,8 @@
      :env env}))
 
 (defn analyze-constant
-  [env form type]
+  [env form]
   {:op :constant
-   :type type
    :form form
    :type (cond (nil? form) :nil
                (string? form) :string
