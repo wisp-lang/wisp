@@ -289,12 +289,11 @@
 (defn analyze-block
   "returns {:statements .. :ret ..}"
   [env form]
-  (let [statements (seq (map #(analyze env %)
-                             (butlast form)))
-        result (if (<= (count form) 1)
-                 (analyze env (first form))
-                 (analyze env (last form)))]
-    {:statements (vec statements)
+  (let [statements (if (> (count form) 1)
+                     (vec (map #(analyze env %)
+                               (butlast form))))
+        result (analyze env (last form))]
+    {:statements statements
      :result result
      :env env}))
 

@@ -316,7 +316,7 @@
             :env {}
             :form '(try* (read-string unicode-error))
             :body {:env {}
-                   :statements []
+                   :statements nil
                    :result {:op :invoke
                             :env {}
                             :form '(read-string unicode-error)
@@ -342,7 +342,7 @@
                     (read-string unicode-error)
                     (catch error :throw))
             :body {:env {}
-                   :statements []
+                   :statements nil
                    :result {:op :invoke
                             :env {}
                             :form '(read-string unicode-error)
@@ -360,7 +360,7 @@
                              :env {}
                              :form 'error
                              :info nil}
-                      :statements []
+                      :statements nil
                       :result {:op :constant
                                :type :keyword
                                :env {}
@@ -377,7 +377,7 @@
                     (read-string unicode-error)
                     (finally :end))
             :body {:env {}
-                   :statements []
+                   :statements nil
                    :result {:op :invoke
                             :env {}
                             :form '(read-string unicode-error)
@@ -392,7 +392,7 @@
                                       :info nil}]}}
             :handler nil
             :finalizer {:env {}
-                        :statements []
+                        :statements nil
                         :result {:op :constant
                                  :type :keyword
                                  :env {}
@@ -416,7 +416,7 @@
                           (print "done")
                           :end))
             :body {:env {}
-                   :statements []
+                   :statements nil
                    :result {:op :invoke
                             :env {}
                             :form '(read-string unicode-error)
@@ -672,7 +672,7 @@
               :form '(let* [x 1 y 2] (+ x y))
               :loop false
               :bindings bindings
-              :statements []
+              :statements nil
               :result {:op :invoke
                        :form '(+ x y)
                        :env {:parent {}
@@ -726,7 +726,7 @@
                                      (conj result (first chars)))))
               :env {}
               :bindings bindings
-              :statements []
+              :statements nil
               :result {:op :if
                        :form '(if (empty? chars)
                                 :eof
