@@ -22,6 +22,14 @@
 (assert (not (self-evaluating? self-evaluating?)) "fn is not self evaluating")
 (assert (not (self-evaluating? (symbol "symbol"))) "symbol is not self evaluating")
 
+(print "re-pattern")
+
+(assert (= "/foo/" (transpile #"foo")))
+(assert (= "/foo/m" (transpile #"(?m)foo")))
+(assert (= "/foo/i" (transpile #"(?i)foo")))
+(assert (= "/^$/" (transpile #"^$")))
+(assert (= "/\\/./" (transpile #"/.")))
+
 
 (print "compile primitive forms")
 
@@ -52,7 +60,7 @@
 (assert (identical? (transpile '(foo bar baz)) "foo(bar, baz)")
         "function calls with multi arg compile")
 (assert (identical? (transpile '(foo ((bar baz) beep)))
-                    "foo((bar(baz))(beep))")
+                    "foo(bar(baz)(beep))")
         "nested function calls compile")
 
 (print "compile functions")
@@ -271,7 +279,7 @@
                     "bar.isFoo")
         "property access compiles naming conventions")
 (assert (identical? (transpile '(.-location (.open window url)))
-                    "(window.open(url)).location")
+                    "window.open(url).location")
         "compound property access and method call")
 (assert (identical? (transpile '(.slice (.splice arr 0)))
                     "arr.splice(0).slice()")
@@ -288,15 +296,16 @@
 
 (print "compile unquote-splicing forms")
 
+
 (assert (identical? (transpile '`(1 ~@'(2 3)))
-                    "concat(list(1), list(2, 3))")
+                    "list.apply(void(0), [1].concat(vec(list(2, 3))))")
         "list unquote-splicing compiles")
 (assert (identical? (transpile '`())
                     "list()")
          "empty list unquotes to empty list")
 
 (assert (identical? (transpile '`[1 ~@[2 3]])
-                    "vec(concat([1], [2, 3]))")
+                    "[1].concat([2, 3])")
         "vector unquote-splicing compiles")
 
 (assert (identical? (transpile '`[])
@@ -364,7 +373,7 @@
 (assert (identical? (transpile '(and a (or b c))) "a && (b || c)")
         "(and a (or b c)) => a && (b || c)")
 (assert (identical?
-        "(a > b) && (c > d) ?\n  x :\n  y"
+        "((a > b) && (c > d)) ?\n  x :\n  y"
         (transpile '(if (and (> a b) (> c d)) x y))))
 
 (assert (identical?
@@ -394,29 +403,29 @@
 (print "compiles = - + == >= <= / * as functions")
 
 (assert (identical? (transpile '(apply and nums))
-        "and.apply(and, nums)"))
+        "and.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply or nums))
-        "or.apply(or, nums)"))
+        "or.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply = nums))
-                    "isEqual.apply(isEqual, nums)"))
+                    "isEqual.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply == nums))
-                    "isStrictEqual.apply(isStrictEqual, nums)"))
+                    "isStrictEqual.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply > nums))
-                    "greaterThan.apply(greaterThan, nums)"))
+                    "greaterThan.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply < nums))
-                    "lessThan.apply(lessThan, nums)"))
+                    "lessThan.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply <= nums))
-                    "notGreaterThan.apply(notGreaterThan, nums)"))
+                    "notGreaterThan.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply >= nums))
-                    "notLessThan.apply(notLessThan, nums)"))
+                    "notLessThan.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply * nums))
-                    "multiply.apply(multiply, nums)"))
+                    "multiply.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply / nums))
-                    "divide.apply(divide, nums)"))
+                    "divide.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply + nums))
-                    "sum.apply(sum, nums)"))
+                    "sum.apply(void(0), nums)"))
 (assert (identical? (transpile '(apply - nums))
-                    "subtract.apply(subtract, nums)"))
+                    "subtract.apply(void(0), nums)"))
 
 (print "compiles dictionaries to js objects")
 
@@ -451,6 +460,10 @@
         "(get (a b) (get c d)) => ((a(b)) || 0)[(c || 0)[d]]")
 (assert (identical? (transpile '(get (or t1 t2) p))
                     "((t1 || t2) || 0)[p]"))
+(assert (identical? (transpile '(aget object field))
+                    "object[field]"))
+(assert (identical? (transpile '(aget object 'field))
+                    "object.field"))
 
 (print "compiles instance?")
 
@@ -491,7 +504,7 @@
 "(function loop(x, y) {
   var recur = loop;
   while (recur === loop) {
-    recur = x > y ?
+    recur = (x > y) ?
     x :
     (x = x + 1, y = y - 1, loop);
   };

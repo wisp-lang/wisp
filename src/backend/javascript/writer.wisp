@@ -1,11 +1,11 @@
 (ns wisp.backend.javascript.writer
   "Compiler backend for for writing JS output"
   (:require [wisp.ast :refer [name namespace symbol symbol? keyword?]]
-            [wisp.sequence :refer [list first rest list? vec map count last
-                                   reduce empty?]]
+            [wisp.sequence :refer [list first second third rest list?
+                                   vec map count last reduce empty?]]
             [wisp.runtime :refer [true? nil? string? number? vector?
                                   dictionary? boolean? re-pattern?
-                                  re-find dec subs]]
+                                  re-find dec subs =]]
             [wisp.string :refer [replace join split upper-case]]))
 
 ;; Actual code
@@ -120,7 +120,20 @@
 
 (def write-vector (write-error "Vectors are not supported"))
 (def write-dictionary (write-error "Dictionaries are not supported"))
-(def write-pattern (write-error "Regular expressions are not supported"))
+
+(defn- escape-pattern [pattern]
+  (set! pattern (join "/" (split pattern "\\/")))
+  (set! pattern (join "\\/" (split pattern "/")))
+  pattern)
+
+(defn write-re-pattern
+  [form]
+  (let [flags (str (if form.multiline "m" "")
+                   (if form.ignoreCase "i" "")
+                   (if form.sticky "y" ""))
+        pattern form.source]
+    (str \/ (escape-pattern pattern) \/ flags)))
+
 
 (defn compile-comment
   [form]
@@ -148,6 +161,13 @@
                               (compile (cons 'set! form)))))))
 
 
+(defn write-instance?
+  "Evaluates x and tests if it is an instance of the class
+  c. Returns true or false"
+  [form]
+  (write-template "~{} instanceof ~{}"
+                  (write (second form))
+                  (write (first form))))
 (defn write
   "compiles given form"
   [form]

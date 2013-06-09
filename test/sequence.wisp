@@ -2,7 +2,8 @@
   (:require [wisp.src.sequence :refer [cons conj list list? seq vec empty?
                                        count first second third rest last
                                        butlast take drop repeat concat reverse
-                                       sort map filter reduce assoc]]
+                                       sort map filter reduce assoc every?
+                                       some partition interleave]]
             [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
 
 
@@ -341,3 +342,89 @@
 (assert (= {:a :b} (assoc {} :a :b)))
 (assert (= {:a :b :c :d} (assoc {:a :b} :c :d)))
 (assert (= {:a :c} (assoc {:a :b} :a :c)))
+
+(print "test every?")
+
+(assert (every? even? [2 4 6 8]))
+(assert (not (every? even? [2 4 6 8 9])))
+(assert (every? even? '(2 4 6 8)))
+(assert (not (every? even? '(2 4 5))))
+
+(print "test some")
+
+(assert (= false (some even? [])))
+(assert (= false (some even? ())))
+(assert (= false (some even? [1 3 5 7])))
+(assert (= false (some even? '(1 3 5 7))))
+(assert (some even? [1 2 3]))
+(assert (some even? '(1 2 3)))
+
+(print "test partition")
+
+
+(assert (= [[1 2] [3 4] [5 6] [7 8]]
+           (partition 2 [1 2 3 4 5 6 7 8 9])))
+
+(assert (= [[1 2 3] [3 4 5] [5 6 7] [7 8 9]]
+           (partition 3 2 [1 2 3 4 5 6 7 8 9])))
+
+(assert (= [[1 2 3 4 5] [3 4 5 6 7] [5 6 7 8 :a]]
+           (partition 5 2 [:a :b :c :d] [1 2 3 4 5 6 7 8])))
+
+(assert (= [[1 2 3] [3 4 5] [5 6 7] [7 8 :a]]
+           (partition 3 2 [:a :b :c :d] [1 2 3 4 5 6 7 8])))
+
+(print "test interleave")
+
+(assert (= [1 4 2 5 3 6]
+           (interleave [1 2 3]
+                       [4 5 6])))
+
+(assert (= [1 4 2 5 3 6]
+           (interleave [1 2 3]
+                       '(4 5 6))))
+
+
+(assert (= [1 4 2 5 3 6]
+           (interleave '(1 2 3)
+                       [4 5 6])))
+
+(assert (= [1 4 2 5 3 6]
+           (interleave [1 2 3 3.5]
+                       [4 5 6])))
+
+(assert (= [1 4 2 5 3 6]
+           (interleave [1 2 3]
+                       [4 5 6 7])))
+
+(assert (= []
+           (interleave [1 2 3]
+                       [])))
+
+(assert (= []
+           (interleave []
+                       [4 5 6])))
+
+(assert (= []
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [])))
+(assert (= '(1 4 8)
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [8])))
+
+(assert (= '(1 4 8 2 5 9)
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [8 9])))
+
+(assert (= '(1 4 8 2 5 9 3 6 10)
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [8 9 10])))
+
+(assert (= '(1 4 8 2 5 9 3 6 10)
+           (interleave [1 2 3]
+                       [4 5 6 7]
+                       [8 9 10 11])))

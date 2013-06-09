@@ -1,7 +1,7 @@
 (ns wisp.test.runtime
   (:require [wisp.src.runtime :refer [dictionary? vector? subs str
                                       and or = == > >= < <= + - / *]]
-            [wisp.src.sequence :refer [list concat]]
+            [wisp.src.sequence :refer [list concat vec]]
             [wisp.src.ast :refer [symbol]]))
 
 

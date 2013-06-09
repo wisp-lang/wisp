@@ -6,7 +6,8 @@
                               syntax-quote? name gensym pr-str]]
             [wisp.sequence :refer [empty? count list? list first second third
                                    rest cons conj reverse reduce vec last
-                                   repeat map filter take concat seq?]]
+                                   butlast repeat map filter take concat seq
+                                   seq?]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
@@ -14,8 +15,11 @@
                                   int = ==]]
             [wisp.string :refer [split join upper-case replace]]
             [wisp.backend.javascript.writer :refer [write-reference
+                                                    write-re-pattern
+                                                    write-if
                                                     write-keyword-reference
                                                     write-keyword write-symbol
+                                                    write-instance?
                                                     write-nil write-comment
                                                     write-number write-string
                                                     write-number write-boolean]]))
@@ -99,140 +103,74 @@
        (get **specials** name)
        true))
 
-(defn execute-special
+(defn compile-special
   "Expands special form"
-  [name form]
-  ((get **specials** name) form))
+  [form]
+  (let [write (get **specials** (first form))
+        metadata (meta form)
+        expansion (map (fn [form] form) form)]
+    (write (with-meta form metadata))))
+
 
 
 (defn opt [argument fallback]
   (if (or (nil? argument) (empty? argument)) fallback (first argument)))
 
-(defn apply-form
-  "Take a form that has a list of children and make a form that
-  applies the children to the function `fn-name`"
-  [fn-name form quoted?]
-  (cons fn-name
-        (if quoted?
-            (map (fn [e] (list 'quote e)) form) form)
-            form))
-
-(defn apply-unquoted-form
-  "Same as apply-form, but respect unquoting"
-  [fn-name form]
-  (cons fn-name ;; ast.prepend ???
-        (map
-          (fn [e]
-              (if (unquote? e)
-                  (second e)
-                  (if (and (list? e)
-                           (keyword? (first e)))
-                      (list 'syntax-quote (second e))
-                      (list 'syntax-quote e))))
-          form)))
-
-(defn split-splices "" [form fn-name]
-  (defn make-splice "" [form]
-    (if (or (self-evaluating? form)
-            (symbol? form))
-        (apply-unquoted-form fn-name (list form))
-        (apply-unquoted-form fn-name form)))
-  (loop [nodes form
-         slices '()
-         acc '()]
-   (if (empty? nodes)
-       (reverse
-        (if (empty? acc)
-            slices
-            (cons (make-splice (reverse acc)) slices)))
-       (let [node (first nodes)]
-        (if (unquote-splicing? node)
-            (recur (rest nodes)
-                   (cons (second node)
-                         (if (empty? acc)
-                             slices
-                             (cons (make-splice (reverse acc)) slices)))
-                   '())
-            (recur (rest nodes)
-                   slices
-                   (cons node acc)))))))
-
-
-(defn syntax-quote-split
-  [append-name fn-name form]
-  (let [slices (split-splices form fn-name)
-        n (count slices)]
-    (cond (identical? n 0) (list fn-name)
-          (identical? n 1) (first slices)
-          :default (apply-form append-name slices))))
-
-
-;; compiler
-
-(defn compile-object
-  ""
-  [form quoted?]
-  ;; TODO: Add regexp to the list.
-  (cond
-    (keyword? form) (write-keyword form)
-    (symbol? form) (write-symbol form)
-    (number? form) (write-number form)
-    (string? form) (write-string form)
-    (boolean? form) (write-boolean form)
-    (nil? form) (write-nil form)
-    (re-pattern? form) (compile-re-pattern form)
-    (vector? form) (compile (apply-form 'vector
-                                        (apply list form)
-                                        quoted?))
-    (list? form) (compile (apply-form 'list
-                                      form
-                                      quoted?))
-    (dictionary? form) (compile-dictionary
-                        (if quoted?
-                          (map-dictionary form (fn [x] (list 'quote x)))
-                          form))))
-
-(defn compile-syntax-quoted-vector
-  [form]
-  (let [concat-form (syntax-quote-split 'concat 'vector (apply list form))]
-    (compile (if (> (count concat-form) 1)
-              (list 'vec concat-form)
-              concat-form))))
-
-(defn compile-syntax-quoted
-  ""
-  [form]
-  (cond
-   (list? form) (compile (syntax-quote-split 'concat 'list form))
-   (vector? form) (compile-syntax-quoted-vector form)
-   ; Disable dictionary form as we can't fully support it yet.
-   ; (dictionary? form) (compile (syntax-quote-split 'merge 'dictionary form))
-   :else (compile-object form)))
 
 (defn compile
   "compiles given form"
   [form]
   (cond
-   (self-evaluating? form) (compile-object form)
    (symbol? form) (write-reference form)
    (keyword? form) (write-keyword-reference form)
-   (vector? form) (compile-object form)
-   (dictionary? form) (compile-object form)
-   (list? form)
-    (let [head (first form)]
-      (cond
-       (empty? form) (compile-object form true)
-       (quote? form) (compile-object (second form) true)
-       (syntax-quote? form) (compile-syntax-quoted (second form))
-       (special? head) (execute-special head form)
-       ;; Compile keyword invoke as a property access.
-       (keyword? head) (compile `(get ~(second form) ~head))
-       :else (do
-              (if (not (or (symbol? head) (list? head)))
-                (throw (compiler-error
-                        form
-                        (str "operator is not a procedure: " head)))
-              (compile-invoke form)))))))
+
+   (number? form) (write-number form)
+   (string? form) (write-string form)
+   (boolean? form) (write-boolean form)
+   (nil? form) (write-nil form)
+   (re-pattern? form) (write-re-pattern form)
+
+   (vector? form) (compile-vector form)
+   (dictionary? form) (compile-dictionary form)
+   (list? form) (compile-list form)))
+
+(defn make-quoted [form] (list 'quote form))
+
+(defn compile-quoted
+  [form]
+  ;; If collection (list, vector, dictionary) is quoted it
+  ;; compiles to collection with it's items quoted. Compile
+  ;; primitive types compile to themsef. Note that symbol
+  ;; typicyally compiles to reference, and keyword to string
+  ;; but if they're quoted they actually do compile to symbol
+  ;; type and keyword type.
+  (cond (vector? form) (compile-vector (map make-quoted form))
+        (list? form) (compile-invoke (cons 'list (map make-quoted form)))
+        (dictionary? form) (compile-dictionary
+                            (map-dictionary form make-quoted))
+        (keyword? form) (write-keyword form)
+        (symbol? form) (write-symbol form)
+        (number? form) (write-number form)
+        (string? form) (write-string form)
+        (boolean? form) (write-boolean form)
+        (nil? form) (write-nil form)
+        (re-pattern? form) (write-re-pattern form)
+        :else (compiler-error form "form not supported")))
+
+(defn compile-list
+  [form]
+  (let [operator (first form)]
+    (cond
+     ;; Empty list compiles to list construction:
+     ;; () -> (list)
+     (empty? form) (compile-invoke '(list))
+     (quote? form) (compile-quoted (second form))
+     (special? operator) (compile-special form)
+     (or (symbol? operator)
+         (list? operator)) (compile-invoke form)
+     :else (compiler-error form
+                           (str "operator is not a procedure: " form)))))
+
 
 (defn compile*
   "compiles all forms"
@@ -247,18 +185,7 @@
           ""
           forms))
 
-(defn compile-program
-  "compiles all expansions"
-  [forms]
-  (reduce (fn [result form]
-            (str result
-                 (if (empty? result) "" ";\n\n")
-                 (compile (if (list? form)
-                            (with-meta (macroexpand form)
-                              (conj {:top true} (meta form)))
-                            form))))
-          ""
-          forms))
+(def compile-program compile*)
 
 (defn macroexpand-1
   "If form represents a macro form, returns its expansion,
@@ -268,28 +195,33 @@
     (let [op (first form)
           id (if (symbol? op) (name op))]
       (cond
-        (special? op) form
-        (macro? op) (execute-macro op (rest form))
-        (and (symbol? op)
-             (not (identical? id ".")))
-          ;; (.substring s 2 5) => (. s substring 2 5)
-          (if (identical? (first id) ".")
-            (if (< (count form) 2)
-              (throw (Error
-                "Malformed member expression, expecting (.member target ...)"))
-              (cons '.
-                    (cons (second form)
-                          (cons (symbol (subs id 1))
-                                (rest (rest form))))))
+       (special? op) form
+       (macro? op) (execute-macro op (rest form))
+       ;; Calling a keyword compiles to getting value from given
+       ;; object associted with that key:
+       ;; (:foo bar) -> (get bar :foo)
+       (keyword? op) (list 'get (second form) op)
+       (and (symbol? op)
+            (not (identical? id ".")))
+       ;; (.substring s 2 5) => (. s substring 2 5)
+       (if (identical? (first id) ".")
+         (if (< (count form) 2)
+           (throw (Error
+                   "Malformed member expression, expecting (.member target ...)"))
+           (cons '.
+                 (cons (second form)
+                       (cons (symbol (subs id 1))
+                             (rest (rest form))))))
 
-            ;; (StringBuilder. "foo") => (new StringBuilder "foo")
-            (if (identical? (last id) ".")
-              (cons 'new
-                    (cons (symbol (subs id 0 (dec (count id))))
-                          (rest form)))
-              form))
-        :else form))
-      form))
+         ;; (StringBuilder. "foo") => (new StringBuilder "foo")
+         (if (identical? (last id) ".")
+           (cons 'new
+                 (cons (symbol (subs id 0 (dec (count id))))
+                       (rest form)))
+           form))
+       ;;  (keyword? op) (list 'get (second form) op)
+       :else form))
+    form))
 
 (defn macroexpand
   "Repeatedly calls macroexpand-1 on form until it no longer
@@ -359,18 +291,31 @@
   nil and false constitute logical falsity, and everything else
   constitutes logical truth, and those meanings apply throughout."
   [form]
-  (let [condition (macroexpand (first form))
-        then-expression (macroexpand (second form))
-        else-expression (macroexpand (third form))]
+  (let [test (macroexpand (first form))
+        consequent (macroexpand (second form))
+        alternate (macroexpand (third form))
+
+        test-template (if (special-expression? test)
+                        "(~{})"
+                        "~{}")
+        consequent-template (if (special-expression? consequent)
+                              "(~{})"
+                              "~{}")
+        alternate-template (if (special-expression? alternate)
+                             "(~{})"
+                             "~{}")
+
+        nested-condition? (and (list? alternate)
+                               (= 'if (first alternate)))]
     (compile-template
       (list
-        (if (and (list? else-expression)
-                 (= (first else-expression) 'if))
-          "~{} ?\n  ~{} :\n~{}"
-          "~{} ?\n  ~{} :\n  ~{}")
-        (compile condition)
-        (compile then-expression)
-        (compile else-expression)))))
+       (str test-template " ?\n  "
+            consequent-template " :\n"
+            (if nested-condition? "" "  ")
+            alternate-template)
+        (compile test)
+        (compile consequent)
+        (compile alternate)))))
 
 (defn compile-dictionary
   "Compiles dictionary to JS object"
@@ -600,17 +545,20 @@
 
 (defn compile-invoke
   [form]
-  (compile-template
-   ;; Wrap functions returned by expressions into parenthesis.
-   (list (if (list? (first form)) "(~{})(~{})" "~{}(~{})")
-         (compile (first form))
-         (compile-group (rest form)))))
+  (let [callee (macroexpand (first form))
+        template (if (special-expression? callee)
+                   "(~{})(~{})"
+                   "~{}(~{})")]
+    (compile-template
+     (list template
+           (compile callee)
+           (compile-group (rest form))))))
 
 (defn compile-group
   [form wrap]
   (if wrap
     (str "(" (compile-group form) ")")
-    (join ", " (vec (map compile (map  macroexpand form))))))
+    (join ", " (vec (map compile (map macroexpand form))))))
 
 (defn compile-do
   "Evaluates the expressions in order and returns the value of the last.
@@ -708,33 +656,6 @@
                    finally-exprs
                    (rest exprs)))))))
 
-(defn compile-property
-  "(. object method arg1 arg2)
-
-  The '.' special form that can be considered to be a method call,
-  operator"
-  [form]
-  ;; (. object method arg1 arg2) -> (object.method arg1 arg2)
-  ;; (. object -property) -> object.property
-  (if (identical? (aget (name (second form)) 0) "-")
-    (compile-template
-      (list (if (list? (first form)) "(~{}).~{}" "~{}.~{}")
-            (compile (macroexpand (first form)))
-            (compile (macroexpand (symbol (subs (name (second form)) 1))))))
-    (compile-template
-      (list "~{}.~{}(~{})"
-            (compile (macroexpand (first form)))    ;; object name
-            (compile (macroexpand (second form)))   ;; method name
-            (compile-group (rest (rest form)))))))  ;; args
-
-(defn compile-apply
-  [form]
-  (compile
-    (list '.
-          (first form)
-          'apply
-          (first form)
-          (second form))))
 
 (defn compile-new
   "(new Classname args*)
@@ -750,27 +671,24 @@
   [form]
   (let [target (macroexpand (first form))
         attribute (macroexpand (second form))
-        not-found (third form)
-        template (if (list? target) "(~{})[~{}]" "~{}[~{}]")]
-    (if not-found
-      (compile (list 'or
-                     (list 'get (first form) (second form))
-                     (macroexpand not-found)))
-      (compile-template
-       (list template (compile target) (compile attribute))))))
+        field? (and (quote? attribute)
+                    (symbol? (second attribute)))
 
-(defn compile-get
-  [form]
-  (compile-aget (cons (list 'or (first form) 0)
-                      (rest form))))
+        member (if field?
+                 (second attribute)
+                 attribute)
 
-(defn compile-instance
-  "Evaluates x and tests if it is an instance of the class
-  c. Returns true or false"
-  [form]
-  (compile-template (list "~{} instanceof ~{}"
-                          (compile (macroexpand (second form)))
-                          (compile (macroexpand (first form))))))
+        target-template (if (special-expression? target)
+                          "(~{})"
+                          "~{}")
+        attribute-template (if field?
+                             ".~{}"
+                             "[~{}]")
+        template (str target-template attribute-template)]
+    (compile-template
+     (list template
+           (compile target)
+           (compile member)))))
 
 
 (defn compile-not
@@ -852,7 +770,6 @@
   (first form))
 
 (install-special 'set! compile-set)
-(install-special 'get compile-get)
 (install-special 'aget compile-aget)
 (install-special 'def compile-def)
 (install-special 'if compile-if-else)
@@ -862,19 +779,14 @@
 (install-special 'throw compile-throw)
 (install-special 'vector compile-vector)
 (install-special 'try compile-try)
-(install-special '. compile-property)
-(install-special 'apply compile-apply)
 (install-special 'new compile-new)
-(install-special 'instance? compile-instance)
 (install-special 'not compile-not)
 (install-special 'loop compile-loop)
 (install-special 'raw* compile-raw)
+
+(install-special 'instance? write-instance?)
 (install-special 'comment write-comment)
 
-
-(defn compile-re-pattern
-  [form]
-  (str form))
 
 (defn install-native
   "Creates an adapter for native operator"
@@ -938,10 +850,53 @@
   [form]
   (if (or (empty? (rest form))
           (empty? (rest (rest form))))
-    (throw
-      (compiler-error
-        form
-        (str (first form) " form requires at least two operands")))))
+    (compiler-error
+     form
+     (str (first form) " form requires at least two operands"))))
+
+(defn special-expression?
+  [form]
+  (and (list? form)
+       (get **operators** (first form))))
+
+(def **operators**
+  {:and :logical-expression
+   :or :logical-expression
+   :not :logical-expression
+   ;; Arithmetic
+   :+ :arithmetic-expression
+   :- :arithmetic-expression
+   :* :arithmetic-expression
+   "/" :arithmetic-expression
+   :mod :arithmetic-expression
+   :not= :comparison-expression
+   :== :comparison-expression
+   :=== :comparison-expression
+   :identical? :comparison-expression
+   :> :comparison-expression
+   :>= :comparison-expression
+   :> :comparison-expression
+   :<= :comparison-expression
+
+   ;; Binary operators
+   :bit-not :binary-expression
+   :bit-or :binary-expression
+   :bit-xor :binary-expression
+   :bit-not :binary-expression
+   :bit-shift-left :binary-expression
+   :bit-shift-right :binary-expression
+   :bit-shift-right-zero-fil :binary-expression
+
+   :if :conditional-expression
+   :set :assignment-expression
+
+   :fn :function-expression
+   :try :try-expression})
+
+(def **statements**
+  {:try :try-expression
+   :aget :member-expression})
+
 
 ;; Arithmetic Operators
 (install-native '+ '+ nil 0)
@@ -1225,3 +1180,118 @@
  (fn [& more]
    "Prints the object(s) to the output for human consumption."
    `(.log console ~@more)))
+
+(install-macro
+ 'debugger!
+ (fn [] 'debugger))
+
+(install-macro
+ '.
+ (fn [object field & args]
+   (let [error-field (if (not (symbol? field))
+                       (str "Member expression `" field "` must be a symbol"))
+         field-name (str field)
+         accessor? (identical? \- (first field-name))
+
+         error-accessor (if (and accessor?
+                                 (not (empty? args)))
+                          "Accessor form must conatin only two members")
+         member (if accessor?
+                  (symbol nil (rest field-name))
+                  field)
+
+         target `(aget ~object (quote ~member))
+         error (or error-field error-accessor)]
+     (cond error (throw (TypeError (str "Unsupported . form: `"
+                                        `(~object ~field ~@args)
+                                        "`\n" error)))
+           accessor? target
+           :else `(~target ~@args)))))
+
+(install-macro
+ 'get
+ (fn
+   ([object field]
+    `(aget (or ~object 0) ~field))
+   ([object field fallback]
+    `(or (aget (or ~object 0) ~field) ~fallback))))
+
+(install-macro
+ 'def
+ (fn [id value]
+   (let [metadata (meta id)
+         export? (not (:private metadata))]
+     (if export?
+       `(do* (def* ~id ~value)
+             (set! (aget exports (quote ~id))
+                   ~value))
+       `(def* ~id ~value)))))
+
+(defn syntax-quote [form]
+  (cond (symbol? form) (list 'quote form)
+        (keyword? form) (list 'quote form)
+        (or (number? form)
+            (string? form)
+            (boolean? form)
+            (nil? form)
+            (re-pattern? form)) form
+
+        (unquote? form) (second form)
+        (unquote-splicing? form) (reader-error "Illegal use of `~@` expression, can only be present in a list")
+
+        (empty? form) form
+
+        ;;
+        (dictionary? form) (list 'apply
+                                 'dictionary
+                                 (cons '.concat
+                                       (sequence-expand (apply concat
+                                                               (seq form)))))
+        ;; If a vector form expand all sub-forms and concatinate
+        ;; them togather:
+        ;;
+        ;; [~a b ~@c] -> (.concat [a] [(quote b)] c)
+        (vector? form) (cons '.concat (sequence-expand form))
+
+        ;; If a list form expand all the sub-forms and apply
+        ;; concationation to a list constructor:
+        ;;
+        ;; (~a b ~@c) -> (apply list (.concat [a] [(quote b)] c))
+        (list? form) (if (empty? form)
+                       (cons 'list nil)
+                       (list 'apply
+                             'list
+                             (cons '.concat (sequence-expand form))))
+
+        :else (reader-error "Unknown Collection type")))
+(def syntax-quote-expand syntax-quote)
+
+(defn unquote-splicing-expand
+  [form]
+  (if (vector? form)
+    form
+    (list 'vec form)))
+
+(defn sequence-expand
+  "Takes sequence of forms and expands them:
+
+  ((unquote a)) -> ([a])
+  ((unquote-splicing a) -> (a)
+  (a) -> ([(quote b)])
+  ((unquote a) b (unquote-splicing a)) -> ([a] [(quote b)] c)"
+  [forms]
+  (map (fn [form]
+         (cond (unquote? form) [(second form)]
+               (unquote-splicing? form) (unquote-splicing-expand (second form))
+               :else [(syntax-quote-expand form)]))
+       forms))
+
+(install-macro 'syntax-quote syntax-quote)
+
+(defn apply-macro
+  [f & params]
+  (let [prefix (vec (butlast params))]
+    (if (empty? prefix)
+      `(.apply ~f nil ~@params)
+      `(.apply ~f nil (.concat ~prefix ~(last params))))))
+(install-macro 'apply apply-macro)
