@@ -824,3 +824,245 @@
                                                                        :params bindings}}]}]}]}}})))
 
 
+
+(assert (= (analyze {} '(fn [] x))
+           {:op :fn
+            :name nil
+            :variadic false
+            :form '(fn [] x)
+            :methods [{:op :overload
+                       :variadic false
+                       :arity 0
+                       :params []
+                       :form '([] x)
+                       :statements nil
+                       :result {:op :var
+                                :form 'x
+                                :info nil
+                                :env {:parent {}
+                                      :locals {}}}
+                       :env {:parent {}
+                             :locals {}}}]
+            :env {}}))
+
+
+(assert (= (analyze {} '(fn foo [] x))
+           {:op :fn
+            :name 'foo
+            :variadic false
+            :form '(fn foo [] x)
+            :methods [{:op :overload
+                       :variadic false
+                       :arity 0
+                       :params []
+                       :form '([] x)
+                       :statements nil
+                       :result {:op :var
+                                :form 'x
+                                :info nil
+                                :env {:parent {}
+                                      :locals {:foo {:op :var
+                                                     :fn-var true
+                                                     :shadow nil
+                                                     :form 'foo
+                                                     :env {}}}}}
+                       :env {:parent {}
+                             :locals {:foo {:op :var
+                                            :fn-var true
+                                            :shadow nil
+                                            :form 'foo
+                                            :env {}}}}}]
+            :env {}}))
+
+(assert (= (analyze {} '(fn foo [a] x))
+           {:op :fn
+            :name 'foo
+            :variadic false
+            :form '(fn foo [a] x)
+            :methods [{:op :overload
+                       :variadic false
+                       :arity 1
+                       :params [{:name 'a
+                                 :tag nil
+                                 :shadow nil}]
+                       :form '([a] x)
+                       :statements nil
+                       :result {:op :var
+                                :form 'x
+                                :info nil
+                                :env {:parent {}
+                                      :locals {:foo {:op :var
+                                                     :fn-var true
+                                                     :shadow nil
+                                                     :form 'foo
+                                                     :env {}}
+                                               :a {:name 'a
+                                                   :tag nil
+                                                   :shadow nil}}}}
+                       :env {:parent {}
+                             :locals {:foo {:op :var
+                                            :fn-var true
+                                            :shadow nil
+                                            :form 'foo
+                                            :env {}}
+                                      :a {:name 'a
+                                          :tag nil
+                                          :shadow nil}}}}]
+            :env {}}))
+
+(assert (= (analyze {} '(fn ([] x)))
+           {:op :fn
+            :name nil
+            :variadic false
+            :form '(fn ([] x))
+            :methods [{:op :overload
+                       :variadic false
+                       :arity 0
+                       :params []
+                       :form '([] x)
+                       :statements nil
+                       :result {:op :var
+                                :form 'x
+                                :info nil
+                                :env {:parent {}
+                                      :locals {}}}
+                       :env {:parent {}
+                             :locals {}}}]
+            :env {}}))
+
+(assert (= (analyze {} '(fn [& args] x))
+           {:op :fn
+            :name nil
+            :variadic true
+            :form '(fn [& args] x)
+            :methods [{:op :overload
+                       :variadic true
+                       :arity 0
+                       :params [{:name 'args
+                                 :tag nil
+                                 :shadow nil}]
+                       :form '([& args] x)
+                       :statements nil
+                       :result {:op :var
+                                :form 'x
+                                :info nil
+                                :env {:parent {}
+                                      :locals {:args {:name 'args
+                                                      :tag nil
+                                                      :shadow nil}}}}
+                       :env {:parent {}
+                             :locals {:args {:name 'args
+                                             :tag nil
+                                             :shadow nil}}}}]
+            :env {}}))
+
+(assert (= (analyze {} '(fn ([] 0) ([x] x)))
+           {:op :fn
+            :name nil
+            :variadic false
+            :form '(fn ([] 0) ([x] x))
+            :methods [{:op :overload
+                       :variadic false
+                       :arity 0
+                       :params []
+                       :form '([] 0)
+                       :statements nil
+                       :result {:op :constant
+                                :form 0
+                                :type :number
+                                :env {:parent {}
+                                      :locals {}}}
+                       :env {:parent {}
+                             :locals {}}}
+                      {:op :overload
+                       :variadic false
+                       :arity 1
+                       :params [{:name 'x
+                                 :tag nil
+                                 :shadow nil}]
+                       :form '([x] x)
+                       :statements nil
+                       :result {:op :var
+                                :form 'x
+                                :info {:name 'x
+                                       :tag nil
+                                       :shadow nil}
+                                :env {:parent {}
+                                      :locals {:x {:name 'x
+                                                   :tag nil
+                                                   :shadow nil}}}}
+                       :env {:parent {}
+                             :locals {:x {:name 'x
+                                          :tag nil
+                                          :shadow nil}}}}]
+            :env {}}))
+
+
+(assert (= (analyze {} '(fn ([] 0) ([x] x) ([x & nums] :etc)))
+           {:op :fn
+            :name nil
+            :variadic true
+            :form '(fn ([] 0) ([x] x) ([x & nums] :etc))
+            :methods [{:op :overload
+                       :variadic false
+                       :arity 0
+                       :params []
+                       :form '([] 0)
+                       :statements nil
+                       :result {:op :constant
+                                :form 0
+                                :type :number
+                                :env {:parent {}
+                                      :locals {}}}
+                       :env {:parent {}
+                             :locals {}}}
+                      {:op :overload
+                       :variadic false
+                       :arity 1
+                       :params [{:name 'x
+                                 :tag nil
+                                 :shadow nil}]
+                       :form '([x] x)
+                       :statements nil
+                       :result {:op :var
+                                :form 'x
+                                :info {:name 'x
+                                       :tag nil
+                                       :shadow nil}
+                                :env {:parent {}
+                                      :locals {:x {:name 'x
+                                                   :tag nil
+                                                   :shadow nil}}}}
+                       :env {:parent {}
+                             :locals {:x {:name 'x
+                                          :tag nil
+                                          :shadow nil}}}}
+                      {:op :overload
+                       :variadic true
+                       :arity 1
+                       :params [{:name 'x
+                                 :tag nil
+                                 :shadow nil}
+                                {:name 'nums
+                                 :tag nil
+                                 :shadow nil}]
+                       :form '([x & nums] :etc)
+                       :statements nil
+                       :result {:op :constant
+                                :form ':etc
+                                :type :keyword
+                                :env {:parent {}
+                                      :locals {:x {:name 'x
+                                                   :tag nil
+                                                   :shadow nil}
+                                               :nums {:name 'nums
+                                                      :tag nil
+                                                      :shadow nil}}}}
+                       :env {:parent {}
+                             :locals {:x {:name 'x
+                                          :tag nil
+                                          :shadow nil}
+                                      :nums {:name 'nums
+                                             :tag nil
+                                             :shadow nil}}}}]
+            :env {}}))

@@ -4,11 +4,13 @@
             [wisp.sequence :refer [list? list conj partition seq
                                    empty? map vec every? concat
                                    first second third rest last
-                                   butlast interleave cons count]]
+                                   butlast interleave cons count
+                                   some assoc reduce filter]]
             [wisp.compiler :refer [macroexpand]]
             [wisp.runtime :refer [nil? dictionary? vector? keys
                                   vals string? number? boolean?
-                                  date? re-pattern? even? =]]
+                                  date? re-pattern? even? = max
+                                  dec]]
             [wisp.string :refer [split]]))
 
 (defn analyze-symbol
@@ -374,6 +376,123 @@
     {:statements statements
      :result result
      :env env}))
+
+(defn analyze-fn-param
+  [env name]
+  (let [locals (:locals env)
+        param {:name name
+               :tag (:tag (meta name))
+               :shadow (aget locals name)}]
+    (conj env
+          {:locals (assoc locals name param)
+           :params (conj (:params env)
+                         param)})))
+
+(defn analyze-fn-method
+  "
+  {} -> '([x y] (+ x y)) -> {:env {}
+                             :form '([x y] (+ x y))
+                             :variadic false
+                             :arity 2
+                             :params [{:op :var :form 'x}
+                                      {:op :var :form 'y}]
+                             :statements []
+                             :return {:op :invoke
+                                      :callee {:op :var
+                                               :form '+
+                                               :env {:parent {}
+                                                     :locals {x {:name 'x
+                                                                 :shadow nil
+                                                                 :local true
+                                                                 :tag nil}
+                                                              y {:name 'y
+                                                                 :shadow nil
+                                                                 :local true
+                                                                 :tag nil}}}}
+                                      :params [{:op :var
+                                                :form 'x
+                                                :info nil
+                                                :tag nil}
+                                               {:op :var
+                                                :form 'y
+                                                :info nil
+                                                :tag nil}]}}"
+  [env form]
+  (let [signature (first form)
+        body (rest form)
+        ;; If param signature contains & fn is variadic.
+        variadic (some #(= '& %) signature)
+
+        ;; All named params of the fn.
+        params (if variadic
+                 (filter #(not (= '& %)) signature)
+                 signature)
+
+        ;; Number of parameters fixed parameters fn takes.
+        arity (if variadic
+                (dec (count params))
+                (count params))
+
+        ;; Analyze parameters in correspondence to environment
+        ;; locals to identify binding shadowing.
+        bindings (reduce analyze-fn-param
+                         {:locals (:locals env)
+                          :params []}
+                         params)
+
+        scope (conj env {:locals (:locals bindings)})]
+    (conj (analyze-block scope body)
+          {:op :overload
+           :variadic variadic
+           :arity arity
+           :params (:params bindings)
+           :form form})))
+
+
+(defn analyze-fn
+  [env form]
+  (let [forms (rest form)
+        ;; Normalize fn form so that it contains name
+        ;; '(fn [x] x) -> '(fn nil [x] x)
+        forms (if (symbol? (first forms))
+                forms
+                (cons nil forms))
+
+        name (first forms)
+
+        ;; Make sure that fn definition is strucutered
+        ;; in method overload style:
+        ;; (fn a [x] y) -> (([x] y))
+        ;; (fn a ([x] y)) -> (([x] y))
+        overloads (if (vector? (second forms))
+                    (list (rest forms))
+                    (rest forms))
+
+        ;; Hash map of local bindings
+        locals (or (:locals env) {})
+
+
+        scope {:parent env
+               :locals (if name
+                         (assoc locals name {:op :var
+                                             :fn-var true
+                                             :form name
+                                             :env env
+                                             :shadow (get locals name)})
+                         locals)}
+
+        methods (map #(analyze-fn-method scope %)
+                     (vec overloads))
+
+        arity (apply max (map #(:arity %) methods))
+        variadic (some #(:variadic %) methods)]
+    {:op :fn
+     :name name
+     :variadic variadic
+     :methods methods
+     :form form
+     :env env}))
+(install-special :fn analyze-fn)
 
 
 (defn analyze-list

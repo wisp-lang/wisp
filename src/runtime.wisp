@@ -510,3 +510,6 @@
 (defn print
   [& more]
   (apply console.log more))
+
+(def max Math.max)
+(def min Math.min)
