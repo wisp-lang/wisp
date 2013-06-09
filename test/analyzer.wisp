@@ -1066,3 +1066,124 @@
                                              :tag nil
                                              :shadow nil}}}}]
             :env {}}))
+
+(assert (= (analyze {} '(ns* foo.bar
+                             "hello world"
+                             (:require [my.lib :refer [foo bar]]
+                                       [foo.baz :refer [a] :rename {a b}])))
+           {:op :ns
+            :name 'foo.bar
+            :doc "hello world"
+            :require [{:op :require
+                       :alias nil
+                       :ns 'my.lib
+                       :refer [{:op :refer
+                                :name 'foo
+                                :form 'foo
+                                :rename nil
+                                :ns 'my.lib}
+                               {:op :refer
+                                :name 'bar
+                                :form 'bar
+                                :rename nil
+                                :ns 'my.lib}]
+                       :form '[my.lib :refer [foo bar]]}
+                      {:op :require
+                       :alias nil
+                       :ns 'foo.baz
+                       :refer [{:op :refer
+                                :name 'a
+                                :form 'a
+                                :rename 'b
+                                :ns 'foo.baz}]
+                       :form '[foo.baz :refer [a] :rename {a b}]}]
+            :form '(ns* foo.bar
+                        "hello world"
+                        (:require [my.lib :refer [foo bar]]
+                                  [foo.baz :refer [a] :rename {a b}]))
+            :env {}}))
+
+(assert (= (analyze {} '(ns* foo.bar
+                             "hello world"
+                             (:require lib.a
+                                       [lib.b]
+                                       [lib.c :as c]
+                                       [lib.d :refer [foo bar]]
+                                       [lib.e :refer [beep baz] :as e]
+                                       [lib.f :refer [faz] :rename {faz saz}]
+                                       [lib.g :refer [beer] :rename {beer coffee} :as booze])))
+           {:op :ns
+            :name 'foo.bar
+            :doc "hello world"
+            :require [{:op :require
+                       :alias nil
+                       :ns 'lib.a
+                       :refer nil
+                       :form 'lib.a}
+                      {:op :require
+                       :alias nil
+                       :ns 'lib.b
+                       :refer nil
+                       :form '[lib.b]}
+                      {:op :require
+                       :alias 'c
+                       :ns 'lib.c
+                       :refer nil
+                       :form '[lib.c :as c]}
+                      {:op :require
+                       :alias nil
+                       :ns 'lib.d
+                       :form '[lib.d :refer [foo bar]]
+                       :refer [{:op :refer
+                                :name 'foo
+                                :form 'foo
+                                :rename nil
+                                :ns 'lib.d}
+                               {:op :refer
+                                :name 'bar
+                                :form 'bar
+                                :rename nil
+                                :ns 'lib.d
+                                }]}
+                      {:op :require
+                       :alias 'e
+                       :ns 'lib.e
+                       :form '[lib.e :refer [beep baz] :as e]
+                       :refer [{:op :refer
+                                :name 'beep
+                                :form 'beep
+                                :rename nil
+                                :ns 'lib.e}
+                               {:op :refer
+                                :name 'baz
+                                :form 'baz
+                                :rename nil
+                                :ns 'lib.e}]}
+                      {:op :require
+                       :alias nil
+                       :ns 'lib.f
+                       :form '[lib.f :refer [faz] :rename {faz saz}]
+                       :refer [{:op :refer
+                                :name 'faz
+                                :form 'faz
+                                :rename 'saz
+                                :ns 'lib.f}]}
+                      {:op :require
+                       :alias 'booze
+                       :ns 'lib.g
+                       :form '[lib.g :refer [beer] :rename {beer coffee} :as booze]
+                       :refer [{:op :refer
+                                :name 'beer
+                                :form 'beer
+                                :rename 'coffee
+                                :ns 'lib.g}]}]
+            :form '(ns* foo.bar
+                        "hello world"
+                        (:require lib.a
+                                  [lib.b]
+                                  [lib.c :as c]
+                                  [lib.d :refer [foo bar]]
+                                  [lib.e :refer [beep baz] :as e]
+                                  [lib.f :refer [faz] :rename {faz saz}]
+                                  [lib.g :refer [beer] :rename {beer coffee} :as booze]))
+            :env {}}))

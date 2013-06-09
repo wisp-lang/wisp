@@ -5,12 +5,12 @@
                                    empty? map vec every? concat
                                    first second third rest last
                                    butlast interleave cons count
-                                   some assoc reduce filter]]
+                                   some assoc reduce filter seq?]]
             [wisp.compiler :refer [macroexpand]]
             [wisp.runtime :refer [nil? dictionary? vector? keys
                                   vals string? number? boolean?
                                   date? re-pattern? even? = max
-                                  dec]]
+                                  dec dictionary]]
             [wisp.string :refer [split]]))
 
 (defn analyze-symbol
@@ -493,6 +493,77 @@
      :form form
      :env env}))
 (install-special :fn analyze-fn)
+
+(defn parse-references
+  "Takes part of namespace difinition and creates hash
+  of reference forms"
+  [forms]
+  (reduce (fn [references form]
+            ;; If not a vector than it's not a reference
+            ;; form that wisp understands so just skip it.
+            (if (seq? form)
+              (assoc references
+                (name (first form))
+                (vec (rest form)))
+              references))
+          {}
+          forms))
+
+(defn parse-require
+  [form]
+  (let [;; require form may be either vector with id in the
+        ;; head or just an id symbol. normalizing to a vector
+        requirement (if (symbol? form) [form] (vec form))
+        id (first requirement)
+        ;; bunch of directives may follow require form but they
+        ;; all come in pairs. wisp supports following pairs:
+        ;; :as foo
+        ;; :refer [foo bar]
+        ;; :rename {foo bar}
+        ;; join these pairs in a hash for key based access.
+        params (apply dictionary (rest requirement))
+        renames (get params ':rename)
+        names (get params ':refer)
+        alias (get params ':as)
+        references (if (not (empty? names))
+                     (reduce (fn [refers name]
+                      (conj refers
+                            {:op :refer
+                             :form name
+                             :name name
+                             :rename (get renames name)
+                             :ns id}))
+                             []
+                             names))]
+    {:op :require
+     :alias alias
+     :ns id
+     :refer references
+     :form form}))
+
+(defn analyze-ns
+  [env form]
+  (let [forms (rest form)
+        name (first forms)
+        body (rest forms)
+        ;; Optional docstring that follows name symbol
+        doc (if (string? (first body)) (first body))
+        ;; If second form is not a string than treat it
+        ;; as regular reference form
+        references (parse-references (if doc
+                                       (rest body)
+                                       body))
+        requirements (if (:require references)
+                       (map parse-require (:require references)))]
+    {:op :ns
+     :name name
+     :doc doc
+     :require (if requirements
+                (vec requirements))
+     :form form
+     :env env}))
+(install-special :ns analyze-ns)
+(install-special :ns* analyze-ns)
 
 
 (defn analyze-list
