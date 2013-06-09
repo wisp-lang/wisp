@@ -3,7 +3,7 @@
                                        count first second third rest last
                                        butlast take drop repeat concat reverse
                                        sort map filter reduce assoc every?
-                                       some partition interleave]]
+                                       some partition interleave nth]]
             [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
 
 
@@ -428,3 +428,16 @@
            (interleave [1 2 3]
                        [4 5 6 7]
                        [8 9 10 11])))
+
+(print "test nth")
+
+(assert (= (nth nil 1) nil))
+(assert (= (nth nil 1 :not-found) :not-found))
+(assert (= (nth "hello" 2) \l))
+(assert (= (nth '(1 2 3 4) 3) 4))
+(assert (= (nth '(1 2 3 4) 0) 1))
+(assert (= (nth [1 2 3 4] 3) 4))
+(assert (= (nth [1 2 3 4] 4) nil))
+(assert (= (nth [1 2 3 4] 2) 3))
+(assert (= (nth [1 2 3 4] 0) 1))
+(assert (= (nth (seq {:foo 1 :bar 2}) 1) [:bar 2]))

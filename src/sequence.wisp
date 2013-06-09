@@ -478,3 +478,17 @@
        result
        (recur (concat result (map first sequences))
               (map rest sequences))))))
+
+(defn nth
+  "Returns nth item of the sequence"
+  [sequence index not-found]
+  (cond (nil? sequence) not-found
+        (list? sequence) (if (< index (count sequence))
+                           (first (drop index sequence))
+                           not-found)
+        (or (vector? sequence)
+            (string? sequence)) (if (< index (count sequence))
+                                  (aget sequence index)
+                                  not-found)
+        (lazy-seq? sequence) (nth (lazy-seq-value sequence) index not-found)
+        :else (throw (TypeError "Unsupported type"))))
