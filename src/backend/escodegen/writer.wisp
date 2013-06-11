@@ -5,7 +5,7 @@
                               syntax-quote? name gensym pr-str]]
             [wisp.sequence :refer [empty? count list? list first second third
                                    rest cons conj reverse reduce vec last map
-                                   filter take concat]]
+                                   filter take concat partition interleave]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
@@ -363,6 +363,20 @@
    :elements (map write (:items form))
    :loc (write-location form)})
 (install-writer! :vector write-vector)
+
+(defn write-dictionary
+  [form]
+  (let [properties (partition 2 (interleave (:keys form)
+                                            (:values form)))]
+    {:type :ObjectExpression
+     :properties (map (fn [pair]
+                        {:kind :init
+                         :type :Property
+                         :key (write (first pair))
+                         :value (write (second pair))})
+                      properties)
+     :loc (write-location form)}))
+(install-writer! :dictionary write-dictionary)
 
 (defn write-def
   [form]
