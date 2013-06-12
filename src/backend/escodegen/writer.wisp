@@ -320,6 +320,26 @@
    :loc (write-location form)})
 (install-writer! :member-expression write-aget)
 
+(defn write-statement
+  [form]
+  (let [op (:op form)]
+    (if (or (= op :def)
+            (= op :throw)
+            (= op :try))
+      (write form)
+      {:type :ExpressionStatement
+       :expression (write form)
+       :loc (write-location form)})))
+
+(defn write-body
+  [form]
+  (let [statements (or (:statements form) [])
+        result (:result form)]
+    (conj (map write-statement statements)
+          (if result
+            {:type :ReturnStatement
+             :argument (write (:result form))}))))
+
 (defn ->block
   [body]
   {:type :BlockStatement
@@ -340,6 +360,11 @@
                            :generator false
                            :rest nil
                            :body (->block body)}]}})
+
+(defn write-do
+  [form]
+  (->expression (write-body form)))
+(install-writer! :do write-do)
 
 (defn write-if
   [form]
