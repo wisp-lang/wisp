@@ -190,14 +190,14 @@
        :end {:line (inc (:line end))
              :column (inc (:column end))}})))
 
-(def *writers* {})
+(def **writers** {})
 (defn install-writer!
   [op writer]
-  (set! (get *writers* op) writer))
+  (set! (get **writers** op) writer))
 
 (defn write-op
   [op form]
-  (let [writer (get *writers* op)]
+  (let [writer (get **writers** op)]
     (assert writer (str "Unsupported operation: " op))
     (writer form)))
 

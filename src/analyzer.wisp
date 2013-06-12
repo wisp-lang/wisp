@@ -41,7 +41,7 @@
 
 (def specials {})
 
-(defn install-special
+(defn install-special!
   [name f]
   (set! (get specials name) f))
 
@@ -74,7 +74,7 @@
      :alternate alternate
      :env env}))
 
-(install-special :if analyze-if)
+(install-special! :if analyze-if)
 
 (defn analyze-throw
   "Example:
@@ -96,7 +96,7 @@
      :throw expression
      :env env}))
 
-(install-special :throw analyze-throw)
+(install-special! :throw analyze-throw)
 
 (defn analyze-try
   [env form name]
@@ -135,7 +135,7 @@
      :finalizer finalizer
      :env env}))
 
-(install-special :try analyze-try)
+(install-special! :try analyze-try)
 
 (defn analyze-set!
   [env form name]
@@ -151,7 +151,7 @@
      :value value
      :form form
      :env env}))
-(install-special :set! analyze-set!)
+(install-special! :set! analyze-set!)
 
 (defn analyze-new
   [env form _]
@@ -163,7 +163,7 @@
      :form form
      :params params
      :env env}))
-(install-special :new analyze-new)
+(install-special! :new analyze-new)
 
 (defn analyze-aget
   [env form _]
@@ -180,7 +180,7 @@
      :target target
      :property property
      :env env}))
-(install-special :aget analyze-aget)
+(install-special! :aget analyze-aget)
 
 (defn parse-def
   ([symbol] {:symbol symbol})
@@ -219,7 +219,7 @@
      :dynamic dynamic
      :export export?
      :env env}))
-(install-special :def analyze-def)
+(install-special! :def analyze-def)
 
 (defn analyze-do
   [env form _]
@@ -228,7 +228,7 @@
     (conj body {:op :do
                 :form form
                 :env env})))
-(install-special :do analyze-do)
+(install-special! :do analyze-do)
 
 (defn analyze-binding
   [env form]
@@ -293,13 +293,13 @@
 (defn analyze-let
   [env form _]
   (analyze-let* env form false))
-(install-special :let analyze-let)
+(install-special! :let analyze-let)
 
 (defn analyze-loop
   [env form _]
   (conj (analyze-let* env form true)
         {:op :loop}))
-(install-special :loop analyze-loop)
+(install-special! :loop analyze-loop)
 
 
 (defn analyze-recur
@@ -316,7 +316,7 @@
      :form form
      :env env
      :params forms}))
-(install-special :recur analyze-recur)
+(install-special! :recur analyze-recur)
 
 (defn analyze-quote
   "Examples:
@@ -491,7 +491,7 @@
      :methods methods
      :form form
      :env env}))
-(install-special :fn analyze-fn)
+(install-special! :fn analyze-fn)
 
 (defn parse-references
   "Takes part of namespace difinition and creates hash
@@ -561,7 +561,7 @@
                 (vec requirements))
      :form form
      :env env}))
-(install-special :ns analyze-ns)
+(install-special! :ns analyze-ns)
 
 
 (defn analyze-list
@@ -655,7 +655,7 @@
     (with-meta expansion metadata)))
 
 
-(defn macro-install!
+(defn install-macro!
   "Registers given `macro` with a given `name`"
   [op expander]
   (set! (get **macros** op) expander))
@@ -756,7 +756,7 @@
       (recur expanded (macroexpand-1 expanded)))))
 
 
-(macro-install!
+(install-macro!
  :print
  (fn [& more]
    "Prints the object(s) to the output for human consumption."
@@ -821,7 +821,7 @@
                :else [(syntax-quote-expand form)]))
        forms))
 
-(macro-install! :syntax-quote syntax-quote)
+(install-macro! :syntax-quote syntax-quote)
 
 (defn apply
   [f & params]
@@ -829,4 +829,4 @@
     (if (empty? prefix)
       `(.apply ~f nil ~@params)
       `(.apply ~f nil (.concat ~prefix ~(last params))))))
-(macro-install! :apply apply)
+(install-macro! :apply apply)
