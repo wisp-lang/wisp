@@ -128,14 +128,14 @@
         body (if handler-form
                (analyze-block env (butlast body-form))
                (analyze-block env body-form))]
-    {:op :try*
+    {:op :try
      :form form
      :body body
      :handler handler
      :finalizer finalizer
      :env env}))
 
-(install-special :try* analyze-try)
+(install-special :try analyze-try)
 
 (defn analyze-set!
   [env form name]

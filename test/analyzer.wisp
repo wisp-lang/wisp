@@ -311,10 +311,10 @@
                       :env {}
                       :form "Boom!"}]}))
 
-(assert (= (analyze {} '(try* (read-string unicode-error)))
-           {:op :try*
+(assert (= (analyze {} '(try (read-string unicode-error)))
+           {:op :try
             :env {}
-            :form '(try* (read-string unicode-error))
+            :form '(try (read-string unicode-error))
             :body {:env {}
                    :statements nil
                    :result {:op :invoke
@@ -332,13 +332,13 @@
             :handler nil
             :finalizer nil}))
 
-(assert (= (analyze {} '(try*
+(assert (= (analyze {} '(try
                          (read-string unicode-error)
                          (catch error :throw)))
 
-           {:op :try*
+           {:op :try
             :env {}
-            :form '(try*
+            :form '(try
                     (read-string unicode-error)
                     (catch error :throw))
             :body {:env {}
@@ -367,13 +367,13 @@
                                :form ':throw}}
             :finalizer nil}))
 
-(assert (= (analyze {} '(try*
+(assert (= (analyze {} '(try
                          (read-string unicode-error)
                          (finally :end)))
 
-           {:op :try*
+           {:op :try
             :env {}
-            :form '(try*
+            :form '(try
                     (read-string unicode-error)
                     (finally :end))
             :body {:env {}
@@ -399,16 +399,16 @@
                                  :form ':end}}}))
 
 
-(assert (= (analyze {} '(try* (read-string unicode-error)
+(assert (= (analyze {} '(try (read-string unicode-error)
                               (catch error
                                 (print error)
                                 :error)
                               (finally
                                (print "done")
                                :end)))
-           {:op :try*
+           {:op :try
             :env {}
-            :form '(try* (read-string unicode-error)
+            :form '(try (read-string unicode-error)
                          (catch error
                            (print error)
                            :error)
