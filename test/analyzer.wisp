@@ -333,14 +333,14 @@
             :finalizer nil}))
 
 (assert (= (analyze {} '(try
-                         (read-string unicode-error)
-                         (catch error :throw)))
+                          (read-string unicode-error)
+                          (catch error :throw)))
 
            {:op :try
             :env {}
             :form '(try
-                    (read-string unicode-error)
-                    (catch error :throw))
+                     (read-string unicode-error)
+                     (catch error :throw))
             :body {:env {}
                    :statements nil
                    :result {:op :invoke
@@ -368,14 +368,14 @@
             :finalizer nil}))
 
 (assert (= (analyze {} '(try
-                         (read-string unicode-error)
-                         (finally :end)))
+                          (read-string unicode-error)
+                          (finally :end)))
 
            {:op :try
             :env {}
             :form '(try
-                    (read-string unicode-error)
-                    (finally :end))
+                     (read-string unicode-error)
+                     (finally :end))
             :body {:env {}
                    :statements nil
                    :result {:op :invoke
@@ -400,21 +400,21 @@
 
 
 (assert (= (analyze {} '(try (read-string unicode-error)
-                              (catch error
-                                (print error)
-                                :error)
-                              (finally
-                               (print "done")
-                               :end)))
+                          (catch error
+                            (print error)
+                            :error)
+                          (finally
+                           (print "done")
+                           :end)))
            {:op :try
             :env {}
             :form '(try (read-string unicode-error)
-                         (catch error
-                           (print error)
-                           :error)
-                         (finally
-                          (print "done")
-                          :end))
+                     (catch error
+                       (print error)
+                       :error)
+                     (finally
+                      (print "done")
+                      :end))
             :body {:env {}
                    :statements nil
                    :result {:op :invoke
@@ -666,10 +666,10 @@
                  :tag nil
                  :local true
                  :shadow nil}]]
-  (assert (= (analyze {} '(let* [x 1 y 2] (+ x y)))
+  (assert (= (analyze {} '(let [x 1 y 2] (+ x y)))
              {:op :let
               :env {}
-              :form '(let* [x 1 y 2] (+ x y))
+              :form '(let [x 1 y 2] (+ x y))
               :loop false
               :bindings bindings
               :statements nil
@@ -711,19 +711,19 @@
                  :shadow nil
                  :local true}]]
 
-  (assert (= (analyze {} '(loop* [chars stream
-                                  result []]
-                                 (if (empty? chars)
-                                   :eof
-                                   (recur (rest chars)
-                                          (conj result (first chars))))))
-             {:op :loop*
-              :loop true
-              :form '(loop* [chars stream
-                             result []]
-                            (if (empty? chars) :eof
+  (assert (= (analyze {} '(loop [chars stream
+                                 result []]
+                            (if (empty? chars)
+                              :eof
                               (recur (rest chars)
-                                     (conj result (first chars)))))
+                                     (conj result (first chars))))))
+             {:op :loop
+              :loop true
+              :form '(loop [chars stream
+                            result []]
+                       (if (empty? chars) :eof
+                         (recur (rest chars)
+                                (conj result (first chars)))))
               :env {}
               :bindings bindings
               :statements nil
@@ -1067,10 +1067,10 @@
                                              :shadow nil}}}}]
             :env {}}))
 
-(assert (= (analyze {} '(ns* foo.bar
-                             "hello world"
-                             (:require [my.lib :refer [foo bar]]
-                                       [foo.baz :refer [a] :rename {a b}])))
+(assert (= (analyze {} '(ns foo.bar
+                          "hello world"
+                          (:require [my.lib :refer [foo bar]]
+                                    [foo.baz :refer [a] :rename {a b}])))
            {:op :ns
             :name 'foo.bar
             :doc "hello world"
@@ -1097,21 +1097,21 @@
                                 :rename 'b
                                 :ns 'foo.baz}]
                        :form '[foo.baz :refer [a] :rename {a b}]}]
-            :form '(ns* foo.bar
-                        "hello world"
-                        (:require [my.lib :refer [foo bar]]
-                                  [foo.baz :refer [a] :rename {a b}]))
+            :form '(ns foo.bar
+                     "hello world"
+                     (:require [my.lib :refer [foo bar]]
+                               [foo.baz :refer [a] :rename {a b}]))
             :env {}}))
 
-(assert (= (analyze {} '(ns* foo.bar
-                             "hello world"
-                             (:require lib.a
-                                       [lib.b]
-                                       [lib.c :as c]
-                                       [lib.d :refer [foo bar]]
-                                       [lib.e :refer [beep baz] :as e]
-                                       [lib.f :refer [faz] :rename {faz saz}]
-                                       [lib.g :refer [beer] :rename {beer coffee} :as booze])))
+(assert (= (analyze {} '(ns foo.bar
+                          "hello world"
+                          (:require lib.a
+                                    [lib.b]
+                                    [lib.c :as c]
+                                    [lib.d :refer [foo bar]]
+                                    [lib.e :refer [beep baz] :as e]
+                                    [lib.f :refer [faz] :rename {faz saz}]
+                                    [lib.g :refer [beer] :rename {beer coffee} :as booze])))
            {:op :ns
             :name 'foo.bar
             :doc "hello world"
@@ -1177,13 +1177,13 @@
                                 :form 'beer
                                 :rename 'coffee
                                 :ns 'lib.g}]}]
-            :form '(ns* foo.bar
-                        "hello world"
-                        (:require lib.a
-                                  [lib.b]
-                                  [lib.c :as c]
-                                  [lib.d :refer [foo bar]]
-                                  [lib.e :refer [beep baz] :as e]
-                                  [lib.f :refer [faz] :rename {faz saz}]
-                                  [lib.g :refer [beer] :rename {beer coffee} :as booze]))
+            :form '(ns foo.bar
+                     "hello world"
+                     (:require lib.a
+                               [lib.b]
+                               [lib.c :as c]
+                               [lib.d :refer [foo bar]]
+                               [lib.e :refer [beep baz] :as e]
+                               [lib.f :refer [faz] :rename {faz saz}]
+                               [lib.g :refer [beer] :rename {beer coffee} :as booze]))
             :env {}}))
