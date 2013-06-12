@@ -341,6 +341,15 @@
                            :rest nil
                            :body (->block body)}]}})
 
+(defn write-if
+  [form]
+  {:type :ConditionalExpression
+   :test (write (:test form))
+   :consequent (write (:consequent form))
+   :alternate (write (:alternate form))
+   :loc (write-location form)})
+(install-writer! :if write-if)
+
 (defn write
   [form]
   (write-op (:op form) form))
