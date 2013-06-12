@@ -289,9 +289,9 @@
 
 (defn write-throw
   [form]
-  {:type :ThrowStatement
-   :argument (write (:throw form))
-   :loc (write-location form)})
+  (->expression {:type :ThrowStatement
+                 :argument (write (:throw form))
+                 :loc (write-location form)}))
 (install-writer! :throw write-throw)
 
 (defn write-new
@@ -319,6 +319,27 @@
    :property (write (:property form))
    :loc (write-location form)})
 (install-writer! :member-expression write-aget)
+
+(defn ->block
+  [body]
+  {:type :BlockStatement
+   :body (if (vector? body)
+           body
+           [body])})
+
+(defn ->expression
+  [body]
+  {:type :CallExpression
+   :arguments []
+   :callee {:type :SequenceExpression
+            :expressions [{:type :FunctionExpression
+                           :id nil
+                           :params []
+                           :defaults []
+                           :expression false
+                           :generator false
+                           :rest nil
+                           :body (->block body)}]}})
 
 (defn write
   [form]
