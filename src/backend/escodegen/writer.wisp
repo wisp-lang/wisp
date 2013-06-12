@@ -375,6 +375,21 @@
    :loc (write-location form)})
 (install-writer! :if write-if)
 
+(defn write-try
+  [form]
+  (->expression {:type :TryStatement
+                 :guardedHandlers []
+                 :block (->block (write-body (:body form)))
+                 :handlers (if (:handler form)
+                             [{:type :CatchClause
+                               :param (write (:name (:handler form)))
+                               :body (->block (write-body (:handler form)))}]
+                             [])
+                 :finalizer (if (:finalizer form)
+                              (->block (write-body (:finalizer form))))
+                 :loc (write-location form)}))
+(install-writer! :try write-try)
+
 (defn write
   [form]
   (write-op (:op form) form))
