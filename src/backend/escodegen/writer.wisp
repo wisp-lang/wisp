@@ -67,112 +67,6 @@
   id)
 
 
-(defn write-call
-  [form]
-  {:type :CallExpression
-   :callee (write (first form))
-   :arguments (map write (vec (rest params)))})
-
-(defn- write-property
-  [pair]
-  {:type :Property
-   :key (write (first pair))
-   :value (write (second pair))
-   :kind :init})
-
-
-(defn write-set!
-  [form]
-  {:type :AssignmentExpression
-   :operator :=
-   :left (write (first form))
-   :right (write (second form))})
-
-(defn write-aget
-  [form]
-  (let [property (write (second form))]
-    {:type :MemberExpression
-     :computed true
-     :object (write (first form))
-     :property (write (second form))}))
-
-(defn write-def
-  "Creates and interns or locates a global var with the name of symbol
-  and a namespace of the value of the current namespace (*ns*). If init
-  is supplied, it is evaluated, and the root binding of the var is set
-  to the resulting value. If init is not supplied, the root binding of
-  the var is unaffected. def always applies to the root binding, even if
-  the var is thread-bound at the point where def is called. def yields
-  the var itself (not its value)."
-  [form]
-  (let [id (first form)
-        export? (and (:top (meta form))
-                     (not (:private (meta id))))
-        attribute (symbol (namespace id)
-                          (str "-" (name id)))
-        declaration {:type :VariableDeclaration
-                     :kind :var
-                     :declarations [{:type :VariableDeclarator
-                                     :id (write id)
-                                     :init (write (second form))}]}]
-    (if export?
-      [declaration (write (set! (get exports ~attribute) ~id))]
-      declaration)))
-
-(defn write-if
-  "Evaluates test. If not the singular values nil or false,
-  evaluates and yields then, otherwise, evaluates and yields else.
-  If else is not supplied it defaults to nil. All of the other
-  conditionals in Clojure are based upon the same logic, that is,
-  nil and false constitute logical falsity, and everything else
-  constitutes logical truth, and those meanings apply throughout."
-  [form]
-  {:type :ConditionalExpression
-   :test (write (first form))
-   :consequent (second form)
-   :alternate (third form)})
-
-(defn write-do
-  [form]
-  {})
-
-(defn write-fn
-  [form]
-  {})
-
-(defn write-throw
-  [form]
-  {:type :ThrowStatement
-   :argument (write (first form))})
-
-
-(defn write-try
-  [form]
-  (let [analyzed (analyze-try form)
-        metadata (meta analyzed)
-        try-block (:try metadata)
-        catch-block (:catch metadata)
-        finally-block (:finally metadata)]
-
-
-    {:type :TryStatement
-     :guardedHandlers []
-     :block (write-block try-block)
-     :handlers (if catch-block
-                 [{:type :CatchClause
-                      :param (first catch-block)
-                      :body (write-block (rest catch-block))}]
-                 [])
-     :finalizer (write-block finally-block)}))
-
-
-(defn write-new
-  [form]
-  {:type :NewExpression
-   :callee (write (first form))
-   :arguments (map write (vec (rest form)))})
-
-
 ;; Operators that compile to binary expressions
 
 (defn make-binary-expression
@@ -280,6 +174,9 @@
   {:type :UnaryExpression
    :operator :!
    :argument (write (second form))})
+
+
+
 
 
 (defn write-location
