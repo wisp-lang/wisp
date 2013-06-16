@@ -445,6 +445,93 @@
                            :rest nil
                            :body (->block (write-body form))}]}})
 (install-writer! :let write-let)
+
+(defn ->rebind
+  [form]
+  (loop [result []
+         bindings (:bindings form)]
+    (if (empty? bindings)
+      result
+      (recur (conj result
+                   {:type :AssignmentExpression
+                    :operator :=
+                    :left (write-var {:form (:name (first bindings))})
+                    :right {:type :MemberExpression
+                            :computed true
+                            :object {:type :Identifier
+                                     :name :loop}
+                            :property {:type :Literal
+                                       :value (count result)}}})
+             (rest bindings)))))
+
+(defn write-loop
+  [form]
+  {:type :CallExpression
+   :arguments (map write-binding-value (:bindings form))
+   :callee {:type :SequenceExpression
+            :expressions [{:type :FunctionExpression
+                           :id {:type :Identifier
+                                :name :loop}
+                           :params (map write-binding-param
+                                        (:bindings form))
+                           :defaults []
+                           :expression false
+                           :generator false
+                           :rest nil
+                           :body (->block [{:type :VariableDeclaration
+                                            :kind :var
+                                            :declarations [{:type :VariableDeclarator
+                                                            :id {:type :Identifier
+                                                                 :name :recur}
+                                                            :init {:type :Identifier
+                                                                   :name :loop}}]}
+                                           {:type :DoWhileStatement
+                                            :body (->block (conj (write-body (conj form {:result nil}))
+                                                                 {:type :ExpressionStatement
+                                                                  :expression {:type :AssignmentExpression
+                                                                               :operator :=
+                                                                               :left {:type :Identifier
+                                                                                      :name :recur}
+                                                                               :right (write (:result form))}}))
+                                            :test {:type :SequenceExpression
+                                                   :expressions (conj (->rebind form)
+                                                                      {:type :BinaryExpression
+                                                                       :operator :===
+                                                                       :left {:type :Identifier
+                                                                              :name :recur}
+                                                                       :right {:type :Identifier
+                                                                               :name :loop}})}}
+                                           {:type :ReturnStatement
+                                            :argument {:type :Identifier
+                                                       :name :recur}}])}]}})
+(install-writer! :loop write-loop)
+
+(defn ->recur
+  [form]
+  (loop [result []
+         params (:params form)]
+    (if (empty? params)
+      result
+      (recur (conj result
+                   {:type :AssignmentExpression
+                    :operator :=
+                    :right (write (first params))
+                    :left {:type :MemberExpression
+                           :computed true
+                           :object {:type :Identifier
+                                    :name :loop}
+                           :property {:type :Literal
+                                      :value (count result)}}})
+             (rest params)))))
+
+(defn write-recur
+  [form]
+  {:type :SequenceExpression
+   :expressions (conj (->recur form)
+                      {:type :Identifier
+                       :name :loop})})
+(install-writer! :recur write-recur)
+
 (defn write
   [form]
   (write-op (:op form) form))
