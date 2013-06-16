@@ -4,8 +4,8 @@
                               namespace unquote? unquote-splicing? quote?
                               syntax-quote? name gensym pr-str]]
             [wisp.sequence :refer [empty? count list? list first second third
-                                   rest cons conj reverse reduce vec last map
-                                   filter take concat partition interleave]]
+                                   rest cons conj butlast reverse reduce vec last
+                                   map filter take concat partition interleave]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
@@ -531,6 +531,107 @@
                       {:type :Identifier
                        :name :loop})})
 (install-writer! :recur write-recur)
+
+(defn fallback-overload
+  []
+  {:type :SwitchCase
+   :test nil
+   :consequent [{:type :ThrowStatement
+                 :argument {:type :CallExpression
+                            :callee {:type :Identifier
+                                     :name :Error}
+                            :arguments [{:type :Literal
+                                         :value "Invalid arity"}]}}]})
+
+(defn splice-binding
+  [form]
+  {:op :def
+   :var {:op :var
+         :form (:name (last (:params form)))}
+   :init {:op :invoke
+          :callee {:op :var
+                   :form 'Array.prototype.slice.call}
+          :params [{:op :var
+                    :form 'arguments}
+                   {:op :constant
+                    :form (:arity form)
+                    :type :number}]}})
+
+(defn write-overloading-params
+  [params]
+  (reduce (fn [forms param]
+            (conj forms {:op :def
+                         :var {:op :var
+                               :form (:name param)}
+                         :init {:op :member-expression
+                                :computed true
+                                :target {:op :var
+                                         :form 'arguments}
+                                :property {:op :constant
+                                           :type :number
+                                           :form (count forms)}}}))
+          []
+          params))
+
+(defn write-overloading-fn
+  [form]
+  (let [overloads (map write-fn-overload (:methods form))]
+    {:params []
+     :body (->block {:type :SwitchStatement
+                     :discriminant {:type :MemberExpression
+                                    :computed false
+                                    :object {:type :Identifier
+                                             :name :arguments}
+                                    :property {:type :Identifier
+                                               :name :length}}
+                     :cases (if (:variadic form)
+                              overloads
+                              (conj overloads (fallback-overload)))})}))
+
+(defn write-fn-overload
+  [form]
+  (let [params (:params form)
+        bindings (if (:variadic form)
+                   (conj (write-overloading-params (butlast params))
+                         (splice-binding form))
+                   (write-overloading-params params))
+        statements (vec (concat bindings (:statements form)))]
+    {:type :SwitchCase
+     :test (if (not (:variadic form))
+             {:type :Literal
+              :value (:arity form)})
+     :consequent (write-body (conj form {:statements statements}))}))
+
+(defn write-simple-fn
+  [form]
+  (let [method (first (:methods form))
+        params (if (:variadic method)
+                 (butlast (:params method))
+                 (:params method))
+        body (if (:variadic method)
+               (conj method
+                     {:statements (vec (cons (splice-binding method)
+                                             (:statements method)))})
+               method)]
+    {:params (map #(write-var {:form (:name %)}) params)
+     :body (->block (write-body body))}))
+
+
+(defn write-fn
+  [form]
+  (let [base (if (> (count (:methods form)) 1)
+               (write-overloading-fn form)
+               (write-simple-fn form))]
+    (conj base
+          {:type :FunctionExpression
+           :id (if (:name form)
+                 (write-var {:form (:name form)}))
+           :defaults nil
+           :rest nil
+           :generator false
+           :expression false
+           :loc (write-location form)})))
+(install-writer! :fn write-fn)
 
 (defn write
   [form]
