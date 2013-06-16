@@ -332,13 +332,45 @@
        :loc (write-location form)})))
 
 (defn write-body
+  "Takes form that may contain `:statements` vector
+  or `:result` form  and returns vector expression
+  nodes that can be used in any block. If `:result`
+  is present it will be a last in vector and of a
+  `:ReturnStatement` type.
+  Examples:
+
+
+  (write-body {:statements nil
+               :result {:op :constant
+                        :type :number
+                        :form 3}})
+  ;; =>
+  [{:type :ReturnStatement
+    :argument {:type :Literal :value 3}}]
+
+  (write-body {:statements [{:op :set!
+                             :target {:op :var :form 'x}
+                             :value {:op :var :form 'y}}]
+               :result {:op :var :form 'x}})
+  ;; =>
+  [{:type :ExpressionStatement
+    :expression {:type :AssignmentExpression
+                 :operator :=
+                 :left {:type :Identifier :name :x}
+                 :right {:type :Identifier :name :y}}}
+   {:type :ReturnStatement
+    :argument {:type :Identifier :name :x}}]"
   [form]
-  (let [statements (or (:statements form) [])
-        result (:result form)]
-    (conj (map write-statement statements)
-          (if result
-            {:type :ReturnStatement
-             :argument (write (:result form))}))))
+  (let [statements (map write-statement
+                        (or (:statements form) []))
+
+        result (if (:result form)
+                 {:type :ReturnStatement
+                  :argument (write (:result form))})]
+
+    (if result
+      (conj statements result)
+      statements)))
 
 (defn ->block
   [body]
