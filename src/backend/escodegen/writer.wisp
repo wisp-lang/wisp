@@ -422,6 +422,29 @@
                  :loc (write-location form)}))
 (install-writer! :try write-try)
 
+(defn- write-binding-value
+  [form]
+  (write (:init form)))
+
+(defn- write-binding-param
+  [form]
+  (write-var {:form (:name form)}))
+
+(defn write-let
+  [form]
+  {:type :CallExpression
+   :arguments (map write-binding-value (:bindings form))
+   :callee {:type :SequenceExpression
+            :expressions [{:type :FunctionExpression
+                           :id nil
+                           :params (map write-binding-param
+                                        (:bindings form))
+                           :defaults []
+                           :expression false
+                           :generator false
+                           :rest nil
+                           :body (->block (write-body form))}]}})
+(install-writer! :let write-let)
 (defn write
   [form]
   (write-op (:op form) form))
