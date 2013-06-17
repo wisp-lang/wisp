@@ -4,8 +4,9 @@
                               namespace unquote? unquote-splicing? quote?
                               syntax-quote? name gensym pr-str]]
             [wisp.sequence :refer [empty? count list? list first second third
-                                   rest cons conj butlast reverse reduce vec last
-                                   map filter take concat partition interleave]]
+                                   rest cons conj butlast reverse reduce vec
+                                   last map filter take concat partition
+                                   repeat interleave]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
@@ -616,6 +617,93 @@
     {:params (map #(write-var {:form (:name %)}) params)
      :body (->block (write-body body))}))
 
+(defn resolve
+  [from to]
+  (let [requirer (split (str from) \.)
+        requirement (split (str to) \.)
+        relative? (and (not (identical? (str from)
+                                        (str to)))
+                       (identical? (first requirer)
+                                   (first requirement)))]
+    (if relative?
+      (loop [from requirer
+             to requirement]
+        (if (identical? (first from)
+                        (first to))
+          (recur (rest from) (rest to))
+          (join \/
+                (concat [\.]
+                        (repeat (dec (count from)) "..")
+                        to))))
+      (join \/ requirement))))
+
+(defn id->ns
+  "Takes namespace identifier symbol and translates to new
+  simbol without . special characters
+  wisp.core -> wisp*core"
+  [id]
+  (symbol nil (join \* (split (str id) \.))))
+
+
+(defn write-require
+  [form requirer]
+  (let [ns-binding {:op :def
+                    :var {:op :var
+                          :form (id->ns (:ns form))}
+                    :init {:op :invoke
+                           :callee {:op :var
+                                    :form 'require}
+                           :params [{:op :constant
+                                     :type :string
+                                     :form (resolve requirer (:ns form))}]}}
+        ns-alias (if (:alias form)
+                   {:op :def
+                    :var {:op :var
+                          :form (:alias form)}
+                    :init (:var ns-binding)})
+
+        references (reduce (fn [references form]
+                             (conj references
+                                   {:op :def
+                                    :var {:op :var
+                                          :form (or (:rename form)
+                                                    (:name form))}
+                                    :init {:op :member-expression
+                                           :computed false
+                                           :target (:var ns-binding)
+                                           :property {:op :var
+                                                      :form (:name form)}}}))
+                           []
+                           (:refer form))]
+    (vec (cons ns-binding
+               (if ns-alias
+                 (cons ns-alias references)
+                 references)))))
+
+(defn write-ns
+  [form]
+  (let [requirer (:name form)
+        ns-binding {:op :def
+                    :var {:op :var
+                          :form '*ns*}
+                    :init {:op :dictionary
+                           :hash? true
+                           :keys [{:op :var
+                                   :form 'id}
+                                  {:op :var
+                                   :form 'doc}]
+                           :values [{:op :constant
+                                     :type :string
+                                     :form (name (:name form))}
+                                    {:op :constant
+                                     :type (if (:doc form)
+                                             :string
+                                             :nil)
+                                       :form (:doc form)}]}}
+        requirements (vec (apply concat (map #(write-require % requirer)
+                                             (:require form))))]
+    (->block (map write (vec (cons ns-binding requirements))))))
+(install-writer! :ns write-ns)
 
 (defn write-fn
   [form]
