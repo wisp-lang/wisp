@@ -331,8 +331,11 @@
   [form]
   (let [op (:op form)]
     (if (or (= op :def)
-            (= op :throw)
-            (= op :try))
+            ;; Disable :throw and :try since now they're
+            ;; wrapped in a IIFE.
+            ;; (= op :throw)
+            ;; (= op :try)
+            (= op :ns))
       (write form)
       {:type :ExpressionStatement
        :expression (write form)
