@@ -13,6 +13,7 @@
                                   false? nil? re-pattern? inc dec str char
                                   int = ==]]
             [wisp.string :refer [split join upper-case replace]]
+            [wisp.expander :refer [install-macro!]]
             [escodegen :refer [generate]]))
 
 
@@ -728,3 +729,9 @@
 (defn compile
   [form options]
   (generate (write form) options))
+
+(defn get-macro
+  [target property]
+  `(aget (or ~target 0)
+         ~property))
+(install-macro! :get get-macro)
