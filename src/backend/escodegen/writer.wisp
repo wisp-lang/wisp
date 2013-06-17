@@ -70,118 +70,9 @@
             (split id "-")))
   id)
 
-
-;; Operators that compile to binary expressions
-
-(defn make-binary-expression
-  [operator left right]
-  {:type :BinaryExpression
-   :operator operator
-   :left left
-   :right right})
-
-
-(defmacro def-binary-operator
-  [id operator default-operand make-operand]
-  `(set-operator! (name ~id)
-                  (fn make-expression
-                    ([] (write ~default-operand))
-                    ([operand] (write (~make-operand operand)))
-                    ([left right] (make-binary-expression ~operator
-                                                          (write left)
-                                                          (write right)))
-                    ([left & more] (make-binary-expression ~operator
-                                                          (write left)
-                                                          (apply make-expression right))))))
-
-(defn verify-one
-  [operator]
-  (error (str operator "form requires at least one operand")))
-
-(defn verify-two
-  [operator]
-  (error (str operator "form requires at least two operands")))
-
-;; Arithmetic operators
-
-;(def-binary-operator :+ :+ 0 identity)
-;(def-binary-operator :- :- 'NaN identity)
-;(def-binary-operator :* :* 1 identity)
-;(def-binary-operator (keyword "/") (keyword "/") verify-two verify-two)
-;(def-binary-operator :mod (keyword "%") verify-two verify-two)
-
-;; Comparison operators
-
-;(def-binary-operator :not= :!= verify-one false)
-;(def-binary-operator :== :=== verify-one true)
-;(def-binary-operator :identical? '=== verify-two verify-two)
-;(def-binary-operator :> :> verify-one true)
-;(def-binary-operator :>= :>= verify-one true)
-;(def-binary-operator :< :< verify-one true)
-;(def-binary-operator :<= :<= verify-one true)
-
-;; Bitwise Operators
-
-;(def-binary-operator :bit-and :& verify-two verify-two)
-;(def-binary-operator :bit-or :| verify-two verify-two)
-;(def-binary-operator :bit-xor (keyword "^") verify-two verify-two)
-;(def-binary-operator :bit-not (keyword "~") verify-two verify-two)
-;(def-binary-operator :bit-shift-left :<< verify-two verify-two)
-;(def-binary-operator :bit-shift-right :>> verify-two verify-two)
-;(def-binary-operator :bit-shift-right-zero-fil :>>> verify-two verify-two)
-
-
-;; Logical operators
-
-(defn make-logical-expression
-  [operator left right]
-  {:type :LogicalExpression
-   :operator operator
-   :left left
-   :right right})
-
-(defmacro def-logical-expression
-  [id operator default-operand make-operand]
-  `(set-operator! (name ~id)
-                  (fn make-expression
-                    ([] (write ~default-operand))
-                    ([operand] (write (~make-operand operand)))
-                    ([left right] (make-logical-expression ~operator
-                                                          (write left)
-                                                          (write right)))
-                    ([left & more] (make-logical-expression ~operator
-                                                          (write left)
-                                                          (apply make-expression right))))))
-
-;(def-logical-expression :and :&& 'true identity)
-;(def-logical-expression :and :|| 'nil identity)
-
-
-(defn write-method-call
-  [form]
-  {:type :CallExpression
-   :callee {:type :MemberExpression
-            :computed false
-            :object (write (first form))
-            :property (write (second form))}
-   :arguments (map write (vec (rest (rest params))))})
-
-(defn write-instance?
-  [form]
-  {:type :BinaryExpression
-   :operator :instanceof
-   :left (write (second form))
-   :right (write (first form))})
-
-(defn write-not
-  [form]
-  {:type :UnaryExpression
-   :operator :!
-   :argument (write (second form))})
-
-
-
-
+(defn error-arg-count
+  [callee n]
+  (throw (Error (str "Wrong number of arguments (" n ") passed to: " callee))))
 
 (defn write-location
   [form]
@@ -750,3 +641,181 @@
   `(aget (or ~target 0)
          ~property))
 (install-macro! :get get-macro)
+
+;; Logical operators
+
+(defn install-logical-operator!
+  [callee operator fallback]
+  (defn write-logical-operator
+    [form]
+    (let [operands (:params form)
+          n (count operands)]
+      (cond (= n 0) (write-constant {:form fallback})
+            (= n 1) (write (first operands))
+            :else (reduce (fn [left right]
+                            {:type :LogicalExpression
+                             :operator operator
+                             :left left
+                             :right (write right)})
+                          (write (first operands))
+                          (rest operands)))))
+  (install-special! callee write-logical-operator))
+(install-logical-operator! :or :|| nil)
+(install-logical-operator! :and :&& true)
+
+(defn install-unary-operator!
+  [callee operator prefix?]
+  (defn write-unary-operator [form]
+    (let [params (:params form)]
+      (if (identical? (count params) 1)
+        {:type :UnaryExpression
+         :operator operator
+         :argument (write (first params))
+         :prefix prefix?
+         :loc (write-location form)}
+        (error-arg-count callee (count params)))))
+  (install-special! callee write-unary-operator))
+(install-unary-operator! :not :!)
+
+;; Bitwise Operators
+
+(install-unary-operator! :bit-not :~)
+
+(defn install-binary-operator!
+  [callee operator]
+  (defn write-binary-operator [form]
+    (let [params (:params form)]
+      (if (< (count params) 2)
+        (error-arg-count callee (count params))
+        (reduce (fn [left right]
+                  {:type :BinaryExpression
+                   :operator operator
+                   :left left
+                   :right (write right)})
+                (write (first params))
+                (rest params)))))
+  (install-special! callee write-binary-operator))
+(install-binary-operator! :bit-and :&)
+(install-binary-operator! :bit-or :|)
+(install-binary-operator! :bit-xor :^)
+(install-binary-operator! :bit-shift-left :<<)
+(install-binary-operator! :bit-shift-right :>>)
+(install-binary-operator! :bit-shift-right-zero-fil :>>>)
+
+;; Arithmetic operators
+
+(defn install-arithmetic-operator!
+  [callee operator valid? fallback]
+
+  (defn write-binary-operator
+    [left right]
+    {:type :BinaryExpression
+     :operator (name operator)
+     :left left
+     :right (write right)})
+
+  (defn write-arithmetic-operator
+    [form]
+    (let [params (:params form)
+          n (count params)]
+      (cond (and valid? (not (valid? n))) (error-arg-count (name callee) n)
+            (== n 0) (write-literal {:form fallback})
+            (== n 1) (reduce write-binary-operator
+                             (write-literal {:form fallback})
+                             params)
+            :else (reduce write-binary-operator
+                          (write (first params))
+                          (rest params)))))
+
+
+  (install-special! callee write-arithmetic-operator))
+
+(install-arithmetic-operator! :+ :+ nil 0)
+(install-arithmetic-operator! :- :- #(>= % 1) 0)
+(install-arithmetic-operator! :* :* nil 1)
+(install-arithmetic-operator! (keyword \/) (keyword \/) #(>= % 1) 1)
+(install-arithmetic-operator! :mod (keyword \%) #(== % 2) 1)
+
+
+;; Comparison operators
+
+(defn install-comparison-operator!
+  "Generates comparison operator writer that given one
+  parameter writes `fallback` given two parameters writes
+  binary expression and given more parameters writes binary
+  expressions joined by logical and."
+  [callee operator fallback]
+
+  ;; TODO #54
+  ;; Comparison operators must use temporary variable to store
+  ;; expression non literal and non-identifiers.
+  (defn comparison-operator
+    ([] (error-arg-count callee 0))
+    ([form] {:type :SequenceExpression
+             :expressions [(write form)
+                           (write-literal {:form fallback})]})
+    ([left right]
+     {:type :BinaryExpression
+      :operator operator
+      :left (write left)
+      :right (write right)})
+    ([left right & more]
+     (reduce (fn [left right]
+               {:type :LogicalExpression
+                :operator :&&
+                :left left
+                :right {:type :BinaryExpression
+                        :operator operator
+                        :left (if (= :LogicalExpression (:type left))
+                                (:right (:right left))
+                                (:right left))
+                        :right (write right)}})
+             (comparison-operator left right)
+             more)))
+
+  (defn write-comparison-operator
+    [form]
+    (conj (apply comparison-operator (:params form))
+          {:loc (write-location form)}))
+
+  (install-special! callee write-comparison-operator))
+
+(install-comparison-operator! :== :== true)
+(install-comparison-operator! :> :> true)
+(install-comparison-operator! :>= :>= true)
+(install-comparison-operator! :< :< true)
+(install-comparison-operator! :<= :<= true)
+
+
+(defn write-identical?
+  [form]
+  ;; TODO: Submit a bug for clojure to allow variadic
+  ;; number of params joined by logical and.
+  (let [params (:params form)]
+    (if (identical? (count params) 2)
+      {:type :BinaryExpression
+       :operator :===
+       :left (write (first params))
+       :right (write (second params))}
+      (error-arg-count :identical? (count params)))))
+(install-special! :identical? write-identical?)
+
+(defn write-instance?
+  [form]
+  ;; TODO: Submit a bug for clojure to make sure that
+  ;; instance? either accepts only two args or returns
+  ;; true only if all the params are instance of the
+  ;; given type.
+
+  (let [params (:params form)
+        constructor (first params)
+        instance (second params)]
+    (if (< (count params) 1)
+      (error-arg-count :instance? (count params))
+      {:type :BinaryExpression
+       :operator :instanceof
+       :left (if instance
+               (write instance)
+               (write-constant {:form instance}))
+       :right (write constructor)})))
+(install-special! :instance? write-instance?)
