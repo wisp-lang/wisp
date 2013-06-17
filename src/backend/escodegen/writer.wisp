@@ -551,7 +551,7 @@
                             :callee {:type :Identifier
                                      :name :Error}
                             :arguments [{:type :Literal
-                                         :value "Invalid arity"}]}}]})
+                                         :value "Wrong number of arguments passed"}]}}]})
 
 (defn splice-binding
   [form]
