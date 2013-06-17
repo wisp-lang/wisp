@@ -25,6 +25,7 @@
   set!            set
   foo_bar         foo_bar
   number?         isNumber
+  red=            redEqual
   create-server   createServer"
   [form]
   (def id (name form))
@@ -47,6 +48,7 @@
   ;; set! ->  set
   (set! id (join (split id "!")))
   (set! id (join "$" (split id "%")))
+  (set! id (join "-equal-" (split id "=")))
   ;; foo= -> fooEqual
   ;(set! id (join "-equal-" (split id "="))
   ;; foo+bar -> fooPlusBar
