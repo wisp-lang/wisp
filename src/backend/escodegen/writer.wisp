@@ -226,20 +226,17 @@
   {:type :Literal
    :value (:form form)
    :loc (write-location form)})
-(install-writer! :number write-literal)
-(install-writer! :string write-literal)
-(install-writer! :boolean write-literal)
-(install-writer! :re-pattern write-literal)
 
 (defn write-constant
   [form]
-  (let [type (:type form)]
-    (cond (= type :list)
-          (write-invoke (conj form {:op :invoke
-                                    :callee {:op :var
-                                             :form 'list}
-                                    :params []}))
-          :else (write-op type form))))
+  (let [value (:form form)]
+    (cond (list? value) (write-invoke (conj form {:op :invoke
+                                                  :callee {:op :var
+                                                           :form 'list}
+                                                  :params []}))
+          (nil? value) (write-nil form)
+          (keyword? value) (write-keyword form)
+          :else (write-literal form))))
 (install-writer! :constant write-constant)
 
 (defn write-keyword
