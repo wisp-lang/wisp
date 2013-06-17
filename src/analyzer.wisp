@@ -327,8 +327,8 @@
   [env form _]
   {:op :constant
    :form (second form)
-   :env :env})
-
+   :env env})
+(install-special! :quote analyze-quote)
 
 
 (defn analyze-block
