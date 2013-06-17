@@ -201,9 +201,15 @@
 
 (defn write-op
   [op form]
-  (let [writer (get **writers** op)]
+  (let [writer (get **writers** (name op))]
     (assert writer (str "Unsupported operation: " op))
     (writer form)))
+
+(def **specials** {})
+(defn install-special!
+  [op writer]
+  (set! (get **specials** (name op)) writer))
+
 
 (defn write-nil
   [form]
@@ -726,7 +732,14 @@
 
 (defn write
   [form]
-  (write-op (:op form) form))
+  (let [op (:op form)
+        writer (and (= :invoke (:op form))
+                    (= :var (:op (:callee form)))
+                    (get **specials** (name (:form (:callee form)))))]
+    (if writer
+      (writer form)
+      (write-op (:op form) form))))
+
 
 (defn compile
   [form options]
