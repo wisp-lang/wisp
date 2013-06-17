@@ -631,10 +631,17 @@
       (writer form)
       (write-op (:op form) form))))
 
+(defn write*
+  [& forms]
+  (let [body (map write-statement forms)]
+    {:type :Program
+     :body body}))
+
 
 (defn compile
-  [form options]
-  (generate (write form) options))
+  ([form] (compile {} form))
+  ([options & forms] (generate (apply write* forms) options)))
+
 
 (defn get-macro
   [target property]
