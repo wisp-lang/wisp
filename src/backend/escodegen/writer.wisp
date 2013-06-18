@@ -122,12 +122,30 @@
   {:type :Literal
    :value form})
 
+(defn write-list
+  [form]
+  {:type :CallExpression
+   :callee (write {:op :var
+                   :form 'list})
+   :arguments (map write (:items form))})
+(install-writer! :list write-list)
+
+(defn write-symbol
+  [form]
+  {:type :CallExpression
+   :callee (write {:op :var
+                   :form 'symbol})
+   :arguments [(write-constant (:namespace form))
+               (write-constant (:name form))]})
+(install-writer! :symbol write-symbol)
+
 (defn write-constant
   [form]
   (cond (nil? form) (write-nil form)
         (keyword? form) (write-keyword form)
         :else (write-literal form)))
 (install-writer! :constant #(write-constant (:form %)))
+
 
 (defn write-keyword
   [form]
