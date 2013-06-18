@@ -25,7 +25,7 @@
   [env form]
   {:op :var
    :form form
-   :info (get (:locals env) form)
+   :info (get (:locals env) (name form))
    :env env})
 
 (defn analyze-keyword
@@ -40,11 +40,11 @@
    :form form
    :env env})
 
-(def specials {})
+(def **specials** {})
 
 (defn install-special!
-  [name f]
-  (set! (get specials name) f))
+  [op f]
+  (set! (get **specials** (name op)) f))
 
 (defn analyze-if
   "Example:
@@ -378,13 +378,13 @@
      :env env}))
 
 (defn analyze-fn-param
-  [env name]
+  [env id]
   (let [locals (:locals env)
-        param {:name name
-               :tag (:tag (meta name))
-               :shadow (aget locals name)}]
+        param {:name id
+               :tag (:tag (meta id))
+               :shadow (aget locals (name id))}]
     (conj env
-          {:locals (assoc locals name param)
+          {:locals (assoc locals (name id) param)
            :params (conj (:params env)
                          param)})))
 
@@ -458,7 +458,7 @@
                 forms
                 (cons nil forms))
 
-        name (first forms)
+        id (first forms)
 
         ;; Make sure that fn definition is strucutered
         ;; in method overload style:
@@ -473,12 +473,14 @@
 
 
         scope {:parent env
-               :locals (if name
-                         (assoc locals name {:op :var
-                                             :fn-var true
-                                             :form name
-                                             :env env
-                                             :shadow (get locals name)})
+               :locals (if id
+                         (assoc locals
+                           (name id)
+                           {:op :var
+                            :fn-var true
+                            :form id
+                            :env env
+                            :shadow (get locals (name id))})
                          locals)}
 
         methods (map #(analyze-fn-method scope %)
@@ -487,7 +489,7 @@
         arity (apply max (map #(:arity %) methods))
         variadic (some #(:variadic %) methods)]
     {:op :fn
-     :name name
+     :name id
      :variadic variadic
      :methods methods
      :form form
@@ -526,12 +528,12 @@
         names (get params ':refer)
         alias (get params ':as)
         references (if (not (empty? names))
-                     (reduce (fn [refers name]
+                     (reduce (fn [refers reference]
                       (conj refers
                             {:op :refer
-                             :form name
-                             :name name
-                             :rename (get renames name)
+                             :form reference
+                             :name reference
+                             :rename (get renames (name reference))
                              :ns id}))
                              []
                              names))]
@@ -566,10 +568,11 @@
 
 
 (defn analyze-list
-  [env form name]
+  [env form]
   (let [expansion (macroexpand form)
         operator (first expansion)
-        analyze-special (get specials operator)]
+        analyze-special (and (symbol? operator)
+                             (get **specials** (name operator)))]
     (if analyze-special
       (analyze-special env expansion name)
       (analyze-invoke env expansion))))
@@ -584,7 +587,9 @@
 
 (defn hash-key?
   [form]
-  (or (string? form) (keyword? form)))
+  (or (and (string? form)
+           (not (symbol? form)))
+      (keyword? form)))
 
 (defn analyze-dictionary
   [env form name]

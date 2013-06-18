@@ -28,33 +28,36 @@
 (defn install-macro!
   "Registers given `macro` with a given `name`"
   [op expander]
-  (set! (get **macros** op) expander))
+  (set! (get **macros** (name op)) expander))
 
 (defn- macro
   "Returns true if macro with a given name is registered"
   [op]
   (and (symbol? op)
-       (get **macros** op)))
+       (get **macros** (name op))))
 
 
 (defn method-syntax?
   [op]
-  (let [name (str op)]
-    (and (identical? \. (first name))
-         (not (identical? \- (second name)))
-         (not (identical? \. name)))))
+  (let [id (and (symbol? op) (name op))]
+    (and id
+         (identical? \. (first id))
+         (not (identical? \- (second id)))
+         (not (identical? \. id)))))
 
 (defn field-syntax?
   [op]
-  (let [name (str op)]
-    (and (identical? \. (first name))
-         (identical? \- (second name)))))
+  (let [id (and (symbol? op) (name op))]
+    (and id
+         (identical? \. (first id))
+         (identical? \- (second id)))))
 
 (defn new-syntax?
   [op]
-  (let [name (str op)]
-    (and (identical? \. (last name))
-         (not (identical? \. name)))))
+  (let [id (and (symbol? op) (name op))]
+    (and id
+         (identical? \. (last id))
+         (not (identical? \. id)))))
 
 (defn method-syntax
   "Example:
