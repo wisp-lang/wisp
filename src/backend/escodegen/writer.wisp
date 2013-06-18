@@ -77,8 +77,8 @@
 (defn write-location
   [form]
   (let [data (meta form)
-        start (:start form)
-        end (:end form)]
+        start (:start data)
+        end (:end data)]
     (if (not (nil? start))
       {:start {:line (inc (:line start))
                :column (:column start)}
@@ -92,14 +92,20 @@
 
 (defn write-op
   [op form]
-  (let [writer (get **writers** (name op))]
+  (let [writer (get **writers** op)]
     (assert writer (str "Unsupported operation: " op))
-    (writer form)))
+    (conj {:loc (write-location (:form form))}
+          (writer form))))
 
 (def **specials** {})
 (defn install-special!
   [op writer]
   (set! (get **specials** (name op)) writer))
+
+(defn write-special
+  [writer form]
+  (conj {:loc (write-location (:form form))}
+        (apply writer (:params form))))
 
 
 (defn write-nil
@@ -108,55 +114,44 @@
    :operator :void
    :argument {:type :Literal
               :value 0}
-   :prefix true
-   :loc (write-location form)})
+   :prefix true})
 (install-writer! :nil write-nil)
 
 (defn write-literal
   [form]
   {:type :Literal
-   :value (:form form)
-   :loc (write-location form)})
+   :value form})
 
 (defn write-constant
   [form]
-  (let [value (:form form)]
-    (cond (list? value) (write-invoke (conj form {:op :invoke
-                                                  :callee {:op :var
-                                                           :form 'list}
-                                                  :params []}))
-          (nil? value) (write-nil form)
-          (keyword? value) (write-keyword form)
-          :else (write-literal form))))
-(install-writer! :constant write-constant)
+  (cond (nil? form) (write-nil form)
+        (keyword? form) (write-keyword form)
+        :else (write-literal form)))
+(install-writer! :constant #(write-constant (:form %)))
 
 (defn write-keyword
   [form]
   {:type :Literal
-   :value (name (:form form))
-   :loc (write-location form)})
+   :value (name form)})
 (install-writer! :keyword write-keyword)
 
 (defn write-var
   [form]
   {:type :Identifier
-   :name (translate-identifier (:form form))
-   :loc (write-location form)})
+   :name (translate-identifier (:form form))})
 (install-writer! :var write-var)
 
 (defn write-invoke
   [form]
   {:type :CallExpression
    :callee (write (:callee form))
-   :arguments (map write (:params form))
-   :loc (write-location form)})
+   :arguments (map write (:params form))})
 (install-writer! :invoke write-invoke)
 
 (defn write-vector
   [form]
   {:type :ArrayExpression
-   :elements (map write (:items form))
-   :loc (write-location form)})
+   :elements (map write (:items form))})
 (install-writer! :vector write-vector)
 
 (defn write-dictionary
@@ -165,12 +160,15 @@
                                             (:values form)))]
     {:type :ObjectExpression
      :properties (map (fn [pair]
-                        {:kind :init
-                         :type :Property
-                         :key (write (first pair))
-                         :value (write (second pair))})
-                      properties)
-     :loc (write-location form)}))
+                        (let [key (first pair)
+                              value (second pair)]
+                          {:kind :init
+                           :type :Property
+                           :key (if (= :symbol (:op key))
+                                  (write-constant (str (:form key)))
+                                  (write key))
+                           :value (write value)}))
+                      properties)}))
 (install-writer! :dictionary write-dictionary)
 
 (defn write-def
@@ -178,26 +176,23 @@
   {:type :VariableDeclaration
    :kind :var
    :declarations [{:type :VariableDeclarator
-                   :id (write-var (:var form))
+                   :id (write (:var form))
                    :init (if (nil? (:init form))
                            (write-nil {})
-                           (write (:init form)))}]
-   :loc (write-location form)})
+                           (write (:init form)))}]})
 (install-writer! :def write-def)
 
 (defn write-throw
   [form]
   (->expression {:type :ThrowStatement
-                 :argument (write (:throw form))
-                 :loc (write-location form)}))
+                 :argument (write (:throw form))}))
 (install-writer! :throw write-throw)
 
 (defn write-new
   [form]
   {:type :NewExpression
    :callee (write (:constructor form))
-   :arguments (map write (:params form))
-   :loc (write-location form)})
+   :arguments (map write (:params form))})
 (install-writer! :new write-new)
 
 (defn write-set!
@@ -205,8 +200,7 @@
   {:type :AssignmentExpression
    :operator :=
    :left (write (:target form))
-   :right (write (:value form))
-   :loc (write-location form)})
+   :right (write (:value form))})
 (install-writer! :set! write-set!)
 
 (defn write-aget
@@ -214,8 +208,7 @@
   {:type :MemberExpression
    :computed (:computed form)
    :object (write (:target form))
-   :property (write (:property form))
-   :loc (write-location form)})
+   :property (write (:property form))})
 (install-writer! :member-expression write-aget)
 
 (defn write-statement
@@ -229,8 +222,7 @@
             (= op :ns))
       (write form)
       {:type :ExpressionStatement
-       :expression (write form)
-       :loc (write-location form)})))
+       :expression (write form)})))
 
 (defn write-body
   "Takes form that may contain `:statements` vector
@@ -304,8 +296,7 @@
   {:type :ConditionalExpression
    :test (write (:test form))
    :consequent (write (:consequent form))
-   :alternate (write (:alternate form))
-   :loc (write-location form)})
+   :alternate (write (:alternate form))})
 (install-writer! :if write-if)
 
 (defn write-try
@@ -319,8 +310,7 @@
                                :body (->block (write-body (:handler form)))}]
                              [])
                  :finalizer (if (:finalizer form)
-                              (->block (write-body (:finalizer form))))
-                 :loc (write-location form)}))
+                              (->block (write-body (:finalizer form))))}))
 (install-writer! :try write-try)
 
 (defn- write-binding-value
@@ -617,8 +607,7 @@
            :defaults nil
            :rest nil
            :generator false
-           :expression false
-           :loc (write-location form)})))
+           :expression false})))
 (install-writer! :fn write-fn)
 
 (defn write
@@ -628,7 +617,7 @@
                     (= :var (:op (:callee form)))
                     (get **specials** (name (:form (:callee form)))))]
     (if writer
-      (writer form)
+      (write-special writer form)
       (write-op (:op form) form))))
 
 (defn write*
@@ -654,10 +643,9 @@
 (defn install-logical-operator!
   [callee operator fallback]
   (defn write-logical-operator
-    [form]
-    (let [operands (:params form)
-          n (count operands)]
-      (cond (= n 0) (write-constant {:form fallback})
+    [& operands]
+    (let [n (count operands)]
+      (cond (= n 0) (write-constant fallback)
             (= n 1) (write (first operands))
             :else (reduce (fn [left right]
                             {:type :LogicalExpression
@@ -672,15 +660,14 @@
 
 (defn install-unary-operator!
   [callee operator prefix?]
-  (defn write-unary-operator [form]
-    (let [params (:params form)]
-      (if (identical? (count params) 1)
-        {:type :UnaryExpression
-         :operator operator
-         :argument (write (first params))
-         :prefix prefix?
-         :loc (write-location form)}
-        (error-arg-count callee (count params)))))
+  (defn write-unary-operator
+    [& params]
+    (if (identical? (count params) 1)
+      {:type :UnaryExpression
+       :operator operator
+       :argument (write (first params))
+       :prefix prefix?}
+      (error-arg-count callee (count params))))
   (install-special! callee write-unary-operator))
 (install-unary-operator! :not :!)
 
@@ -690,17 +677,17 @@
 
 (defn install-binary-operator!
   [callee operator]
-  (defn write-binary-operator [form]
-    (let [params (:params form)]
-      (if (< (count params) 2)
-        (error-arg-count callee (count params))
-        (reduce (fn [left right]
-                  {:type :BinaryExpression
-                   :operator operator
-                   :left left
-                   :right (write right)})
-                (write (first params))
-                (rest params)))))
+  (defn write-binary-operator
+    [& params]
+    (if (< (count params) 2)
+      (error-arg-count callee (count params))
+      (reduce (fn [left right]
+                {:type :BinaryExpression
+                 :operator operator
+                 :left left
+                 :right (write right)})
+              (write (first params))
+              (rest params))))
   (install-special! callee write-binary-operator))
 (install-binary-operator! :bit-and :&)
 (install-binary-operator! :bit-or :|)
@@ -722,13 +709,12 @@
      :right (write right)})
 
   (defn write-arithmetic-operator
-    [form]
-    (let [params (:params form)
-          n (count params)]
+    [& params]
+    (let [n (count params)]
       (cond (and valid? (not (valid? n))) (error-arg-count (name callee) n)
-            (== n 0) (write-literal {:form fallback})
+            (== n 0) (write-literal fallback)
             (== n 1) (reduce write-binary-operator
-                             (write-literal {:form fallback})
+                             (write-literal fallback)
                              params)
             :else (reduce write-binary-operator
                           (write (first params))
@@ -756,11 +742,11 @@
   ;; TODO #54
   ;; Comparison operators must use temporary variable to store
   ;; expression non literal and non-identifiers.
-  (defn comparison-operator
+  (defn write-comparison-operator
     ([] (error-arg-count callee 0))
     ([form] {:type :SequenceExpression
              :expressions [(write form)
-                           (write-literal {:form fallback})]})
+                           (write-literal fallback)]})
     ([left right]
      {:type :BinaryExpression
       :operator operator
@@ -777,13 +763,8 @@
                                 (:right (:right left))
                                 (:right left))
                         :right (write right)}})
-             (comparison-operator left right)
+             (write-comparison-operator left right)
              more)))
-
-  (defn write-comparison-operator
-    [form]
-    (conj (apply comparison-operator (:params form))
-          {:loc (write-location form)}))
 
   (install-special! callee write-comparison-operator))
 
@@ -795,27 +776,25 @@
 
 
 (defn write-identical?
-  [form]
+  [& params]
   ;; TODO: Submit a bug for clojure to allow variadic
   ;; number of params joined by logical and.
-  (let [params (:params form)]
-    (if (identical? (count params) 2)
-      {:type :BinaryExpression
-       :operator :===
-       :left (write (first params))
-       :right (write (second params))}
-      (error-arg-count :identical? (count params)))))
+  (if (identical? (count params) 2)
+    {:type :BinaryExpression
+     :operator :===
+     :left (write (first params))
+     :right (write (second params))}
+    (error-arg-count :identical? (count params))))
 (install-special! :identical? write-identical?)
 
 (defn write-instance?
-  [form]
+  [& params]
   ;; TODO: Submit a bug for clojure to make sure that
   ;; instance? either accepts only two args or returns
   ;; true only if all the params are instance of the
   ;; given type.
 
-  (let [params (:params form)
-        constructor (first params)
+  (let [constructor (first params)
         instance (second params)]
     (if (< (count params) 1)
       (error-arg-count :instance? (count params))
@@ -823,6 +802,6 @@
        :operator :instanceof
        :left (if instance
                (write instance)
-               (write-constant {:form instance}))
+               (write-constant instance))
        :right (write constructor)})))
 (install-special! :instance? write-instance?)
