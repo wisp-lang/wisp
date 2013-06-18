@@ -857,7 +857,8 @@
 (defn special-expression?
   [form]
   (and (list? form)
-       (get **operators** (first form))))
+       (symbol? (first form))
+       (get **operators** (name (first form)))))
 
 (def **operators**
   {:and :logical-expression
@@ -1046,11 +1047,11 @@
         ;; :rename {foo bar}
         ;; join these pairs in a hash for key based access.
         params (apply dictionary (rest requirement))
-
-        imports (reduce (fn [imports name]
-                          (set! (get imports name)
-                                (or (get imports name) name))
-                          imports)
+        imports (reduce (fn [imports id]
+                          (let [rename (get imports (name id))]
+                            (set! (get imports (name id))
+                                  (or rename id))
+                            imports))
                         (conj {} (get params ':rename))
                         (get params ':refer))]
     ;; results of analyzes are stored as metadata on a given
@@ -1076,14 +1077,14 @@
   simbol without . special characters
   wisp.core -> wisp*core"
   [id]
-  (symbol nil (join \* (split (str id) \.))))
+  (symbol nil (join \* (split (name id) \.))))
 
 (defn name->field
   "Takes a requirement name symbol and returns field
   symbol.
   foo -> -foo"
-  [name]
-  (symbol nil (str \- name)))
+  [id]
+  (symbol nil (str \- (name id))))
 
 (defn compile-import
   [module]
@@ -1102,10 +1103,10 @@
 
 (defn resolve
   [from to]
-  (let [requirer (split (str from) \.)
-        requirement (split (str to) \.)
-        relative? (and (not (identical? (str from)
-                                        (str to)))
+  (let [requirer (split (name from) \.)
+        requirement (split (name to) \.)
+        relative? (and (not (identical? (name from)
+                                        (name to)))
                        (identical? (first requirer)
                                    (first requirement)))]
     (if relative?
@@ -1165,7 +1166,7 @@
   not recognized by wisp and there for will be ignored."
   [& form]
   (let [metadata (meta (analyze-ns form))
-        id (str (:id metadata))
+        id (name (:id metadata))
         doc (:doc metadata)
         requirements (:require metadata)
         ns (if doc {:id id :doc doc} {:id id})]
@@ -1190,7 +1191,7 @@
  (fn [object field & args]
    (let [error-field (if (not (symbol? field))
                        (str "Member expression `" field "` must be a symbol"))
-         field-name (str field)
+         field-name (name field)
          accessor? (identical? \- (first field-name))
 
          error-accessor (if (and accessor?
