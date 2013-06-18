@@ -35,5 +35,8 @@
   "scripts": {
     "prepublish": "make all",
     "test": "make all && make test"
+  },
+  "dependencies": {
+    "escodegen": "0.0.23"
   }
 }
