@@ -1,4 +1,4 @@
-(ns wisp.test
+(ns wisp.test.index
   (:require wisp.test.sequence
             wisp.test.ast
             wisp.test.runtime
