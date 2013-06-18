@@ -317,15 +317,59 @@
      :params forms}))
 (install-special! :recur analyze-recur)
 
+(defn analyze-quoted-list
+  [form]
+  {:op :list
+   :items (map analyze-quoted (vec form))
+   :form form})
+
+(defn analyze-quoted-vector
+  [form]
+  {:op :vector
+   :items (map analyze-quoted form)
+   :form form})
+
+(defn analyze-quoted-dictionary
+  [form]
+  (let [hash? (every? hash-key? (keys form))
+        names (vec (map analyze-quoted (keys form)))
+        values (vec (map analyze-quoted (vals form)))]
+    {:op :dictionary
+     :hash? hash?
+     :form form
+     :keys names
+     :values values}))
+
+(defn analyze-quoted-symbol
+  [form]
+  {:op :symbol
+   :name (name form)
+   :namespace (namespace form)
+   :form form})
+
+(defn analyze-quoted-keyword
+ [form]
+  {:op :keyword
+   :name (name form)
+   :namespace (namespace form)
+   :form form})
+
+(defn analyze-quoted
+  [form]
+  (cond (symbol? form) (analyze-quoted-symbol form)
+        (list? form) (analyze-quoted-list form)
+        (vector? form) (analyze-quoted-vector form)
+        (dictionary? form) (analyze-quoted-dictionary form)
+        :else {:op :constant
+               :form form}))
+
 (defn analyze-quote
   "Examples:
    (analyze-quote {} '(quote foo)) => {:op :constant
                                        :form 'foo
                                        :env env}"
   [env form _]
-  {:op :constant
-   :form (second form)
-   :env env})
+  (analyze-quoted (second form)))
 (install-special! :quote analyze-quote)
 
 
