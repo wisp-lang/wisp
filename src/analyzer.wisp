@@ -31,12 +31,10 @@
 (defn analyze-keyword
   "Example:
   (analyze-keyword {} :foo) => {:op :constant
-                                :type :keyword
                                 :form ':foo
                                 :env {}}"
   [env form]
   {:op :constant
-   :type :keyword
    :form form
    :env env})
 
@@ -619,14 +617,6 @@
   [env form]
   {:op :constant
    :form form
-   :type (cond (nil? form) :nil
-               (string? form) :string
-               (number? form) :number
-               (boolean? form) :boolean
-               (date? form) :date
-               (re-pattern? form) :re-pattern
-               (list? form) :list
-               :else :unknown)
    :env env})
 
 (defn analyze
