@@ -66,6 +66,8 @@
         test (analyze env (first forms))
         consequent (analyze env (second forms))
         alternate (analyze env (third forms))]
+    (if (< (count forms) 2)
+      (throw (SyntaxError "Malformed if expression, too few operands")))
     {:op :if
      :form form
      :test test
