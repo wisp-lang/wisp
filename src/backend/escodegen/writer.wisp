@@ -72,7 +72,7 @@
 
 (defn error-arg-count
   [callee n]
-  (throw (Error (str "Wrong number of arguments (" n ") passed to: " callee))))
+  (throw (SyntaxError (str "Wrong number of arguments (" n ") passed to: " callee))))
 
 (defn write-location
   [form]
