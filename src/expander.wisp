@@ -63,19 +63,20 @@
   "Example:
   '(.substring string 2 5) => '((aget string 'substring) 2 5)"
   [op target & params]
-  ;; (if (nil? target)
-  ;;   (throw (Error "Malformed member expression, expecting (.member target ...)")))
   (let [member (symbol (subs (name op) 1))]
-    `((aget ~target (quote ~member)) ~@params)))
+    (if (nil? target)
+      (throw (Error "Malformed method expression, expecting (.method object ...)"))
+      `((aget ~target (quote ~member)) ~@params))))
 
 (defn field-syntax
   "Example:
   '(.-field object) => '(aget object 'field)"
-  [op target]
-  ;; (if (nil? target)
-  ;;   (throw (Error "Malformed member expression, expecting (.member target ...)")))
+  [op target & more]
   (let [member (symbol (subs (name op) 2))]
-    `(aget ~target (quote ~member))))
+    (if (or (nil? target)
+            (count more))
+      (throw (Error "Malformed member expression, expecting (.-member target)"))
+      `(aget ~target (quote ~member)))))
 
 (defn new-syntax
   "Example:
