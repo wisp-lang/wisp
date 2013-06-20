@@ -184,42 +184,32 @@
 (install-special! :aget analyze-aget)
 
 (defn parse-def
-  ([symbol] {:symbol symbol})
-  ([symbol init] {:symbol symbol :init init})
-  ([symbol doc init] {:symbol symbol
-                      :doc doc
-                      :init init}))
+  ([id] {:id id})
+  ([id init] {:id id :init init})
+  ([id doc init] {:id id :doc doc :init init}))
 
 (defn analyze-def
-  [env form _]
+  [env form]
   (let [params (apply parse-def (vec (rest form)))
-        symbol (:symbol params)
-        metadata (meta symbol)
+        id (:id params)
+        metadata (meta id)
 
-        export? (and (not (nil? (:parent env)))
-                     (not (:private metadata)))
+        variable (analyze env id)
 
-        tag (:tag metadata)
-        protocol (:protocol metadata)
-        dynamic (:dynamic metadata)
-        ns-name (:name (:ns env))
+        init (analyze {:parent env
+                       :bindings (assoc {} (name id) variable)}
+                       (:init params))
 
-        ;name (:name (resolve-var (dissoc env :locals) sym))
-
-        init (analyze env (:init params) symbol)
-        variable (analyze env symbol)
 
         doc (or (:doc params)
                 (:doc metadata))]
     {:op :def
-     :form form
      :doc doc
      :var variable
      :init init
-     :tag tag
-     :dynamic dynamic
-     :export export?
-     :env env}))
+     :export (and (not (:parent env))
+                  (not (:private metadata)))
+     :form form}))
 (install-special! :def analyze-def)
 
 (defn analyze-do
