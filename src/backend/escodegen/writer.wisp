@@ -617,7 +617,6 @@
                     :var {:op :var
                           :form '*ns*}
                     :init {:op :dictionary
-                           :hash? true
                            :keys [{:op :var
                                    :form 'id}
                                   {:op :var

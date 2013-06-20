@@ -88,7 +88,7 @@
                                                                   :type :keyword
                                                                   :form ':boom
                                                                   :env {}}]}}"
-  [env form name]
+  [env form]
   (let [expression (analyze env (second form))]
     {:op :throw
      :form form
@@ -98,7 +98,7 @@
 (install-special! :throw analyze-throw)
 
 (defn analyze-try
-  [env form name]
+  [env form]
   (let [forms (vec (rest form))
 
         ;; Finally
@@ -137,7 +137,7 @@
 (install-special! :try analyze-try)
 
 (defn analyze-set!
-  [env form name]
+  [env form]
   (let [body (rest form)
         left (first body)
         right (second body)
@@ -153,7 +153,7 @@
 (install-special! :set! analyze-set!)
 
 (defn analyze-new
-  [env form _]
+  [env form]
   (let [body (rest form)
         constructor (analyze env (first body))
         params (vec (map #(analyze env %) (rest body)))]
@@ -165,7 +165,7 @@
 (install-special! :new analyze-new)
 
 (defn analyze-aget
-  [env form _]
+  [env form]
   (let [body (rest form)
         target (analyze env (first body))
         attribute (second body)
@@ -331,11 +331,9 @@
 
 (defn analyze-quoted-dictionary
   [form]
-  (let [hash? (every? hash-key? (keys form))
-        names (vec (map analyze-quoted (keys form)))
+  (let [names (vec (map analyze-quoted (keys form)))
         values (vec (map analyze-quoted (vals form)))]
     {:op :dictionary
-     :hash? hash?
      :form form
      :keys names
      :values values}))
@@ -635,11 +633,9 @@
 
 (defn analyze-dictionary
   [env form name]
-  (let [hash? (every? hash-key? (keys form))
-        names (vec (map #(analyze env % name) (keys form)))
+  (let [names (vec (map #(analyze env % name) (keys form)))
         values (vec (map #(analyze env % name) (vals form)))]
     {:op :dictionary
-     :hash? hash?
      :form form
      :keys names
      :values values
@@ -653,8 +649,6 @@
      :callee callee
      :form form
      :params params
-     :tag (or (:tag (:info callee))
-              (:tag (meta form)))
      :env env}))
 
 (defn analyze-constant
