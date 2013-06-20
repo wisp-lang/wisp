@@ -192,3 +192,11 @@
                :else [(syntax-quote-expand form)]))
        forms))
 (install-macro! :syntax-quote syntax-quote)
+
+;; TODO: New reader translates not= correctly
+;; but for the time being use not-equal name
+(defn not-equal
+  [& body]
+  `(not (= ~@body)))
+(install-macro! :not= not-equal)
+
