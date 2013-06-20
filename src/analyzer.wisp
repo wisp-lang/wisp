@@ -48,8 +48,8 @@
 (def **specials** {})
 
 (defn install-special!
-  [op f]
-  (set! (get **specials** (name op)) f))
+  [op analyzer]
+  (set! (get **specials** (name op)) analyzer))
 
 (defn analyze-if
   "Example:
@@ -218,7 +218,7 @@
 (install-special! :def analyze-def)
 
 (defn analyze-do
-  [env form _]
+  [env form]
   (let [expressions (rest form)
         body (analyze-block env expressions)]
     (conj body {:op :do
@@ -281,12 +281,12 @@
      :result (:result expressions)}))
 
 (defn analyze-let
-  [env form _]
+  [env form]
   (analyze-let* env form false))
 (install-special! :let analyze-let)
 
 (defn analyze-loop
-  [env form _]
+  [env form]
   (conj (analyze-let* env form true) {:op :loop}))
 (install-special! :loop analyze-loop)
 
@@ -354,7 +354,7 @@
    (analyze-quote {} '(quote foo)) => {:op :constant
                                        :form 'foo
                                        :env env}"
-  [env form _]
+  [env form]
   (analyze-quoted (second form)))
 (install-special! :quote analyze-quote)
 
@@ -611,38 +611,46 @@
 
 
 (defn analyze-list
+  "Takes form of list type and performs a macroexpansions until
+  fully expanded. If expansion is different from a given form then
+  expanded form is handed back to analyzer. If form is special like
+  def, fn, let... than associated is dispatched, otherwise form is
+  analyzed as invoke expression."
   [env form]
   (let [expansion (macroexpand form)
+        ;; Special operators must be symbols and stored in the
+        ;; **specials** hash by operator name.
         operator (first form)
         analyze-special (and (symbol? operator)
                              (get **specials** (name operator)))]
+    ;; If form is expanded pass it back to analyze since it may no
+    ;; longer be a list. Otherwise either analyze as a special form
+    ;; (if it's such) or as function invokation form.
     (cond (not (identical? expansion form)) (analyze env expansion)
           analyze-special (analyze-special env expansion)
           :else (analyze-invoke env expansion))))
 
 (defn analyze-vector
-  [env form name]
-  (let [items (vec (map #(analyze env % name) form))]
+  [env form]
+  (let [items (vec (map #(analyze env %) form))]
     {:op :vector
      :form form
      :items items}))
 
-(defn hash-key?
-  [form]
-  (or (and (string? form)
-           (not (symbol? form)))
-      (keyword? form)))
-
 (defn analyze-dictionary
-  [env form name]
-  (let [names (vec (map #(analyze env % name) (keys form)))
-        values (vec (map #(analyze env % name) (vals form)))]
+  [env form]
+  (let [names (vec (map #(analyze env %) (keys form)))
+        values (vec (map #(analyze env %) (vals form)))]
     {:op :dictionary
      :keys names
      :values values
      :form form}))
 
 (defn analyze-invoke
+  "Returns node of :invoke type, representing a function call. In
+  addition to regular properties this node contains :callee mapped
+  to a node that is being invoked and :params that is an vector of
+  paramter expressions that :callee is invoked with."
   [env form]
   (let [callee (analyze env (first form))
         params (vec (map #(analyze env %) (rest form)))]
@@ -652,26 +660,40 @@
      :form form}))
 
 (defn analyze-constant
+  "Returns a node representing a contstant value which is
+  most certainly a primitive value literal this form cantains
+  no extra information."
   [env form]
   {:op :constant
    :form form})
 
 (defn analyze
-  "Given an environment, a map containing {:locals (mapping of names to bindings), :context
-  (one of :statement, :expr, :return), :ns (a symbol naming the
-  compilation ns)}, and form, returns an expression object (a map
-  containing at least :form, :op and :env keys). If expr has any (immediately)
-  nested exprs, must have :children [exprs...] entry. This will
-  facilitate code walking without knowing the details of the op set."
-  ([env form] (analyze env form nil))
-  ([env form name]
+  "Takes a hash representing a given environment and `form` to be
+  analyzed. Environment may contain following entries:
+
+  :locals  - Hash of the given environments bindings mappedy by binding name.
+  :context - One of the following :statement, :expression, :return. That
+             information is included in resulting nodes and is meant for
+             writer that may output different forms based on context.
+  :ns      - Namespace of the forms being analized.
+
+  Analyzer performs all the macro & syntax expansions and transforms form
+  into AST node of an expression. Each such node contains at least following
+  properties:
+
+  :op   - Operation type of the expression.
+  :form - Given form.
+
+  Based on :op node may contain different set of properties."
+  ([form] (analyze {:locals {}} form))
+  ([env form]
    (cond (nil? form) (analyze-constant env form)
          (symbol? form) (analyze-symbol env form)
          (list? form) (if (empty? form)
                         (analyze-quoted form)
-                        (analyze-list env form name))
-         (dictionary? form) (analyze-dictionary env form name)
-         (vector? form) (analyze-vector env form name)
+                        (analyze-list env form))
+         (dictionary? form) (analyze-dictionary env form)
+         (vector? form) (analyze-vector env form)
          ;(set? form) (analyze-set env form name)
          (keyword? form) (analyze-keyword env form)
          :else (analyze-constant env form))))
