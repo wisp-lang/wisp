@@ -198,14 +198,24 @@
                       properties)}))
 (install-writer! :dictionary write-dictionary)
 
+(defn write-export
+  [form]
+  (write {:op :set!
+          :target {:op :member-expression
+                   :computed false
+                   :target {:op :var
+                            :form 'exports}
+                   :property (:var form)}
+          :value (:init form)}))
+
 (defn write-def
   [form]
   {:type :VariableDeclaration
    :kind :var
    :declarations [{:type :VariableDeclarator
                    :id (write (:var form))
-                   :init (if (nil? (:init form))
-                           (write-nil {})
+                   :init (if (:export form)
+                           (write-export form)
                            (write (:init form)))}]})
 (install-writer! :def write-def)
 
