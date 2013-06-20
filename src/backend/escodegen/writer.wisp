@@ -143,9 +143,18 @@
   [form]
   (cond (nil? form) (write-nil form)
         (keyword? form) (write-keyword form)
+        (number? form) (write-number form)
         :else (write-literal form)))
 (install-writer! :constant #(write-constant (:form %)))
 
+(defn write-number
+  [form]
+  (if (< form 0)
+    {:type :UnaryExpression
+     :operator :-
+     :prefix true
+     :argument (write-number (* form -1))}
+    (write-literal form)))
 
 (defn write-keyword
   [form]
