@@ -173,14 +173,14 @@
         attribute (second body)
         field (and (quote? attribute)
                    (symbol? (second attribute))
-                   (second attribute))
-        property (analyze env (or field attribute))]
-    {:op :member-expression
-     :computed (not field)
-     :form form
-     :target target
-     :property property
-     :env env}))
+                   (second attribute))]
+    (if attribute
+      {:op :member-expression
+       :computed (not field)
+       :form form
+       :target target
+       :property (analyze env (or field attribute))}
+      (throw (SyntaxError "Malformed aget expression expected (aget object member)")))))
 (install-special! :aget analyze-aget)
 
 (defn parse-def
