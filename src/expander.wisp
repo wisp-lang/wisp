@@ -132,11 +132,6 @@
 
 ;; Define core macros
 
-(install-macro!
- :print
- (fn [& more]
-   "Prints the object(s) to the output for human consumption."
-   `(.log console ~@more)))
 
 (defn syntax-quote [form]
   (cond (symbol? form) (list 'quote form)
@@ -197,11 +192,3 @@
                :else [(syntax-quote-expand form)]))
        forms))
 (install-macro! :syntax-quote syntax-quote)
-
-(defn apply
-  [f & params]
-  (let [prefix (vec (butlast params))]
-    (if (empty? prefix)
-      `(.apply ~f nil ~@params)
-      `(.apply ~f nil (.concat ~prefix ~(last params))))))
-(install-macro! :apply apply)

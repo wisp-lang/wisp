@@ -832,3 +832,30 @@
                (write-constant instance))
        :right (write constructor)})))
 (install-special! :instance? write-instance?)
+
+
+(defn expand-apply
+  [f & params]
+  (let [prefix (vec (butlast params))]
+    (if (empty? prefix)
+      `(.apply ~f nil ~@params)
+      `(.apply ~f nil (.concat ~prefix ~(last params))))))
+(install-macro! :apply expand-apply)
+
+
+ (defn expand-print
+   [& more]
+   "Prints the object(s) to the output for human consumption."
+   `(.log console ~@more))
+ (install-macro! :print expand-print)
+
+ (defn expand-str
+   "str inlining and optimization via macros"
+   [& forms]
+   `(+ "" ~@forms))
+ (install-macro! :str expand-str)
+
+ (defn expand-debug
+   []
+   'debugger)
+ (install-macro! :debugger! expand-debug)
