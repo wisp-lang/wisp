@@ -338,16 +338,19 @@
 
 (defn write-try
   [form]
-  (->expression {:type :TryStatement
-                 :guardedHandlers []
-                 :block (->block (write-body (:body form)))
-                 :handlers (if (:handler form)
-                             [{:type :CatchClause
-                               :param (write (:name (:handler form)))
-                               :body (->block (write-body (:handler form)))}]
-                             [])
-                 :finalizer (if (:finalizer form)
-                              (->block (write-body (:finalizer form))))}))
+  (let [handler (:handler form)
+        finalizer (:finalizer form)]
+    (->expression {:type :TryStatement
+                   :guardedHandlers []
+                   :block (->block (write-body (:body form)))
+                   :handlers (if handler
+                               [{:type :CatchClause
+                                 :param (write (:name handler))
+                                 :body (->block (write-body handler))}]
+                               [])
+                   :finalizer (cond finalizer (->block (write-body finalizer))
+                                    (not handler) (->block [])
+                                    :else nil)})))
 (install-writer! :try write-try)
 
 (defn- write-binding-value
