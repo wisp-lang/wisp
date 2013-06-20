@@ -3,7 +3,7 @@
   as wisp data structures"
   (:require [wisp.sequence :refer [list list? count empty? first second third
                                    rest map vec cons conj rest concat last
-                                   butlast sort lazy-seq]]
+                                   butlast sort lazy-seq reduce]]
             [wisp.runtime :refer [odd? dictionary keys nil? inc dec vector? string?
                                   number? boolean? object? dictionary? re-pattern
                                   re-matches re-find str subs char vals =]]
@@ -412,13 +412,19 @@
         (keyword ns name)))))
 
 (defn desugar-meta
-  [f]
-  (cond
-   ;; keyword should go before string since it is a string.
-   (keyword? f) (dictionary (name f) true)
-   (symbol? f) {:tag f}
-   (string? f) {:tag f}
-   :else f))
+  [form]
+  ;; keyword should go before string since it is a string.
+  (cond (keyword? form) (dictionary (name form) true)
+        (symbol? form) {:tag form}
+        (string? form) {:tag form}
+        (dictionary? form) (reduce (fn [result pair]
+                                     (set! (get result
+                                                (name (first pair)))
+                                           (second pair))
+                                     result)
+                                   {}
+                                   form)
+        :else form))
 
 (defn wrapping-reader
   [prefix]
