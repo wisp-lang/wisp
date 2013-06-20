@@ -610,12 +610,12 @@
 (defn analyze-list
   [env form]
   (let [expansion (macroexpand form)
-        operator (first expansion)
+        operator (first form)
         analyze-special (and (symbol? operator)
                              (get **specials** (name operator)))]
-    (if analyze-special
-      (analyze-special env expansion name)
-      (analyze-invoke env expansion))))
+    (cond (not (identical? expansion form)) (analyze env expansion)
+          analyze-special (analyze-special env expansion)
+          :else (analyze-invoke env expansion))))
 
 (defn analyze-vector
   [env form name]
@@ -668,8 +668,9 @@
   ([env form name]
    (cond (nil? form) (analyze-constant env form)
          (symbol? form) (analyze-symbol env form)
-         (and (list? form)
-              (not (empty? form))) (analyze-list env form name)
+         (list? form) (if (empty? form)
+                        (analyze-quoted form)
+                        (analyze-list env form name))
          (dictionary? form) (analyze-dictionary env form name)
          (vector? form) (analyze-vector env form name)
          ;(set? form) (analyze-set env form name)
