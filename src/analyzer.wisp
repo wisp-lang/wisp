@@ -19,7 +19,6 @@
   [env form]
   (loop [scope env]
     (or (get (:locals scope) (name form))
-        (get (:bindings scope) (name form))
         (if (:parent scope)
           (recur (:parent scope))
           :top))))
@@ -203,7 +202,7 @@
         variable (analyze env id)
 
         init (analyze {:parent env
-                       :bindings (assoc {} (name id) variable)}
+                       :locals (assoc {} (:name variable) variable)}
                        (:init params))
 
 
@@ -228,7 +227,8 @@
 
 (defn analyze-binding
   [env form]
-  (let [bindings (:bindings env)
+  (let [bindings (or (:bindings env) [])
+        locals (or (:locals env) {})
         name (first form)
         id (analyze env name)
         init (analyze env (second form))
@@ -238,10 +238,13 @@
                    :variadic (:variadic init-meta)
                    :arity (:arity init-meta)}
                   {})
-        binding (conj id fn-meta {:init init :name name})]
+        binding (conj id fn-meta {:init init
+                                  :info :local
+                                  :shadow (resolve-var env name)})]
     (assert (not (or (namespace name)
                      (< 1 (count (split \. (str name)))))))
-    (conj env {:bindings (conj bindings binding)})))
+    (conj env {:locals (assoc locals (:name binding) binding)
+               :bindings (conj bindings binding)})))
 
 
 (defn analyze-let*
@@ -261,8 +264,7 @@
         context (:context env)
 
         scope (reduce analyze-binding
-                      {:parent env
-                       :bindings []}
+                      {:parent env}
                       (partition 2 bindings))
 
         params (if is-loop
@@ -359,7 +361,7 @@
 (defn analyze-statement
   [env form]
   (let [statements (or (:statements env) [])
-        bindings (or (:bindings env) {})
+        bindings (or (:bindings env) [])
         statement (analyze env form)
         op (:op statement)
 
@@ -368,7 +370,7 @@
                    :else nil)]
 
     (conj env {:statements (conj statements statement)
-               :bindings (conj bindings defs)})))
+               :bindings (concat bindings defs)})))
 
 (defn analyze-block
   "Examples:
