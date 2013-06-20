@@ -575,7 +575,11 @@
                             {:op :refer
                              :form reference
                              :name reference
-                             :rename (get renames (name reference))
+                             ;; Look up by reference symbol and by symbol
+                             ;; name since reading dictionaries is little
+                             ;; bit in a fuzz right now.
+                             :rename (or (get renames reference)
+                                         (get renames (name reference)))
                              :ns id}))
                              []
                              names))]
