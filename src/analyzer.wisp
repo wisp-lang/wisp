@@ -1,6 +1,6 @@
 (ns wisp.analyzer
   (:require [wisp.ast :refer [meta with-meta symbol? keyword?
-                              quote? symbol namespace name
+                              quote? symbol namespace name pr-str
                               unquote? unquote-splicing?]]
             [wisp.sequence :refer [list? list conj partition seq
                                    empty? map vec every? concat
@@ -450,7 +450,10 @@
                                                 :info nil
                                                 :tag nil}]}}"
   [env form]
-  (let [signature (first form)
+  (let [signature (if (and (list? form)
+                           (vector? (first form)))
+                    (first form)
+                    (throw (SyntaxError "Malformed fn overload form")))
         body (rest form)
         ;; If param signature contains & fn is variadic.
         variadic (some #(= '& %) signature)
@@ -491,14 +494,19 @@
                 (cons nil forms))
 
         id (first forms)
+        body (rest forms)
 
         ;; Make sure that fn definition is strucutered
         ;; in method overload style:
         ;; (fn a [x] y) -> (([x] y))
         ;; (fn a ([x] y)) -> (([x] y))
-        overloads (if (vector? (second forms))
-                    (list (rest forms))
-                    (rest forms))
+        overloads (cond (vector? (first body)) (list body)
+                        (and (list? (first body))
+                             (vector? (first (first body)))) body
+                        :else (throw (SyntaxError (str "Malformed fn expression, "
+                                                       "parameter declaration ("
+                                                       (pr-str (first body))
+                                                       ") must be a vector"))))
 
         ;; Hash map of local bindings
         locals (or (:locals env) {})
