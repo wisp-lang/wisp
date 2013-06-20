@@ -536,10 +536,10 @@
 
 (defn resolve
   [from to]
-  (let [requirer (split (str from) \.)
-        requirement (split (str to) \.)
-        relative? (and (not (identical? (str from)
-                                        (str to)))
+  (let [requirer (split (name from) \.)
+        requirement (split (name to) \.)
+        relative? (and (not (identical? (name from)
+                                        (name to)))
                        (identical? (first requirer)
                                    (first requirement)))]
     (if relative?
@@ -559,7 +559,7 @@
   simbol without . special characters
   wisp.core -> wisp*core"
   [id]
-  (symbol nil (join \* (split (str id) \.))))
+  (symbol nil (join \* (split (name id) \.))))
 
 
 (defn write-require
@@ -576,7 +576,7 @@
         ns-alias (if (:alias form)
                    {:op :def
                     :var {:op :var
-                          :form (:alias form)}
+                          :form (id->ns (:alias form))}
                     :init (:var ns-binding)})
 
         references (reduce (fn [references form]
