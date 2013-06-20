@@ -133,6 +133,8 @@
 ;; Define core macros
 
 
+;; TODO make this language independent
+
 (defn syntax-quote [form]
   (cond (symbol? form) (list 'quote form)
         (keyword? form) (list 'quote form)
@@ -214,3 +216,40 @@
             (second clauses))
           (cons 'cond (rest (rest clauses))))))
 (install-macro! :cond expand-cond)
+
+(defn expand-defn
+  "Same as (def name (fn [params* ] exprs*)) or
+  (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
+  to the var metadata"
+  [name & doc+meta+body]
+  (let [doc (if (string? (first doc+meta+body))
+              (first doc+meta+body))
+
+        ;; If docstring is found it's not part of body.
+        meta+body (if doc (rest doc+meta+body) doc+meta+body)
+
+        ;; defn may contain attribute list after
+        ;; docstring or a name, in which case it's
+        ;; merged into name metadata.
+        metadata (if (dictionary? (first meta+body))
+                   (conj {:doc doc} (first meta+body)))
+
+        ;; If metadata map is found it's not part of body.
+        body (if metadata (rest meta+body) body)
+
+        ;; Combine all the metadata and add to a name.
+        id (with-meta name (conj (or (meta name) {}) metadata))]
+    `(def ~id (fn ~@body))))
+(install-macro! :defn expand-defn)
+
+
+(defn expand-private-defn
+  "Same as (def name (fn [params* ] exprs*)) or
+  (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
+  to the var metadata"
+  [name & body]
+  (let [metadata (conj (or (meta name) {})
+                       {:private true})
+        id (with-meta name metadata)]
+    `(defn ~id ~@body)))
+(install-macro :defn- expand-private-defn)
