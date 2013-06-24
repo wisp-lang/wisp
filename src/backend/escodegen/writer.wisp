@@ -17,6 +17,10 @@
             [escodegen :refer [generate]]))
 
 
+;; Define unique character that is valid JS identifier that will
+;; be used in generated symbols to avoid conflicts
+;; http://www.fileformat.info/info/unicode/char/141d/index.htm
+(def **unique-char** "ᐝ")
 (defn translate-identifier
   "Translates references from clojure convention to JS:
 
@@ -162,11 +166,38 @@
    :value (name form)})
 (install-writer! :keyword write-keyword)
 
-(defn write-var
+(defn ->identifier
   [form]
   {:type :Identifier
-   :name (translate-identifier (:form form))})
+   :name (translate-identifier form)})
+
+(defn write-binding-var
+  [form]
+  (let [id (name (:id form))]
+    ;; If identifiers binding shadows other binding rename it according
+    ;; to shadowing depth. This allows bindings initializer safely
+    ;; access binding before shadowing it.
+    (->identifier (if (:shadow form)
+                    (str id **unique-char** (:depth form))
+                    id))))
+
+(defn write-var
+  "handler for {:op :var} type forms. Such forms may
+  represent references in which case they have :info
+  pointing to a declaration :var which way be either
+  function parameter (has :param true) or local
+  binding declaration (has :binding true) like ones defined
+  by let and loop forms in later case form will also have
+  :shadow pointing to a declaration node it shadows and
+  :depth property with a depth of shadowing, that is used
+  to for renaming logic to avoid name collisions in forms
+  like let that allow same named bindings."
+  [node]
+  (if (= :binding (:type (:binding node)))
+    (write-binding-var (:binding node))
+    (->identifier (name (:form node)))))
 (install-writer! :var write-var)
+(install-writer! :param write-var)
 
 (defn write-invoke
   [form]
@@ -205,7 +236,7 @@
                    :computed false
                    :target {:op :var
                             :form 'exports}
-                   :property (:var form)}
+                   :property (:id form)}
           :value (:init form)}))
 
 (defn write-def
@@ -213,11 +244,20 @@
   {:type :VariableDeclaration
    :kind :var
    :declarations [{:type :VariableDeclarator
-                   :id (write (:var form))
+                   :id (write (:id form))
                    :init (if (:export form)
                            (write-export form)
                            (write (:init form)))}]})
 (install-writer! :def write-def)
+
+(defn write-binding
+  [form]
+  {:type :VariableDeclaration
+   :kind :var
+   :declarations [{:type :VariableDeclarator
+                   :id (write-binding-var form)
+                   :init (write (:init form))}]})
+(install-writer! :binding write-binding)
 
 (defn write-throw
   [form]
@@ -248,18 +288,33 @@
    :property (write (:property form))})
 (install-writer! :member-expression write-aget)
 
+;; Map of statement AST node that are generated
+;; by a writer. Used to decet weather node is
+;; statement or expression.
+(def **statements** {:EmptyStatement true :BlockStatement true
+                     :ExpressionStatement true :IfStatement true
+                     :LabeledStatement true :BreakStatement true
+                     :ContinueStatement true :SwitchStatement true
+                     :ReturnStatement true :ThrowStatement true
+                     :TryStatement true :WhileStatement true
+                     :DoWhileStatement true :ForStatement true
+                     :ForInStatement true :ForOfStatement true
+                     :LetStatement true :VariableDeclaration true
+                     :FunctionDeclaration true})
+
 (defn write-statement
+  "Wraps expression that can't be in a block statement
+  body into :ExpressionStatement otherwise returns back
+  expression."
   [form]
-  (let [op (:op form)]
-    (if (or (= op :def)
-            ;; Disable :throw and :try since now they're
-            ;; wrapped in a IIFE.
-            ;; (= op :throw)
-            ;; (= op :try)
-            (= op :ns))
-      (write form)
-      {:type :ExpressionStatement
-       :expression (write form)})))
+  (->statement (write form)))
+
+(defn ->statement
+  [node]
+  (if (get **statements** (:type node))
+    node
+    {:type :ExpressionStatement
+     :expression node}))
 
 (defn write-body
   "Takes form that may contain `:statements` vector
@@ -313,15 +368,14 @@
   [body]
   {:type :CallExpression
    :arguments []
-   :callee {:type :SequenceExpression
-            :expressions [{:type :FunctionExpression
-                           :id nil
-                           :params []
-                           :defaults []
-                           :expression false
-                           :generator false
-                           :rest nil
-                           :body (->block body)}]}})
+   :callee (->sequence [{:type :FunctionExpression
+                         :id nil
+                         :params []
+                         :defaults []
+                         :expression false
+                         :generator false
+                         :rest nil
+                         :body (->block body)}])})
 
 (defn write-do
   [form]
@@ -361,20 +415,20 @@
   [form]
   (write-var {:form (:name form)}))
 
+(defn write-binding
+  [form]
+  (write {:op :def
+          :var form
+          :init (:init form)
+          :form form}))
+
 (defn write-let
   [form]
-  {:type :CallExpression
-   :arguments (map write-binding-value (:bindings form))
-   :callee {:type :SequenceExpression
-            :expressions [{:type :FunctionExpression
-                           :id nil
-                           :params (map write-binding-param
-                                        (:bindings form))
-                           :defaults []
-                           :expression false
-                           :generator false
-                           :rest nil
-                           :body (->block (write-body form))}]}})
+  (let [body (conj form
+                   {:statements (vec (concat
+                                      (:bindings form)
+                                      (:statements form)))})]
+    (->iffe (->block (write-body body)))))
 (install-writer! :let write-let)
 
 (defn ->rebind
@@ -386,7 +440,7 @@
       (recur (conj result
                    {:type :AssignmentExpression
                     :operator :=
-                    :left (write-var {:form (:name (first bindings))})
+                    :left (write-binding-var (first bindings))
                     :right {:type :MemberExpression
                             :computed true
                             :object {:type :Identifier
@@ -395,46 +449,75 @@
                                        :value (count result)}}})
              (rest bindings)))))
 
+(defn ->sequence
+  [expressions]
+  {:type :SequenceExpression
+   :expressions expressions})
+
+(defn ->iffe
+  [body id]
+  {:type :CallExpression
+   :arguments []
+   :callee (->sequence [{:type :FunctionExpression
+                         :id id
+                         :params []
+                         :defaults []
+                         :expression false
+                         :generator false
+                         :rest nil
+                         :body body}])})
+
+(defn ->loop-init
+  []
+  {:type :VariableDeclaration
+   :kind :var
+   :declarations [{:type :VariableDeclarator
+                   :id {:type :Identifier
+                        :name :recur}
+                   :init {:type :Identifier
+                          :name :loop}}]})
+
+(defn ->do-while
+ [body test]
+ {:type :DoWhileStatement
+  :body body
+  :test test})
+
+(defn ->set!-recur
+  [form]
+  {:type :AssignmentExpression
+   :operator :=
+   :left {:type :Identifier :name :recur}
+   :right (write form)})
+
+(defn ->loop
+  [form]
+  (->sequence (conj (->rebind form)
+                    {:type :BinaryExpression
+                     :operator :===
+                     :left {:type :Identifier
+                            :name :recur}
+                     :right {:type :Identifier
+                             :name :loop}})))
+
+
 (defn write-loop
   [form]
-  {:type :CallExpression
-   :arguments (map write-binding-value (:bindings form))
-   :callee {:type :SequenceExpression
-            :expressions [{:type :FunctionExpression
-                           :id {:type :Identifier
-                                :name :loop}
-                           :params (map write-binding-param
-                                        (:bindings form))
-                           :defaults []
-                           :expression false
-                           :generator false
-                           :rest nil
-                           :body (->block [{:type :VariableDeclaration
-                                            :kind :var
-                                            :declarations [{:type :VariableDeclarator
-                                                            :id {:type :Identifier
-                                                                 :name :recur}
-                                                            :init {:type :Identifier
-                                                                   :name :loop}}]}
-                                           {:type :DoWhileStatement
-                                            :body (->block (conj (write-body (conj form {:result nil}))
-                                                                 {:type :ExpressionStatement
-                                                                  :expression {:type :AssignmentExpression
-                                                                               :operator :=
-                                                                               :left {:type :Identifier
-                                                                                      :name :recur}
-                                                                               :right (write (:result form))}}))
-                                            :test {:type :SequenceExpression
-                                                   :expressions (conj (->rebind form)
-                                                                      {:type :BinaryExpression
-                                                                       :operator :===
-                                                                       :left {:type :Identifier
-                                                                              :name :recur}
-                                                                       :right {:type :Identifier
-                                                                               :name :loop}})}}
-                                           {:type :ReturnStatement
-                                            :argument {:type :Identifier
-                                                       :name :recur}}])}]}})
+  (let [statements (:statements form)
+        result (:result form)
+        bindings (:bindings form)
+
+        loop-body (conj (map write statements)
+                        (->statement (->set!-recur result)))
+        body (concat [(
+                       ->loop-init)]
+                     (map write bindings)
+                     [(->do-while (->block (vec loop-body))
+                                  (->loop form))]
+                     [{:type :ReturnStatement
+                       :argument {:type :Identifier
+                                  :name :recur}}])]
+    (->iffe (->block (vec body)) 'loop)))
 (install-writer! :loop write-loop)
 
 (defn ->recur
@@ -457,10 +540,9 @@
 
 (defn write-recur
   [form]
-  {:type :SequenceExpression
-   :expressions (conj (->recur form)
-                      {:type :Identifier
-                       :name :loop})})
+  (->sequence (conj (->recur form)
+                    {:type :Identifier
+                     :name :loop})))
 (install-writer! :recur write-recur)
 
 (defn fallback-overload
@@ -470,15 +552,14 @@
    :consequent [{:type :ThrowStatement
                  :argument {:type :CallExpression
                             :callee {:type :Identifier
-                                     :name :Error}
+                                     :name :RangeError}
                             :arguments [{:type :Literal
                                          :value "Wrong number of arguments passed"}]}}]})
 
 (defn splice-binding
   [form]
   {:op :def
-   :var {:op :var
-         :form (:name (last (:params form)))}
+   :id (last (:params form))
    :init {:op :invoke
           :callee {:op :var
                    :form 'Array.prototype.slice.call}
@@ -492,8 +573,7 @@
   [params]
   (reduce (fn [forms param]
             (conj forms {:op :def
-                         :var {:op :var
-                               :form (:name param)}
+                         :id param
                          :init {:op :member-expression
                                 :computed true
                                 :target {:op :var
@@ -544,7 +624,7 @@
                      {:statements (vec (cons (splice-binding method)
                                              (:statements method)))})
                method)]
-    {:params (map #(write-var {:form (:name %)}) params)
+    {:params (map write-var params)
      :body (->block (write-body body))}))
 
 (defn resolve
@@ -578,30 +658,34 @@
 (defn write-require
   [form requirer]
   (let [ns-binding {:op :def
-                    :var {:op :var
-                          :form (id->ns (:ns form))}
+                    :id {:op :var
+                         :type :identifier
+                         :form (id->ns (:ns form))}
                     :init {:op :invoke
                            :callee {:op :var
+                                    :type :identifier
                                     :form 'require}
                            :params [{:op :constant
-                                     :type :string
                                      :form (resolve requirer (:ns form))}]}}
         ns-alias (if (:alias form)
                    {:op :def
-                    :var {:op :var
-                          :form (id->ns (:alias form))}
-                    :init (:var ns-binding)})
+                    :id {:op :var
+                         :type :identifier
+                         :form (id->ns (:alias form))}
+                    :init (:id ns-binding)})
 
         references (reduce (fn [references form]
                              (conj references
                                    {:op :def
-                                    :var {:op :var
-                                          :form (or (:rename form)
-                                                    (:name form))}
+                                    :id {:op :var
+                                         :type :identifier
+                                         :form (or (:rename form)
+                                                   (:name form))}
                                     :init {:op :member-expression
                                            :computed false
-                                           :target (:var ns-binding)
+                                           :target (:id ns-binding)
                                            :property {:op :var
+                                                      :type :identifier
                                                       :form (:name form)}}}))
                            []
                            (:refer form))]
@@ -614,21 +698,21 @@
   [form]
   (let [requirer (:name form)
         ns-binding {:op :def
-                    :var {:op :var
-                          :form '*ns*}
+                    :id {:op :var
+                         :type :identifier
+                         :form '*ns*}
                     :init {:op :dictionary
                            :keys [{:op :var
+                                   :type :identifier
                                    :form 'id}
                                   {:op :var
+                                   :type :identifier
                                    :form 'doc}]
                            :values [{:op :constant
-                                     :type :string
+                                     :type :identifier
                                      :form (name (:name form))}
                                     {:op :constant
-                                     :type (if (:doc form)
-                                             :string
-                                             :nil)
-                                       :form (:doc form)}]}}
+                                     :form (:doc form)}]}}
         requirements (vec (apply concat (map #(write-require % requirer)
                                              (:require form))))]
     (->block (map write (vec (cons ns-binding requirements))))))
@@ -641,8 +725,7 @@
                (write-simple-fn form))]
     (conj base
           {:type :FunctionExpression
-           :id (if (:name form)
-                 (write-var {:form (:name form)}))
+           :id (if (:id form) (write-var (:id form)))
            :defaults nil
            :rest nil
            :generator false
@@ -783,9 +866,8 @@
   ;; expression non literal and non-identifiers.
   (defn write-comparison-operator
     ([] (error-arg-count callee 0))
-    ([form] {:type :SequenceExpression
-             :expressions [(write form)
-                           (write-literal fallback)]})
+    ([form] (->sequence [(write form)
+                         (write-literal fallback)]))
     ([left right]
      {:type :BinaryExpression
       :operator operator

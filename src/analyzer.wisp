@@ -10,31 +10,9 @@
             [wisp.runtime :refer [nil? dictionary? vector? keys
                                   vals string? number? boolean?
                                   date? re-pattern? even? = max
-                                  dec dictionary subs]]
+                                  dec dictionary subs inc dec]]
             [wisp.expander :refer [macroexpand]]
             [wisp.string :refer [split]]))
-
-
-(defn resolve-var
-  [env form]
-  (loop [scope env]
-    (or (get (:locals scope) (name form))
-        (if (:parent scope)
-          (recur (:parent scope))
-          :top))))
-
-(defn analyze-symbol
-  "Finds the var associated with symbol
-  Example:
-
-  (analyze-symbol {} 'foo) => {:op :var
-                               :form 'foo
-                               :info nil}"
-  [env form]
-  {:op :var
-   :name (name form)
-   :form form
-   :info (resolve-var env form)})
 
 (defn analyze-keyword
   "Example:
@@ -199,20 +177,17 @@
         id (:id params)
         metadata (meta id)
 
-        variable (analyze env id)
+        binding (analyze-declaration env id)
 
-        init (analyze {:parent env
-                       :locals (assoc {} (:name variable) variable)}
-                       (:init params))
-
+        init (analyze env (:init params))
 
         doc (or (:doc params)
                 (:doc metadata))]
     {:op :def
      :doc doc
-     :var variable
+     :id binding
      :init init
-     :export (and (not (:parent env))
+     :export (and (:top env)
                   (not (:private metadata)))
      :form form}))
 (install-special! :def analyze-def)
@@ -225,26 +200,82 @@
                 :form form})))
 (install-special! :do analyze-do)
 
+(defn analyze-identifier
+  [env form]
+  {:op :var
+   :type :identifier
+   :form form
+   :binding (resolve-binding env form)})
+(def analyze-symbol analyze-identifier)
+
+(defn unresolved-binding
+  [env form]
+  {:op :unresolved-binding
+   :type :unresolved-binding
+   :identifier {:type :identifier
+                :form (symbol (namespace form)
+                              (name form))}})
+
+(defn resolve-binding
+  [env form]
+  (or (get (:locals env) (name form))
+      (get (:enclosed env) (name form))
+      (unresolved-binding env form)))
+
+(defn analyze-shadow
+  [env id]
+  (let [binding (resolve-binding env id)]
+    {:depth (inc (or (:depth binding) 0))
+     :shadow binding}))
+
 (defn analyze-binding
   [env form]
-  (let [bindings (or (:bindings env) [])
-        locals (or (:locals env) {})
-        name (first form)
-        id (analyze env name)
-        init (analyze env (second form))
-        init-meta (meta init)
-        fn-meta (if (= :fn (:op init-meta))
-                  {:fn-var true
-                   :variadic (:variadic init-meta)
-                   :arity (:arity init-meta)}
-                  {})
-        binding (conj id fn-meta {:init init
-                                  :info :local
-                                  :shadow (resolve-var env name)})]
-    (assert (not (or (namespace name)
-                     (< 1 (count (split \. (str name)))))))
-    (conj env {:locals (assoc locals (:name binding) binding)
-               :bindings (conj bindings binding)})))
+  (let [id (first form)
+        body (second form)]
+    (conj (analyze-shadow env id)
+          {:op :binding
+           :type :binding
+           :id id
+           :init (analyze env body)
+           :form form})))
+
+(defn analyze-declaration
+  [env form]
+  (assert (not (or (namespace form)
+                   (< 1 (count (split \. (str form)))))))
+  (conj (analyze-shadow env form)
+        {:op :var
+         :type :identifier
+         :depth 0
+         :id form
+         :form form}))
+
+(defn analyze-param
+  [env form]
+  (conj (analyze-shadow env form)
+        {:op :param
+         :type :parameter
+         :id form
+         :form form}))
+
+(defn with-binding
+  "Returns enhanced environment with additional binding added
+  to the :bindings and :scope"
+  [env form]
+  (conj env {:locals (assoc (:locals env) (name (:id form)) form)
+             :bindings (conj (:bindings env) form)}))
+
+(defn with-param
+  [env form]
+  (conj (with-binding env form)
+        {:params (conj (:params env) form)}))
+
+(defn sub-env
+  [env]
+  {:enclosed (or (:locals env) {})
+   :locals {}
+   :bindings []
+   :params (or (:params env) [])})
 
 
 (defn analyze-let*
@@ -261,22 +292,20 @@
         _ (assert valid-bindings?
                   "bindings must be vector of even number of elements")
 
-        context (:context env)
-
-        scope (reduce analyze-binding
-                      {:parent env}
+        scope (reduce #(with-binding %1 (analyze-binding %1 %2))
+                      (sub-env env)
                       (partition 2 bindings))
 
-        params (if is-loop
-                 (:bindings scope)
-                 (:params env))
+        bindings (:bindings scope)
 
-        expressions (analyze-block (conj scope {:params params}) body)]
+        expressions (analyze-block (if is-loop
+                                     (conj scope {:params bindings})
+                                     scope)
+                                   body)]
 
     {:op :let
      :form form
-     :loop is-loop
-     :bindings (:bindings scope)
+     :bindings bindings
      :statements (:statements expressions)
      :result (:result expressions)}))
 
@@ -418,15 +447,6 @@
     {:statements (:statements body)
      :result result}))
 
-(defn analyze-fn-param
-  [env id]
-  (let [locals (:locals env)
-        param (conj (analyze env id)
-                    {:name id})]
-    (conj env
-          {:locals (assoc locals (name id) param)
-           :params (conj (:params env) param)})))
-
 (defn analyze-fn-method
   "
   {} -> '([x y] (+ x y)) -> {:env {}
@@ -477,7 +497,7 @@
 
         ;; Analyze parameters in correspondence to environment
         ;; locals to identify binding shadowing.
-        scope (reduce analyze-fn-param
+        scope (reduce #(with-param %1 (analyze-param %1 %2))
                       (conj env {:params []})
                       params)]
     (conj (analyze-block scope body)
@@ -498,7 +518,7 @@
                 (cons nil forms))
 
         id (first forms)
-        binding (if id (conj (analyze env id) {:fn-var true}))
+        binding (if id (analyze-declaration env id))
 
         body (rest forms)
 
@@ -514,14 +534,9 @@
                                                        (pr-str (first body))
                                                        ") must be a vector"))))
 
-        ;; Hash map of local bindings
-        locals (or (:locals env) {})
-
-
-        scope {:parent env
-               :locals (if binding
-                         (assoc {} (name (:form binding)) binding)
-                         {})}
+        scope (if binding
+                (with-binding (sub-env env) binding)
+                (sub-env env))
 
         methods (map #(analyze-fn-method scope %)
                      (vec overloads))
@@ -529,8 +544,8 @@
         arity (apply max (map #(:arity %) methods))
         variadic (some #(:variadic %) methods)]
     {:op :fn
-     :name id
-     :var binding
+     :type :function
+     :id binding
      :variadic variadic
      :methods methods
      :form form}))
@@ -574,7 +589,7 @@
                              :form reference
                              :name reference
                              ;; Look up by reference symbol and by symbol
-                             ;; name since reading dictionaries is little
+
                              ;; bit in a fuzz right now.
                              :rename (or (get renames reference)
                                          (get renames (name reference)))
@@ -685,7 +700,9 @@
   :form - Given form.
 
   Based on :op node may contain different set of properties."
-  ([form] (analyze {:locals {}} form))
+  ([form] (analyze {:locals {}
+                    :bindings []
+                    :top true} form))
   ([env form]
    (cond (nil? form) (analyze-constant env form)
          (symbol? form) (analyze-symbol env form)

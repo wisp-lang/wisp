@@ -16,7 +16,7 @@
 (defn transpile
   [code options]
   (let [forms (read* code)
-        analyzed (map #(analyze {} %) forms)
+        analyzed (map #(analyze %) forms)
         compiled (apply compile options analyzed)]
     compiled))
 
@@ -62,6 +62,7 @@
         false))))
 
 
+;; =>
 ;; literals
 
 
@@ -75,6 +76,7 @@
 (is (= (transpile "[]") "[];"))
 (is (= (transpile "{}") "({});"))
 
+;; =>
 ;; identifiers
 
 
@@ -93,6 +95,7 @@
 (is (= (transpile "->string") "toString;"))
 (is (= (transpile "%a") "$a;"))
 
+;; =>
 ;; re-pattern
 
 (is (= (transpile "#\"foo\"") "/foo/;"))
@@ -101,6 +104,7 @@
 (is (= (transpile "#\"^$\"") "/^$/;"))
 (is (= (transpile "#\"/.\"") "/\\/./;"))
 
+;; =>
 ;; invoke forms
 
 (is (= (transpile "(foo)")"foo();")
@@ -130,7 +134,7 @@
 (is (= (transpile "(.create-server http options)")
        "http.createServer(options);"))
 
-
+;; =>
 ;; vectors
 
 (is (= (transpile "[]")
@@ -150,6 +154,7 @@
 ];"))
 
 
+;; =>
 ;; public defs
 
 (is (= (transpile "(def x)")
@@ -179,6 +184,7 @@
 (is (= (transpile "(def under_dog)")
        "var under_dog = exports.under_dog = void 0;"))
 
+;; =>
 ;; private defs
 
 (is (= (transpile "(def ^:private x)")
@@ -188,6 +194,7 @@
        "var y = 1;"))
 
 
+;; =>
 ;; throw
 
 
@@ -212,7 +219,7 @@
     throw 'boom';
 })();") "throw string literal")
 
-
+;; =>
 ;; new
 
 (is (= (transpile "(new Type)")
@@ -228,7 +235,7 @@
 (is (= (transpile "(Point. x y)")
        "new Point(x, y);"))
 
-
+;; =>
 ;; macro syntax
 
 (is (thrown? (transpile "(.-field)")
@@ -280,6 +287,7 @@
 (is (= (transpile "(:foo bar)")
        "(bar || 0)['foo'];"))
 
+;; =>
 ;; syntax quotes
 
 
@@ -310,6 +318,7 @@
 (is (= (transpile "'[]")
        "[];"))
 
+;; =>
 ;; set!
 
 (is (= (transpile "(set! x 1)")
@@ -324,6 +333,7 @@
 (is (= (transpile "(set! (.-field object) x)")
        "object.field = x;"))
 
+;; =>
 ;; aget
 
 
@@ -348,6 +358,7 @@
 (is (= (transpile "(aget (beep foo) (boop bar))")
        "beep(foo)[boop(bar)];"))
 
+;; =>
 ;; functions
 
 
@@ -356,70 +367,106 @@
     return x + y;
 });"))
 
+;; =>
+
 (is (= (transpile "(fn [x] (def y 7) (+ x y))")
 "(function (x) {
     var y = 7;
     return x + y;
 });"))
 
+;; =>
+
 (is (= (transpile "(fn [])")
 "(function () {
     return void 0;
 });"))
 
-(is (= (transpile "(fn ([]))")
-"(function () {
-    return void 0;
-});"))
+;; =>
 
 (is (= (transpile "(fn ([]))")
 "(function () {
     return void 0;
 });"))
+
+;; =>
+
+(is (= (transpile "(fn ([]))")
+"(function () {
+    return void 0;
+});"))
+
+;; =>
 
 (is (thrown? (transpile "(fn a b)")
              #"parameter declaration \(b\) must be a vector"))
 
+;; =>
+
 (is (thrown? (transpile "(fn a ())")
              #"parameter declaration \(\(\)\) must be a vector"))
+
+;; =>
 
 (is (thrown? (transpile "(fn a (b))")
              #"parameter declaration \(\(b\)\) must be a vector"))
 
+;; =>
+
 (is (thrown? (transpile "(fn)")
              #"parameter declaration \(nil\) must be a vector"))
+
+;; =>
 
 (is (thrown? (transpile "(fn {} a)")
              #"parameter declaration \({}\) must be a vector"))
 
+;; =>
+
 (is (thrown? (transpile "(fn ([]) a)")
              #"Malformed fn overload form"))
 
+;; =>
+
 (is (thrown? (transpile "(fn ([]) (a))")
              #"Malformed fn overload form"))
+
+;; =>
 
 (is (= (transpile "(fn [x] x)")
        "(function (x) {\n    return x;\n});")
     "function compiles")
 
+;; =>
+
 (is (= (transpile "(fn [x] (def y 1) (foo x y))")
        "(function (x) {\n    var y = 1;\n    return foo(x, y);\n});")
     "function with multiple statements compiles")
+
+;; =>
 
 (is (= (transpile "(fn identity [x] x)")
                   "(function identity(x) {\n    return x;\n});")
     "named function compiles")
 
+;; =>
+
 (is (thrown? (transpile "(fn \"doc\" a [x] x)")
              #"parameter declaration (.*) must be a vector"))
+
+;; =>
 
 (is (= (transpile "(fn foo? ^boolean [x] true)")
        "(function isFoo(x) {\n    return true;\n});")
     "metadata is supported")
 
+;; =>
+
 (is (= (transpile "(fn ^:static x [y] y)")
        "(function x(y) {\n    return y;\n});")
     "fn name metadata")
+
+;; =>
 
 (is (= (transpile "(fn [a & b] a)")
 "(function (a) {
@@ -427,12 +474,16 @@
     return a;
 });") "variadic function")
 
+;; =>
+
 (is (= (transpile "(fn [& a] a)")
 "(function () {
     var a = Array.prototype.slice.call(arguments, 0);
     return a;
 });") "function with all variadic arguments")
 
+
+;; =>
 
 (is (= (transpile "(fn
                      ([] 0)
@@ -445,10 +496,11 @@
         var x = arguments[0];
         return x;
     default:
-        throw Error('Wrong number of arguments passed');
+        throw RangeError('Wrong number of arguments passed');
     }
 });") "function with overloads")
 
+;; =>
 
 (is (= (transpile "(fn sum
                     ([] 0)
@@ -477,6 +529,7 @@
 });") "variadic with overloads")
 
 
+;; =>
 
 (is (= (transpile "(fn vector->list [v] (make list v))")
 "(function vectorToList(v) {
@@ -484,6 +537,7 @@
 });"))
 
 
+;; =>
 ;; Conditionals
 
 (is (thrown? (transpile "(if x)")
@@ -510,7 +564,7 @@
 (is (= (transpile "(if (if foo? bar) (make a))")
        "(isFoo ? bar : void 0) ? make(a) : void 0;"))
 
-
+;; =>
 ;; Do
 
 
@@ -553,6 +607,7 @@
 });") "only top level defs are public")
 
 
+
 ;; Let
 
 (is (= (transpile "(let [])")
@@ -560,26 +615,37 @@
     return void 0;
 })();"))
 
+;; =>
+
 (is (= (transpile "(let [] x)")
 "(function () {
     return x;
 })();"))
 
+;; =>
+
 (is (= (transpile "(let [x 1 y 2] (+ x y))")
-"(function (x, y) {
-    return x + y;
-})(1, 2);"))
+"(function () {
+    var xᐝ1 = 1;
+    var yᐝ1 = 2;
+    return xᐝ1 + yᐝ1;
+})();"))
+
+;; =>
 
 (is (= (transpile "(let [x y
                          y x]
                      [x y])")
-"(function (x, y) {
+"(function () {
+    var xᐝ1 = y;
+    var yᐝ1 = xᐝ1;
     return [
-        x,
-        y
+        xᐝ1,
+        yᐝ1
     ];
-})(y, x);") "same named bindings can be used")
+})();") "same named bindings can be used")
 
+;; =>
 
 (is (= (transpile "(let []
                      (+ x y))")
@@ -587,13 +653,83 @@
     return x + y;
 })();"))
 
+;; =>
+
 (is (= (transpile "(let [x 1
                          y y]
                      (+ x y))")
-"(function (x, y) {
-    return x + y;
-})(1, y);"))
+"(function () {
+    var xᐝ1 = 1;
+    var yᐝ1 = y;
+    return xᐝ1 + yᐝ1;
+})();"))
 
+
+;; =>
+
+(is (= (transpile "(let [x 1
+                         x (inc x)
+                         x (dec x)]
+                     (+ x 5))")
+"(function () {
+    var xᐝ1 = 1;
+    var xᐝ2 = inc(xᐝ1);
+    var xᐝ3 = dec(xᐝ2);
+    return xᐝ3 + 5;
+})();"))
+
+;; =>
+
+(is (= (transpile "(let [x 1
+                         y (inc x)
+                         x (dec x)]
+                     (if x y (+ x 5)))")
+"(function () {
+    var xᐝ1 = 1;
+    var yᐝ1 = inc(xᐝ1);
+    var xᐝ2 = dec(xᐝ1);
+    return xᐝ2 ? yᐝ1 : xᐝ2 + 5;
+})();"))
+
+;; =>
+
+(is (= (transpile "(let [x x] (fn [] x))")
+"(function () {
+    var xᐝ1 = x;
+    return function () {
+        return xᐝ1;
+    };
+})();"))
+
+;; =>
+
+(is (= (transpile "(let [x x] (fn [x] x))")
+"(function () {
+    var xᐝ1 = x;
+    return function (x) {
+        return x;
+    };
+})();"))
+
+;; =>
+
+(is (= (transpile "(let [x x] (fn x [] x))")
+"(function () {
+    var xᐝ1 = x;
+    return function x() {
+        return x;
+    };
+})();"))
+
+;; =>
+
+(is (= (transpile "(let [x x] (< x 2))")
+"(function () {
+    var xᐝ1 = x;
+    return xᐝ1 < 2;
+})();") "macro forms inherit renaming")
+
+;; =>
 
 
 ;; throw
@@ -604,25 +740,35 @@
     throw void 0;
 })();"))
 
+;; =>
+
 (is (= (transpile "(throw error)")
 "(function () {
     throw error;
 })();"))
+
+;; =>
 
 (is (= (transpile "(throw (Error message))")
 "(function () {
     throw Error(message);
 })();"))
 
+;; =>
+
 (is (= (transpile "(throw \"boom\")")
 "(function () {
     throw 'boom';
 })();"))
 
+;; =>
+
 (is (= (transpile "(throw (Error. message))")
 "(function () {
     throw new Error(message);
 })();"))
+
+;; =>
 
 ;; TODO: Consider submitting a bug to clojure
 ;; to raise compile time error on such forms
@@ -631,7 +777,7 @@
     throw a;
 })();"))
 
-
+;; =>
 ;; try
 
 
@@ -648,6 +794,9 @@
     }
 })();"))
 
+;; =>
+
+
 (is (= (transpile "(try
                      (/ 1 0)
                      (catch e (console.error e))
@@ -662,6 +811,8 @@
     }
 })();"))
 
+;; =>
+
 (is (= (transpile "(try
                         (open file)
                         (read file)
@@ -675,6 +826,9 @@
     }
 })();"))
 
+;; =>
+
+
 (is (= (transpile "(try)")
 "(function () {
     try {
@@ -683,6 +837,8 @@
     }
 })();"))
 
+;; =>
+
 (is (= (transpile "(try me)")
 "(function () {
     try {
@@ -690,6 +846,8 @@
     } finally {
     }
 })();"))
+
+;; =>
 
 (is (= (transpile "(try (boom) (catch error))")
 "(function () {
@@ -700,6 +858,7 @@
     }
 })();"))
 
+;; =>
 
 (is (= (transpile "(try (m 1 0) (catch e e))")
 "(function () {
@@ -710,6 +869,8 @@
     }
 })();"))
 
+;; =>
+
 (is (= (transpile "(try (m 1 0) (finally 0))")
 "(function () {
     try {
@@ -718,6 +879,8 @@
         return 0;
     }
 })();"))
+
+;; =>
 
 
 (is (= (transpile "(try (m 1 0) (catch e e) (finally 0))")
@@ -731,6 +894,8 @@
     }
 })();"))
 
+;; =>
+
 ;; loop
 
 
@@ -738,29 +903,35 @@
                         (if (< x 7)
                           (print x)
                           (recur (- x 2))))")
-"(function loop(x) {
+"(function loop() {
     var recur = loop;
+    var xᐝ1 = 10;
     do {
-        recur = x < 7 ? console.log(x) : (loop[0] = x - 2, loop);
-    } while (x = loop[0], recur === loop);
+        recur = xᐝ1 < 7 ? console.log(xᐝ1) : (loop[0] = xᐝ1 - 2, loop);
+    } while (xᐝ1 = loop[0], recur === loop);
     return recur;
-})(10);"))
+})();"))
+
+;; =>
 
 (is (= (transpile "(loop [forms forms
                              result []]
-                        (if (empty? items)
+                        (if (empty? forms)
                           result
                           (recur (rest forms)
                                  (conj result (process (first forms))))))")
-"(function loop(forms, result) {
+"(function loop() {
     var recur = loop;
+    var formsᐝ1 = forms;
+    var resultᐝ1 = [];
     do {
-        recur = isEmpty(items) ? result : (loop[0] = rest(forms), loop[1] = conj(result, process(first(forms))), loop);
-    } while (forms = loop[0], result = loop[1], recur === loop);
+        recur = isEmpty(formsᐝ1) ? resultᐝ1 : (loop[0] = rest(formsᐝ1), loop[1] = conj(resultᐝ1, process(first(formsᐝ1))), loop);
+    } while (formsᐝ1 = loop[0], resultᐝ1 = loop[1], recur === loop);
     return recur;
-})(forms, []);"))
+})();"))
 
 
+;; =>
 ;; ns
 
 
@@ -844,7 +1015,7 @@
         };
 }"))
 
-
+;; =>
 ;; Logical operators
 
 (is (= (transpile "(or)")
@@ -883,7 +1054,7 @@
 (is (= (transpile "(not (not x))")
        "!!x;"))
 
-
+;; =>
 ;; Bitwise Operators
 
 
