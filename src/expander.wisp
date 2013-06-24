@@ -235,11 +235,11 @@
                    (conj {:doc doc} (first meta+body)))
 
         ;; If metadata map is found it's not part of body.
-        body (if metadata (rest meta+body) body)
+        body (if metadata (rest meta+body) meta+body)
 
         ;; Combine all the metadata and add to a name.
         id (with-meta name (conj (or (meta name) {}) metadata))]
-    `(def ~id (fn ~@body))))
+    `(def ~id (fn ~id ~@body))))
 (install-macro! :defn expand-defn)
 
 
