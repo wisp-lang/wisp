@@ -94,6 +94,7 @@
 (is (= (transpile "red+blue") "redPlusBlue;"))
 (is (= (transpile "->string") "toString;"))
 (is (= (transpile "%a") "$a;"))
+(is (= (transpile "what.man?.->you.**.=") "what.isMan.toYou.__.isEqual;"))
 
 ;; =>
 ;; re-pattern

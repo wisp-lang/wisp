@@ -21,7 +21,16 @@
 ;; be used in generated symbols to avoid conflicts
 ;; http://www.fileformat.info/info/unicode/char/141d/index.htm
 (def **unique-char** "ᐝ")
-(defn translate-identifier
+
+(defn ->camel-join
+  [prefix key]
+  (str prefix
+       (if (and (not (empty? prefix))
+                (not (empty? key)))
+         (str (upper-case (get key 0)) (subs key 1))
+         key)))
+
+(defn translate-identifier-word
   "Translates references from clojure convention to JS:
 
   **macros**      __macros__
@@ -63,16 +72,12 @@
              (str "is-" (subs id 0 (dec (count id))))
              id))
   ;; create-server -> createServer
-  (set! id (reduce
-            (fn [result key]
-              (str result
-                   (if (and (not (empty? result))
-                            (not (empty? key)))
-                     (str (upper-case (get key 0)) (subs key 1))
-                     key)))
-            ""
-            (split id "-")))
+  (set! id (reduce ->camel-join "" (split id "-")))
   id)
+
+(defn translate-identifier
+  [form]
+  (join \. (map translate-identifier-word (split (name form) \.))))
 
 (defn error-arg-count
   [callee n]
