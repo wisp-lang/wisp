@@ -20,10 +20,11 @@
 (defn- expand
   "Applies macro registered with given `name` to a given `form`"
   [expander form]
-  (let [expansion (apply expander (vec (rest form)))
-        metadata (conj {} (meta form) (meta expansion))]
-    (with-meta expansion metadata)))
-
+  (let [metadata (or (meta form) {})
+        expansion (apply expander (vec (rest form)))]
+    (if expansion
+      (with-meta expansion (conj metadata (meta expansion)))
+      expansion)))
 
 (defn install-macro!
   "Registers given `macro` with a given `name`"
