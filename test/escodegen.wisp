@@ -732,6 +732,13 @@
 
 ;; =>
 
+(is (= (transpile "(let [a a] a.a)")
+"(function () {
+    var aᐝ1 = a;
+    return aᐝ1.a;
+})();") "member targets also renamed")
+
+;; =>
 
 ;; throw
 

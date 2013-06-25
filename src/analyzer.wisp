@@ -12,7 +12,7 @@
                                   date? re-pattern? even? = max
                                   dec dictionary subs inc dec]]
             [wisp.expander :refer [macroexpand]]
-            [wisp.string :refer [split]]))
+            [wisp.string :refer [split join]]))
 
 (defn analyze-keyword
   "Example:
@@ -162,7 +162,12 @@
        :computed (not field)
        :form form
        :target target
-       :property (analyze env (or field attribute))}
+       ;; If field is a quoted symbol there's no need to resolve
+       ;; it for info
+       :property (if field
+                   (conj (analyze-identifier env field)
+                         {:binding nil})
+                   (analyze env attribute))}
       (throw (SyntaxError "Malformed aget expression expected (aget object member)")))))
 (install-special! :aget analyze-aget)
 
@@ -200,13 +205,24 @@
                 :form form})))
 (install-special! :do analyze-do)
 
+(defn analyze-symbol
+  "Symbol analyzer also does syntax desugaring for the symbols
+  like foo.bar.baz producing (aget foo 'bar.baz) form. This enables
+  renaming of shadowed symbols."
+  [env form]
+  (let [forms (split (name form) \.)]
+    (if (> (count forms) 1)
+      (analyze env (list 'aget
+                         (symbol (first forms))
+                         (list 'quote (symbol (join \. (rest forms))))))
+      (analyze-identifier env form))))
+
 (defn analyze-identifier
   [env form]
   {:op :var
    :type :identifier
    :form form
    :binding (resolve-binding env form)})
-(def analyze-symbol analyze-identifier)
 
 (defn unresolved-binding
   [env form]
