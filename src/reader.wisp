@@ -261,20 +261,15 @@
   "Reads out delimited list"
   [delim reader recursive?]
   (loop [forms []]
-    (let [ch (read-past whitespace? reader)]
+    (let [_ (read-past whitespace? reader)
+          ch (read-char reader)]
       (if (not ch) (reader-error reader :EOF))
       (if (identical? delim ch)
-        (do (read-char reader) forms)
-        (let [macro (macros ch)]
-          (if macro
-            (let [form (macro reader (read-char reader))]
-              (recur (if (identical? form reader)
-                       forms
-                       (conj forms form))))
-            (let [form (read reader true nil recursive?)]
-              (recur (if (identical? form reader)
-                       forms
-                       (conj forms form))))))))))
+        forms
+        (let [form (read-form reader ch)]
+          (recur (if (identical? form reader)
+                   forms
+                   (conj forms form))))))))
 
 ;; data structure readers
 
