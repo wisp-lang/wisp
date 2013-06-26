@@ -168,7 +168,9 @@
         field (and (quote? attribute)
                    (symbol? (second attribute))
                    (second attribute))]
-    (if attribute
+    (if (nil? attribute)
+      (syntax-error "Malformed aget expression expected (aget object member)"
+                    form)
       {:op :member-expression
        :computed (not field)
        :form form
@@ -178,9 +180,7 @@
        :property (if field
                    (conj (analyze-identifier env field)
                          {:binding nil})
-                   (analyze env attribute))}
-      (syntax-error "Malformed aget expression expected (aget object member)"
-                    form))))
+                   (analyze env attribute))})))
 (install-special! :aget analyze-aget)
 
 (defn parse-def
@@ -353,13 +353,13 @@
   (let [params (:params env)
         forms (vec (map #(analyze env %) (rest form)))]
 
-    (assert (identical? (count params)
-                        (count forms))
-            "Recurs with unexpected number of arguments")
-
-    {:op :recur
-     :form form
-     :params forms}))
+    (if (= (count params)
+           (count forms))
+      {:op :recur
+       :form form
+       :params forms}
+      (syntax-error "Recurs with wrong number of arguments"
+                    form))))
 (install-special! :recur analyze-recur)
 
 (defn analyze-quoted-list
