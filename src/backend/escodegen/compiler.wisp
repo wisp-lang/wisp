@@ -19,8 +19,11 @@
             [wisp.backend.escodegen.writer :refer [write compile write*]]
             [escodegen :refer [generate]]
 
-            [fs :refer [read-file-sync]]))
+            [fs :refer [read-file-sync write-file-sync]]
+            [path :refer [basename dirname join]
+                  :rename {join join-path}]))
 
+;; Just munge all the `--param value` pairs into global *env* hash.
 (set! global.*env*
       (reduce (fn [env param]
                 (let [name (first param)
@@ -32,17 +35,38 @@
               {}
               (partition 2 1 process.argv)))
 
+
+
 (defn transpile
   [code options]
   (let [forms (read* code (:uri options))
         analyzed (map analyze forms)
-        compiled (apply compile options analyzed)]
-    compiled))
+        ast (apply write* analyzed)
+        generated (generate ast options)]
+    generated))
 
+(defn compile-with-source-map
+  "Takes relative uri (path) to the .wisp file and writes
+  generated `*.js` file and a `*.wisp.map` source map file
+  next to it."
+  [uri]
+  (let [directory (dirname uri)
+        file (basename uri)
+        source-map-uri (str file ".map")
+        code-uri (replace file #".wisp$" ".js")
+        source (read-file-sync uri {:encoding :utf-8})
+        source-map-prefix (str "\n\n//# sourceMappingURL=" source-map-uri "\n")
+        output (transpile source {:uri uri
+                                  :sourceMap file
+                                  :sourceMapWithCode true})
+
+        code (str (:code output) source-map-prefix)
+        source-map (:map output)]
+    (write-file-sync (join-path directory source-map-uri) source-map)
+    (write-file-sync (join-path directory code-uri) code)))
 
 (if (:compile *env*)
-  (print (transpile (str (read-file-sync (:compile *env*)))
-                    {:uri (:compile *env*)})))
+  (compile-with-source-map (:compile *env*)))
 
 
 (defn expand-defmacro
