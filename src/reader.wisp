@@ -544,7 +544,8 @@
                    (boolean? form)
                    (nil? form)
                    (keyword? form))) (with-meta form
-                                                (conj {:start start
+                                                (conj {:uri (:uri reader)
+                                                       :start start
                                                        :end {:line (:line reader)
                                                              :column (:column reader)}}
                                                       (meta form)))
