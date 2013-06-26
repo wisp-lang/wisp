@@ -17,14 +17,11 @@
 (defn syntax-error
   [message form]
   (let [metadata (meta form)
-        line (:line (:start metadata))
-        column (:column (:start metadata))
-        serailaized (pr-str form)
         error (SyntaxError (str message "\n"
                                 "Form: " (pr-str form) "\n"
-                                "Metadata: " (pr-str metadata) "\n"
-                                "Line: " line "\n"
-                                "Column: " column))]
+                                "URI: " (:uri metadata) "\n"
+                                "Line: " (:line (:start metadata)) "\n"
+                                "Column: " (:column (:start metadata))))]
     (throw error)))
 
 
