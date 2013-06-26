@@ -14,6 +14,20 @@
             [wisp.expander :refer [macroexpand]]
             [wisp.string :refer [split join]]))
 
+(defn syntax-error
+  [message form]
+  (let [metadata (meta form)
+        line (:line (:start metadata))
+        column (:column (:start metadata))
+        serailaized (pr-str form)
+        error (SyntaxError (str message "\n"
+                                "Form: " (pr-str form) "\n"
+                                "Metadata: " (pr-str metadata) "\n"
+                                "Line: " line "\n"
+                                "Column: " column))]
+    (throw error)))
+
+
 (defn analyze-keyword
   "Example:
   (analyze-keyword {} :foo) => {:op :constant
@@ -52,7 +66,7 @@
         consequent (analyze env (second forms))
         alternate (analyze env (third forms))]
     (if (< (count forms) 2)
-      (throw (SyntaxError "Malformed if expression, too few operands")))
+      (syntax-error "Malformed if expression, too few operands" form))
     {:op :if
      :form form
      :test test
@@ -168,7 +182,8 @@
                    (conj (analyze-identifier env field)
                          {:binding nil})
                    (analyze env attribute))}
-      (throw (SyntaxError "Malformed aget expression expected (aget object member)")))))
+      (syntax-error "Malformed aget expression expected (aget object member)"
+                    form))))
 (install-special! :aget analyze-aget)
 
 (defn parse-def
@@ -496,7 +511,7 @@
   (let [signature (if (and (list? form)
                            (vector? (first form)))
                     (first form)
-                    (throw (SyntaxError "Malformed fn overload form")))
+                    (syntax-error "Malformed fn overload form" form))
         body (rest form)
         ;; If param signature contains & fn is variadic.
         variadic (some #(= '& %) signature)
@@ -545,10 +560,11 @@
         overloads (cond (vector? (first body)) (list body)
                         (and (list? (first body))
                              (vector? (first (first body)))) body
-                        :else (throw (SyntaxError (str "Malformed fn expression, "
-                                                       "parameter declaration ("
-                                                       (pr-str (first body))
-                                                       ") must be a vector"))))
+                        :else (syntax-error (str "Malformed fn expression, "
+                                                 "parameter declaration ("
+                                                 (pr-str (first body))
+                                                 ") must be a vector")
+                                            form))
 
         scope (if binding
                 (with-binding (sub-env env) binding)
