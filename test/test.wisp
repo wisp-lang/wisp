@@ -5,6 +5,7 @@
             wisp.test.string
             wisp.test.reader
             wisp.test.compiler
-            wisp.test.analyzer))
+            ;wisp.test.analyzer
+            ))
 
 (print "\n\nAll tests passed!")
