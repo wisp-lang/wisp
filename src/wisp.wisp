@@ -23,14 +23,15 @@
   [input output uri]
   (def source "")
   (.on input :data
-       (fn on-chunck
-         "Accumulate text form input until it ends."
+       (fn
+         ^{:doc "Accumulate text form input until it ends."}
+         on-chunck
          [chunck]
          (set! source (str source chunck))))
   (.on input :end
-       (fn on-read
-         "Once input ends try to compile & write to output."
-         []
+       (fn
+         ^{:doc "Once input ends try to compile & write to output."}
+         on-read []
          (try (.write output (compile* (read* source)))
            (catch error (exit error)))))
   (.on input :error exit)

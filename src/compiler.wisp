@@ -71,9 +71,9 @@
 (install-macro
  'defmacro
  (fn
-  "Like defn, but the resulting function name is declared as a
-  macro and will be used as a macro by the compiler when it is
-  called."
+  ^{:doc "Like defn, but the resulting function name is declared as a
+    macro and will be used as a macro by the compiler when it is
+    called."}
   [name signature & body]
   (install-macro name (make-macro signature body))))
 
@@ -934,17 +934,20 @@
 (install-macro
  'str
  (fn str
-   "str inlining and optimization via macros"
+   ^{:doc "str inlining and optimization via macros"}
    [& forms]
    `(+ "" ~@forms)))
 
 (install-macro
   'let
-  (fn let-macro
-    "Evaluates the exprs in a lexical context in which the symbols in
-    the binding-forms are bound to their respective init-exprs or parts
-    therein."
-    {:added "1.0" :special-form true :forms '[(let [bindings*] exprs*)]}
+  (fn
+    ^{:doc "Evaluates the exprs in a lexical context in which the symbols in
+      the binding-forms are bound to their respective init-exprs or parts
+      therein."
+      :added "1.0"
+      :special-form true
+      :forms '[(let [bindings*] exprs*)]}
+    let-macro
     [bindings & body]
     ;; TODO: Implement destructure for bindings:
     ;; https://github.com/clojure/clojure/blob/master/src/clj/clojure/core.clj#L3937
@@ -955,12 +958,12 @@
 
 (install-macro
  'cond
- (fn cond
-   "Takes a set of test/expr pairs. It evaluates each test one at a
-   time.  If a test returns logical true, cond evaluates and returns
-   the value of the corresponding expr and doesn't evaluate any of the
-   other tests or exprs. (cond) returns nil."
-   {:added "1.0"}
+ (fn
+   ^{:doc "Takes a set of test/expr pairs. It evaluates each test one at a
+     time.  If a test returns logical true, cond evaluates and returns
+     the value of the corresponding expr and doesn't evaluate any of the
+     other tests or exprs. (cond) returns nil."}
+   cond
    [& clauses]
    (if (not (empty? clauses))
      (list 'if (first clauses)
@@ -971,30 +974,30 @@
 
 (install-macro
  'defn
- (fn defn
-   "Same as (def name (fn [params* ] exprs*)) or
-   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
-   to the var metadata"
-   {:added "1.0" :special-form true }
+ (fn
+   ^{:doc "Same as (def name (fn [params* ] exprs*)) or
+     (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
+     to the var metadata"}
+   defn
    [name & body]
    `(def ~name (fn ~name ~@body))))
 
 (install-macro
  'defn-
- (fn defn
-   "Same as (def name (fn [params* ] exprs*)) or
-   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
-   to the var metadata"
-   {:added "1.0" :special-form true }
+ (fn
+   ^{:doc "Same as (def name (fn [params* ] exprs*)) or
+     (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
+     to the var metadata"}
+   defn
    [name & body]
    `(defn ~(with-meta name (conj {:private true} (meta name))) ~@body)))
 
 (install-macro
  'assert
- (fn assert
-   "Evaluates expr and throws an exception if it does not evaluate to
-   logical true."
-   {:added "1.0"}
+ (fn
+   ^{:doc "Evaluates expr and throws an exception if it does not evaluate to
+     logical true."}
+   assert
    [x message]
    (let [title (or message "")
          assertion (pr-str x)

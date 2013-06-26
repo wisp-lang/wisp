@@ -87,14 +87,15 @@
 
 (def to-string Object.prototype.to-string)
 
-(def fn?
+(def
+  ^{:tag boolean
+    :doc "Returns true if x is a function"}
+  fn?
   (if (identical? (typeof #".") "function")
-    (fn ^boolean fn?
-      "Returns true if x is a function"
+    (fn
       [x]
       (identical? (.call to-string x) "[object Function]"))
-    (fn ^boolean fn?
-      "Returns true if x is a function"
+    (fn
       [x]
       (identical? (typeof x) "function"))))
 
@@ -110,13 +111,13 @@
   (or (identical? (typeof x) "number")
       (identical? (.call to-string x) "[object Number]")))
 
-(def vector?
+(def
+  ^{:tag boolean
+    :doc "Returns true if x is a vector"}
+  vector?
   (if (fn? Array.isArray)
     Array.isArray
-    (fn ^boolean vector?
-      "Returns true if x is a vector"
-      [x]
-      (identical? (.call to-string x) "[object Array]"))))
+    (fn [x] (identical? (.call to-string x) "[object Array]"))))
 
 (defn ^boolean date?
   "Returns true if x is a date"

@@ -5,48 +5,42 @@
 (defn split
   "Splits string on a regular expression.  Optional argument limit is
   the maximum number of splits. Not lazy. Returns vector of the splits."
-  {:added "0.1"}
   [string pattern limit]
   (.split string pattern limit))
 
-(defn ^String join
+(defn join
   "Returns a string of all elements in coll, as returned by (seq coll),
    separated by an optional separator."
-  {:added "0.1"}
   ([coll]
      (apply str (vec coll)))
   ([separator coll]
      (.join (vec coll) separator)))
 
-(defn ^String upper-case
+(defn upper-case
   "Converts string to all upper-case."
-  {:added "1.2"}
   [string]
   (.toUpperCase string))
 
-(defn ^String upper-case
+(defn upper-case
   "Converts string to all upper-case."
-  {:added "1.2"}
-  [^CharSequence string]
+  [string]
   (.toUpperCase string))
 
-(defn ^String lower-case
+(defn lower-case
   "Converts string to all lower-case."
-  {:added "1.2"}
-  [^CharSequence string]
+  [string]
   (.toLowerCase string))
 
 (defn ^String capitalize
   "Converts first character of the string to upper-case, all other
   characters to lower-case."
-  {:added "1.2"}
-  [^CharSequence string]
+  [string]
   (if (< (count string) 2)
       (upper-case string)
       (str (upper-case (subs s 0 1))
            (lower-case (subs s 1)))))
 
-(defn ^String replace
+(defn replace
   "Replaces all instance of match with replacement in s.
 
    match/replacement can be:
@@ -56,8 +50,7 @@
    pattern / (string or function of match).
 
    See also replace-first."
-  {:added "1.2"}
-  [^CharSequence string match replacement]
+  [string match replacement]
   (.replace string match replacement))
 
 
@@ -74,38 +67,33 @@
 (def **SPACES** #"^\s\s*$")
 
 
-(def triml
+(def
+  ^{:tag string
+    :doc "Removes whitespace from the left side of string."}
+  triml
   (if (nil? (.-trimLeft ""))
-    (fn [^CharSequence string] (.replace string **LEFT-SPACES** ""))
-    (fn ^String triml
-      "Removes whitespace from the left side of string."
-      {:added "1.2"}
-      [^CharSequence string]
-      (.trimLeft string))))
+    (fn [string] (.replace string **LEFT-SPACES** ""))
+    (fn [string] (.trimLeft string))))
 
-(def trimr
+(def
+  ^{:tag string
+    :doc "Removes whitespace from the right side of string."}
+  trimr
   (if (nil? (.-trimRight ""))
-    (fn [^CharSequence string] (.replace string **RIGHT-SPACES** ""))
-    (fn ^String trimr
-      "Removes whitespace from the right side of string."
-      {:added "1.2"}
-      [^CharSequence string]
-      (.trimRight string))))
+    (fn [string] (.replace string **RIGHT-SPACES** ""))
+    (fn [string] (.trimRight string))))
 
-(def trim
+(def
+  ^{:tag string
+    :doc "Removes whitespace from both ends of string."}
+  trim
   (if (nil? (.-trim ""))
-    (fn [^CharSequence string]
-      (.replace (.replace string **LEFT-SPACES**) **RIGHT-SPACES**))
-    (fn ^String trim
-      "Removes whitespace from both ends of string."
-      {:added "1.2"}
-      [^CharSequence string]
-      (.trim string))))
+    (fn [string] (.replace (.replace string **LEFT-SPACES**) **RIGHT-SPACES**))
+    (fn [string] (.trim string))))
 
 (defn blank?
   "True if s is nil, empty, or contains only whitespace."
-  {:added "1.2"}
-  [^CharSequence string]
+  [string]
   (or (nil? string)
       (empty? string)
       (re-matches **SPACES** string)))

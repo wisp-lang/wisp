@@ -450,8 +450,7 @@
      (let [chunk (take n items)
            size (count chunk)]
        (cond (identical? size n) (recur (conj result chunk)
-                                        (drop step items)
-                                        (take n items))
+                                        (drop step items))
              (identical? 0 size) result
              (> n (+ size (count pad))) result
              :else (conj result

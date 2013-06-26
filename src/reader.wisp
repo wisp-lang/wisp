@@ -567,7 +567,7 @@
                                            is-recursive)
                 :else (read-form reader ch))]
       (if (identical? form reader)
-        (recur eof-is-error sentinel is-recursive)
+        (recur)
         form))))
 
 (defn read*
