@@ -11,7 +11,7 @@
             [wisp.runtime :refer [nil? dictionary? vector? keys
                                   vals string? number? boolean?
                                   date? re-pattern? even? = max
-                                  dec dictionary subs]]
+                                  inc dec dictionary subs]]
             [wisp.string :refer [split]]))
 
 
@@ -64,10 +64,31 @@
   "Example:
   '(.substring string 2 5) => '((aget string 'substring) 2 5)"
   [op target & params]
-  (let [member (symbol (subs (name op) 1))]
+  (let [op-meta (meta op)
+        form-start (:start op-meta)
+        target-meta (meta target)
+        member (with-meta (symbol (subs (name op) 1))
+                 ;; Include metadat from the original symbol just
+                 (conj op-meta
+                       {:start {:line (:line form-start)
+                                :column (inc (:column form-start))}}))
+        ;; Add metadata to aget symbol that will map to the first `.`
+        ;; character of the method name.
+        aget (with-meta 'aget
+               (conj op-meta
+                     {:end {:line (:line form-start)
+                            :column (inc (:column form-start))}}))
+
+        ;; First two forms (.substring string ...) expand to
+        ;; ((aget string 'substring) ...) there for expansion gets
+        ;; position metadata from start of the first `.substring` form
+        ;; to the end of the `string` form.
+        method (with-meta `(~aget ~target (quote ~member))
+                 (conj op-meta
+                       {:end (:end (meta target))}))]
     (if (nil? target)
       (throw (Error "Malformed method expression, expecting (.method object ...)"))
-      `((aget ~target (quote ~member)) ~@params))))
+      `(~method ~@params))))
 
 (defn field-syntax
   "Example:
@@ -84,7 +105,19 @@
   '(Point. x y) => '(new Point x y)"
   [op & params]
   (let [id (name op)
-        constructor (symbol (subs id 0 (dec (count id))))]
+        id-meta (:meta id)
+        rename (subs id 0 (dec (count id)))
+        ;; constructur symbol inherits metada from the first `op` form
+        ;; it's just it's end column info is updated to reflect subtraction
+        ;; of `.` character.
+        constructor (with-meta (symbol rename)
+                      (conj id-meta
+                            {:end {:line (:line (:end id-meta))
+                                   :column (dec (:column (:end id-meta)))}}))
+        operator (with-meta 'new
+                   (conj id-meta
+                         {:start {:line (:line (:end id-meta))
+                                  :column (dec (:column (:end id-meta)))}}))]
     `(new ~constructor ~@params)))
 
 (defn keyword-invoke
