@@ -958,17 +958,3 @@
   []
   'debugger)
 (install-macro! :debugger! expand-debug)
-
-
-(defn expand-defmacro
-  "Like defn, but the resulting function name is declared as a
-  macro and will be used as a macro by the compiler when it is
-  called."
-  [id & body]
-  (let [form `(fn ~id ~@body)
-        ast (analyze form)
-        code (compile ast)
-        macro (eval code)]
-    (install-macro! id macro)
-    nil))
-(install-macro 'defmacro expand-defmacro)
