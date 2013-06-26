@@ -116,7 +116,7 @@
   first item, followed by applying f to the second items, until sequence is
   exhausted."
   [f sequence]
-  (cond (vector? sequence) (.map sequence f)
+  (cond (vector? sequence) (.map sequence #(f %))
         (list? sequence) (map-list f sequence)
         (nil? sequence) '()
         :else (map f (seq sequence))))
