@@ -958,7 +958,7 @@
 (defn expand-print
   [&form & more]
   "Prints the object(s) to the output for human consumption."
-  (let [op (with-meta `(.-log console) (meta &form))]
+  (let [op (with-meta 'console.log (meta &form))]
     `(~op ~@more)))
 (install-macro! :print (with-meta expand-print {:implicit [:&form]}))
 
