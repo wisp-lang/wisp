@@ -40,6 +40,14 @@
   [op analyzer]
   (set! (get **specials** (name op)) analyzer))
 
+(defn analyze-special
+  [analyzer env form]
+  (let [metadata (meta form)
+        ast (analyzer env form)]
+    (conj {:start (:start metadata)
+           :end (:end metadata)}
+          ast)))
+
 (defn analyze-if
   "Example:
   (analyze-if {} '(if monday? :yep :nope)) => {:op :if
@@ -178,7 +186,7 @@
        ;; If field is a quoted symbol there's no need to resolve
        ;; it for info
        :property (if field
-                   (conj (analyze-identifier env field)
+                   (conj (analyze-special analyze-identifier env field)
                          {:binding nil})
                    (analyze env attribute))})))
 (install-special! :aget analyze-aget)
@@ -194,7 +202,7 @@
         id (:id params)
         metadata (meta id)
 
-        binding (analyze-declaration env id)
+        binding (analyze-special analyze-declaration env id)
 
         init (analyze env (:init params))
 
@@ -546,7 +554,7 @@
                 (cons nil forms))
 
         id (first forms)
-        binding (if id (analyze-declaration env id))
+        binding (if id (analyze-special analyze-declaration env id))
 
         body (rest forms)
 
@@ -665,13 +673,13 @@
         ;; Special operators must be symbols and stored in the
         ;; **specials** hash by operator name.
         operator (first form)
-        analyze-special (and (symbol? operator)
-                             (get **specials** (name operator)))]
+        analyzer (and (symbol? operator)
+                      (get **specials** (name operator)))]
     ;; If form is expanded pass it back to analyze since it may no
     ;; longer be a list. Otherwise either analyze as a special form
     ;; (if it's such) or as function invokation form.
     (cond (not (identical? expansion form)) (analyze env expansion)
-          analyze-special (analyze-special env expansion)
+          analyzer (analyze-special analyzer env expansion)
           :else (analyze-invoke env expansion))))
 
 (defn analyze-vector
