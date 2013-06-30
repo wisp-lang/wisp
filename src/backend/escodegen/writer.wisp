@@ -182,9 +182,10 @@
     ;; If identifiers binding shadows other binding rename it according
     ;; to shadowing depth. This allows bindings initializer safely
     ;; access binding before shadowing it.
-    (->identifier (if (:shadow form)
-                    (str id **unique-char** (:depth form))
-                    id))))
+    (conj (->identifier (if (:shadow form)
+                          (str id **unique-char** (:depth form))
+                          id))
+          {:loc (write-location (:id form))})))
 
 (defn write-var
   "handler for {:op :var} type forms. Such forms may
