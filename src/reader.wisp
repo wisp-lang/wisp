@@ -537,18 +537,21 @@
         read-macro (macros ch)
         form (cond read-macro (read-macro reader ch)
                    (number-literal? reader ch) (read-number reader ch)
-                   :else (read-symbol reader ch))]
+                   :else (read-symbol reader ch))
+        end {:line (:line reader)
+             :column (:column reader)}
+        location {:uri (:uri reader)
+                  :start start
+                  :end end}]
     (cond (identical? form reader) form
+          ;; TODO consider boxing primitives into associtade
+          ;; types to include metadata on those.
           (not (or (string? form)
                    (number? form)
                    (boolean? form)
                    (nil? form)
                    (keyword? form))) (with-meta form
-                                                (conj {:uri (:uri reader)
-                                                       :start start
-                                                       :end {:line (:line reader)
-                                                             :column (:column reader)}}
-                                                      (meta form)))
+                                       (conj location (meta form)))
           :else form)))
 
 (defn read
