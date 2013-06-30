@@ -230,12 +230,26 @@
   like foo.bar.baz producing (aget foo 'bar.baz) form. This enables
   renaming of shadowed symbols."
   [env form]
-  (let [forms (split (name form) \.)]
-    (if (> (count forms) 1)
-      (analyze env (list 'aget
-                         (symbol (first forms))
-                         (list 'quote (symbol (join \. (rest forms))))))
-      (analyze-identifier env form))))
+  (let [forms (split (name form) \.)
+        metadata (meta form)
+        start (:start metadata)
+        end (:end metadata)
+        expansion (if (> (count forms) 1)
+                   (list 'aget
+                         (with-meta (symbol (first forms))
+                           (conj metadata
+                                 {:start start
+                                  :end {:line (:line end)
+                                        :column (+ 1 (:column start) (count (first forms)))}}))
+                         (list 'quote
+                               (with-meta (symbol (join \. (rest forms)))
+                                 (conj metadata
+                                       {:end end
+                                        :start {:line (:line start)
+                                                :column (+ 1 (:column start) (count (first forms)))}})))))]
+    (if expansion
+      (analyze env (with-meta expansion (meta form)))
+      (analyze-special analyze-identifier env form))))
 
 (defn analyze-identifier
   [env form]
