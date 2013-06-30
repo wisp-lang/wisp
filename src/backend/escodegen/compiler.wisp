@@ -65,9 +65,6 @@
     (write-file-sync (join-path directory source-map-uri) source-map)
     (write-file-sync (join-path directory code-uri) code)))
 
-(if (:compile *env*)
-  (compile-with-source-map (:compile *env*)))
-
 
 (defn expand-defmacro
   "Like defn, but the resulting function name is declared as a
@@ -81,3 +78,7 @@
     (install-macro! id macro)
     nil))
 (install-macro! 'defmacro expand-defmacro)
+
+
+(if (:compile *env*)
+  (compile-with-source-map (:compile *env*)))
