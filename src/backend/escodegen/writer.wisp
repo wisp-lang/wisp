@@ -200,8 +200,10 @@
   like let that allow same named bindings."
   [node]
   (if (= :binding (:type (:binding node)))
-    (write-binding-var (:binding node))
-    (->identifier (name (:form node)))))
+    (conj (write-binding-var (:binding node))
+          {:loc (write-location (:form node))})
+    (conj {:loc (write-location (:form node))}
+          (->identifier (name (:form node))))))
 (install-writer! :var write-var)
 (install-writer! :param write-var)
 
@@ -249,20 +251,26 @@
   [form]
   {:type :VariableDeclaration
    :kind :var
+   :loc (write-location (:form form))
    :declarations [{:type :VariableDeclarator
                    :id (write (:id form))
-                   :init (if (:export form)
-                           (write-export form)
-                           (write (:init form)))}]})
+                   :loc (write-location (:form (:id form)))
+                   :init (conj (if (:export form)
+                                 (write-export form)
+                                 (write (:init form))))}]})
 (install-writer! :def write-def)
 
 (defn write-binding
   [form]
-  {:type :VariableDeclaration
-   :kind :var
-   :declarations [{:type :VariableDeclarator
-                   :id (write-binding-var form)
-                   :init (write (:init form))}]})
+  (let [id (write-binding-var form)
+        init (write (:init form))]
+    {:type :VariableDeclaration
+     :kind :var
+     :loc {:start (:start (:loc id))
+           :end (:end (:loc init))}
+     :declarations [{:type :VariableDeclarator
+                     :id id
+                     :init init}]}))
 (install-writer! :binding write-binding)
 
 (defn write-throw
@@ -322,6 +330,12 @@
     {:type :ExpressionStatement
      :expression node}))
 
+(defn ->return
+  [form]
+  {:type :ReturnStatement
+   :loc (write-location (:form form))
+   :argument (write form)})
+
 (defn write-body
   "Takes form that may contain `:statements` vector
   or `:result` form  and returns vector expression
@@ -354,10 +368,8 @@
   [form]
   (let [statements (map write-statement
                         (or (:statements form) []))
-
         result (if (:result form)
-                 {:type :ReturnStatement
-                  :argument (write (:result form))})]
+                 (->return (:result form)))]
 
     (if result
       (conj statements result)
@@ -944,10 +956,11 @@
 
 
 (defn expand-print
-  [& more]
+  [&form & more]
   "Prints the object(s) to the output for human consumption."
-  `(.log console ~@more))
-(install-macro! :print expand-print)
+  (let [op (with-meta `(.-log console) (meta &form))]
+    `(~op ~@more)))
+(install-macro! :print (with-meta expand-print {:implicit [:&form]}))
 
 (defn expand-str
   "str inlining and optimization via macros"
