@@ -1,16 +1,10 @@
-(ns wisp.hello-wold)
+(ns example.hello)
+
+;; Using private fn's since we don't have exports in this demo.
 
 (defn- hello
   [name]
   (print "hello " name))
-
-;; =>
-
-
-(hello "wisp")
-
-;; =>
-
 
 (defn- main
   []
