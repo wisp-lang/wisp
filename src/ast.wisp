@@ -15,7 +15,7 @@
 (defn meta
   "Returns the metadata of the given value or nil if there is no metadata."
   [value]
-  (if (object? value) (.-metadata value)))
+  (if (nil? value) nil (.-metadata value)))
 
 (def **ns-separator** "\u2044")
 
