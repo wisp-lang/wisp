@@ -56,7 +56,7 @@
         code-uri (replace file #".wisp$" ".js")
         source (read-file-sync uri {:encoding :utf-8})
         source-map-prefix (str "\n\n//# sourceMappingURL=" source-map-uri "\n")
-        output (transpile source {:uri uri
+        output (transpile source {:file code-uri
                                   :sourceMap file
                                   :sourceMapWithCode true})
 
