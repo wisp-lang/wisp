@@ -100,8 +100,14 @@
 (defn field-syntax
   "Example:
   '(.-field object) => '(aget object 'field)"
-  [op target & more]
-  (let [member (symbol (subs (name op) 2))]
+  [field target & more]
+  (let [metadata (meta field)
+        start (:start metadata)
+        end (:end metadata)
+        member (with-meta (symbol (subs (name field) 2))
+                 (conj metadata
+                       {:start {:line (:line start)
+                                :column (+ (:column start) 2)}}))]
     (if (or (nil? target)
             (count more))
       (throw (Error "Malformed member expression, expecting (.-member target)"))
