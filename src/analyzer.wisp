@@ -256,6 +256,8 @@
   {:op :var
    :type :identifier
    :form form
+   :start (:start (meta form))
+   :end (:end (meta form))
    :binding (resolve-binding env form)})
 
 (defn unresolved-binding
@@ -264,7 +266,9 @@
    :type :unresolved-binding
    :identifier {:type :identifier
                 :form (symbol (namespace form)
-                              (name form))}})
+                              (name form))}
+   :start (:start (meta form))
+   :end (:end (meta form))})
 
 (defn resolve-binding
   [env form]
@@ -306,7 +310,9 @@
         {:op :param
          :type :parameter
          :id form
-         :form form}))
+         :form form
+         :start (:start (meta form))
+         :end (:end (meta form))}))
 
 (defn with-binding
   "Returns enhanced environment with additional binding added
@@ -355,6 +361,8 @@
 
     {:op :let
      :form form
+     :start (:start (meta form))
+     :end (:end (meta form))
      :bindings bindings
      :statements (:statements expressions)
      :result (:result expressions)}))
@@ -388,13 +396,17 @@
   [form]
   {:op :list
    :items (map analyze-quoted (vec form))
-   :form form})
+   :form form
+   :start (:start (meta form))
+   :end (:end (meta form))})
 
 (defn analyze-quoted-vector
   [form]
   {:op :vector
    :items (map analyze-quoted form)
-   :form form})
+   :form form
+   :start (:start (meta form))
+   :end (:end (meta form))})
 
 (defn analyze-quoted-dictionary
   [form]
@@ -403,7 +415,9 @@
     {:op :dictionary
      :form form
      :keys names
-     :values values}))
+     :values values
+     :start (:start (meta form))
+     :end (:end (meta form))}))
 
 (defn analyze-quoted-symbol
   [form]
