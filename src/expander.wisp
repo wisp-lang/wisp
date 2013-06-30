@@ -268,7 +268,7 @@
   "Same as (def name (fn [params* ] exprs*)) or
   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
   to the var metadata"
-  [name & doc+meta+body]
+  [&form name & doc+meta+body]
   (let [doc (if (string? (first doc+meta+body))
               (first doc+meta+body))
 
@@ -285,9 +285,11 @@
         body (if metadata (rest meta+body) meta+body)
 
         ;; Combine all the metadata and add to a name.
-        id (with-meta name (conj (or (meta name) {}) metadata))]
-    `(def ~id (fn ~id ~@body))))
-(install-macro! :defn expand-defn)
+        id (with-meta name (conj (or (meta name) {}) metadata))
+
+        fn (with-meta `(fn ~id ~@body) (meta &form))]
+    `(def ~id ~fn)))
+(install-macro! :defn (with-meta expand-defn {:implicit [:&form]}))
 
 
 (defn expand-private-defn
