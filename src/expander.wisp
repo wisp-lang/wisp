@@ -19,9 +19,16 @@
 
 (defn- expand
   "Applies macro registered with given `name` to a given `form`"
-  [expander form]
+  [expander form env]
   (let [metadata (or (meta form) {})
-        expansion (apply expander (vec (rest form)))]
+        parmas (rest form)
+        implicit (map #(cond (= :&form %) form
+                             (= :&env %) env
+                             :else %)
+                      (or (:implicit (meta expander)) []))
+        params (vec (concat implicit (vec (rest form))))
+
+        expansion (apply expander params)]
     (if expansion
       (with-meta expansion (conj metadata (meta expansion)))
       expansion)))
