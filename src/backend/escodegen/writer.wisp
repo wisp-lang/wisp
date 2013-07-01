@@ -972,3 +972,15 @@
   []
   'debugger)
 (install-macro! :debugger! expand-debug)
+
+(defn expand-assert
+  ^{:doc "Evaluates expr and throws an exception if it does not evaluate to
+    logical true."}
+  ([x] (expand-assert x ""))
+  ([x message] (let [form (pr-str x)]
+                 `(if (not ~x)
+                    (throw (Error (str "Assert failed: "
+                                       ~message
+                                       ~form)))))))
+(install-macro! :assert expand-assert)
+
