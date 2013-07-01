@@ -6,8 +6,16 @@
   "author": "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)",
   "homepage": "https://github.com/Gozala/wisp",
   "keywords": [
-    "compiler", "language", "transpiler", "javascript", "lisp", "clojure",
-    "maros", "s-expression", "homoiconicity", "functional"
+    "compiler",
+    "language",
+    "transpiler",
+    "javascript",
+    "lisp",
+    "clojure",
+    "maros",
+    "s-expression",
+    "homoiconicity",
+    "functional"
   ],
   "repository": {
     "type": "git",
@@ -17,10 +25,12 @@
   "bugs": {
     "url": "https://github.com/Gozala/wisp/issues/"
   },
-  "licenses": [{
-    "type": "BSD New",
-    "url": "http://opensource.org/licenses/BSD-3-Clause"
-  }],
+  "licenses": [
+    {
+      "type": "BSD New",
+      "url": "http://opensource.org/licenses/BSD-3-Clause"
+    }
+  ],
   "devDependencies": {
     "browserify": "2.14.1",
     "wisp": "0.8.0"
@@ -37,6 +47,7 @@
     "test": "make all && make test"
   },
   "dependencies": {
-    "escodegen": "git://github.com/Constellation/escodegen.git#master"
+    "escodegen": "git://github.com/Constellation/escodegen.git#master",
+    "Base64": "~0.1.2"
   }
 }

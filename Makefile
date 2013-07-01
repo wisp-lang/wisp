@@ -12,7 +12,7 @@ else
 	WISP = ./node_modules/wisp/bin/wisp.js
 endif
 
-core: runtime sequence string ast reader compiler writer analyzer expander escodegen-writer
+core: runtime sequence string ast reader compiler writer analyzer expander escodegen
 node: core wisp node-engine repl
 browser: core browser-engine
 all: node browser
@@ -40,9 +40,19 @@ writer:
 	mkdir -p ./backend/javascript/
 	cat ./src/backend/javascript/writer.wisp | $(WISP) > ./backend/javascript/writer.js
 
+escodegen: escodegen-writer escodegen-compiler escodegen-generator
+
 escodegen-writer:
 	mkdir -p ./backend/escodegen/
 	cat ./src/backend/escodegen/writer.wisp | $(WISP) > ./backend/escodegen/writer.js
+
+escodegen-compiler:
+	mkdir -p ./backend/escodegen/
+	cat ./src/backend/escodegen/compiler.wisp | $(WISP) > ./backend/escodegen/compiler.js
+
+escodegen-generator:
+	mkdir -p ./backend/escodegen/
+	cat ./src/backend/escodegen/generator.wisp | $(WISP) > ./backend/escodegen/generator.js
 
 runtime:
 	cat ./src/runtime.wisp | $(WISP) > ./runtime.js
