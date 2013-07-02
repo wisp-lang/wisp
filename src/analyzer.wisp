@@ -438,6 +438,7 @@
 (defn analyze-quoted
   [form]
   (cond (symbol? form) (analyze-quoted-symbol form)
+        (keyword? form) (analyze-quoted-keyword form)
         (list? form) (analyze-quoted-list form)
         (vector? form) (analyze-quoted-vector form)
         (dictionary? form) (analyze-quoted-dictionary form)

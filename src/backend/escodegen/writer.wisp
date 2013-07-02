@@ -151,8 +151,8 @@
 (defn write-constant
   [form]
   (cond (nil? form) (write-nil form)
-        (keyword? form) (write-keyword form)
         (number? form) (write-number form)
+        (keyword? form) (write-literal (name form))
         :else (write-literal form)))
 (install-writer! :constant #(write-constant (:form %)))
 
@@ -168,7 +168,7 @@
 (defn write-keyword
   [form]
   {:type :Literal
-   :value (name form)})
+   :value (:form form)})
 (install-writer! :keyword write-keyword)
 
 (defn ->identifier
