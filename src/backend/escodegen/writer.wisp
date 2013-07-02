@@ -477,15 +477,19 @@
 (defn ->iffe
   [body id]
   {:type :CallExpression
-   :arguments []
-   :callee (->sequence [{:type :FunctionExpression
-                         :id id
-                         :params []
-                         :defaults []
-                         :expression false
-                         :generator false
-                         :rest nil
-                         :body body}])})
+   :arguments [{:type :ThisExpression}]
+   :callee {:type :MemberExpression
+            :computed false
+            :object {:type :FunctionExpression
+                     :id id
+                     :params []
+                     :defaults []
+                     :expression false
+                     :generator false
+                     :rest nil
+                     :body body}
+            :property {:type :Identifier
+                       :name :call}}})
 
 (defn ->loop-init
   []
