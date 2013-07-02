@@ -49,8 +49,7 @@
 
 (assert (symbol? (symbol "foo")))
 (assert (symbol? (symbol "/")))
-; TODO: Fix
-;(assert (symbol? (symbol "")))
+(assert (symbol? (symbol "")))
 (assert (symbol? (symbol "foo" "bar")))
 
 (assert (= "foo" (name (symbol "foo"))))
