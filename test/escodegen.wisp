@@ -16,7 +16,7 @@
 (defn transpile
   [code options]
   (let [forms (read* code)
-        analyzed (map #(analyze %) forms)
+        analyzed (map analyze forms)
         compiled (apply compile options analyzed)]
     compiled))
 
@@ -614,14 +614,14 @@
 (is (= (transpile "(let [])")
 "(function () {
     return void 0;
-})();"))
+}.call(this));"))
 
 ;; =>
 
 (is (= (transpile "(let [] x)")
 "(function () {
     return x;
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -630,7 +630,7 @@
     var xᐝ1 = 1;
     var yᐝ1 = 2;
     return xᐝ1 + yᐝ1;
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -644,7 +644,7 @@
         xᐝ1,
         yᐝ1
     ];
-})();") "same named bindings can be used")
+}.call(this));") "same named bindings can be used")
 
 ;; =>
 
@@ -652,7 +652,7 @@
                      (+ x y))")
 "(function () {
     return x + y;
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -663,7 +663,7 @@
     var xᐝ1 = 1;
     var yᐝ1 = y;
     return xᐝ1 + yᐝ1;
-})();"))
+}.call(this));"))
 
 
 ;; =>
@@ -677,7 +677,7 @@
     var xᐝ2 = inc(xᐝ1);
     var xᐝ3 = dec(xᐝ2);
     return xᐝ3 + 5;
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -690,7 +690,7 @@
     var yᐝ1 = inc(xᐝ1);
     var xᐝ2 = dec(xᐝ1);
     return xᐝ2 ? yᐝ1 : xᐝ2 + 5;
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -700,7 +700,7 @@
     return function () {
         return xᐝ1;
     };
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -710,7 +710,7 @@
     return function (x) {
         return x;
     };
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -720,7 +720,7 @@
     return function x() {
         return x;
     };
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -728,7 +728,7 @@
 "(function () {
     var xᐝ1 = x;
     return xᐝ1 < 2;
-})();") "macro forms inherit renaming")
+}.call(this));") "macro forms inherit renaming")
 
 ;; =>
 
@@ -736,7 +736,7 @@
 "(function () {
     var aᐝ1 = a;
     return aᐝ1.a;
-})();") "member targets also renamed")
+}.call(this));") "member targets also renamed")
 
 ;; =>
 
@@ -918,7 +918,7 @@
         recur = xᐝ1 < 7 ? console.log(xᐝ1) : (loop[0] = xᐝ1 - 2, loop);
     } while (xᐝ1 = loop[0], recur === loop);
     return recur;
-})();"))
+}.call(this));"))
 
 ;; =>
 
@@ -936,7 +936,7 @@
         recur = isEmpty(formsᐝ1) ? resultᐝ1 : (loop[0] = rest(formsᐝ1), loop[1] = conj(resultᐝ1, process(first(formsᐝ1))), loop);
     } while (formsᐝ1 = loop[0], resultᐝ1 = loop[1], recur === loop);
     return recur;
-})();"))
+}.call(this));"))
 
 
 ;; =>
