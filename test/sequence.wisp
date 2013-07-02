@@ -151,7 +151,7 @@
 (print "test cons")
 
 (assert (not (empty? (cons 1 '()))) "cons creates non-empty list")
-(assert (not (empty? (cons 1 nil)) "cons onto nil is list of that item"))
+(assert (not (empty? (cons 1 nil))) "cons onto nil is list of that item")
 (assert (= (cons 1 nil) '(1)))
 (assert (= 1 (first (cons 1 nil))))
 (assert (= '() (rest (cons 1 nil))))
@@ -180,7 +180,8 @@
 ;; TODO fix this test
 ;; (assert (= {5 6, 1 2, 3 4} (conj {1 2, 3 4} [5 6])))
 
-(assert (not (empty? (cons 1 nil)) "cons onto nil is list of that item"))
+(assert (not (empty? (cons 1 nil)))
+        "cons onto nil is list of that item")
 (assert (= (cons 1 nil) '(1)))
 (assert (= 1 (first (cons 1 nil))))
 (assert (= '() (rest (cons 1 nil))))
