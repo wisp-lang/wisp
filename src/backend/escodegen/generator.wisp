@@ -27,11 +27,6 @@
 (defn generate
   [options & nodes]
   (let [source-map-uri (:source-map-uri options)
-        source-map-link (if source-map-uri
-                          (str "\n\n//# sourceMappingURL="
-                               source-map-uri
-                               "\n")
-                          "")
         ast (apply write* nodes)
 
         output (generate* ast {:file (:output-uri options)
