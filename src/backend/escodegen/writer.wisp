@@ -531,7 +531,7 @@
         result (:result form)
         bindings (:bindings form)
 
-        loop-body (conj (map write statements)
+        loop-body (conj (map write-statement statements)
                         (->statement (->set!-recur result)))
         body (concat [(
                        ->loop-init)]
