@@ -448,7 +448,7 @@
                    {:statements (vec (concat
                                       (:bindings form)
                                       (:statements form)))})]
-    (->iffe (->block (write-body body)))))
+    (->iife (->block (write-body body)))))
 (install-writer! :let write-let)
 
 (defn ->rebind
@@ -474,7 +474,7 @@
   {:type :SequenceExpression
    :expressions expressions})
 
-(defn ->iffe
+(defn ->iife
   [body id]
   {:type :CallExpression
    :arguments [{:type :ThisExpression}]
@@ -541,7 +541,7 @@
                      [{:type :ReturnStatement
                        :argument {:type :Identifier
                                   :name :recur}}])]
-    (->iffe (->block (vec body)) 'loop)))
+    (->iife (->block (vec body)) 'loop)))
 (install-writer! :loop write-loop)
 
 (defn ->recur
