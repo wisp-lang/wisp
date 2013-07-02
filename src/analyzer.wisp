@@ -328,7 +328,9 @@
 
 (defn sub-env
   [env]
-  {:enclosed (or (:locals env) {})
+  {:enclosed (conj {}
+                   (:enclosed env)
+                   (:locals env))
    :locals {}
    :bindings []
    :params (or (:params env) [])})
