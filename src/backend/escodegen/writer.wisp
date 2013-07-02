@@ -183,7 +183,9 @@
     ;; to shadowing depth. This allows bindings initializer safely
     ;; access binding before shadowing it.
     (conj (->identifier (if (:shadow form)
-                          (str id **unique-char** (:depth form))
+                          (str (translate-identifier id)
+                               **unique-char**
+                               (:depth form))
                           id))
           {:loc (write-location (:id form))})))
 
