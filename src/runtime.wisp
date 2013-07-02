@@ -22,15 +22,15 @@
 (defn dictionary
   "Creates dictionary of given arguments. Odd indexed arguments
   are used for keys and evens for values"
-  []
+  [& pairs]
   ; TODO: We should convert keywords to names to make sure that keys are not
   ; used in their keyword form.
-  (loop [key-values (.call Array.prototype.slice arguments)
+  (loop [key-values pairs
          result {}]
     (if (.-length key-values)
       (do
-        (set! (get result (get key-values 0))
-              (get key-values 1))
+        (set! (aget result (aget key-values 0))
+              (aget key-values 1))
         (recur (.slice key-values 2) result))
       result)))
 
