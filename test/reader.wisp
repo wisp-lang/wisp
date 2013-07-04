@@ -4,7 +4,7 @@
                                   unquote meta dictionary pr-str]]
             [wisp.src.runtime :refer [dictionary nil? str =]]
             [wisp.src.reader :refer [read-from-string]]
-            [wisp.src.sequence :refer [list]]))
+            [wisp.src.sequence :refer [list reduce]]))
 
 (def read-string read-from-string)
 
