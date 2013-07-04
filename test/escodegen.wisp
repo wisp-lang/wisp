@@ -584,9 +584,9 @@
 
 (is (= (transpile "(let [x 1 y 2] (+ x y))")
 "(function () {
-    var xᐝ1 = 1;
-    var yᐝ1 = 2;
-    return xᐝ1 + yᐝ1;
+    var xø1 = 1;
+    var yø1 = 2;
+    return xø1 + yø1;
 }.call(this));"))
 
 ;; =>
@@ -595,11 +595,11 @@
                          y x]
                      [x y])")
 "(function () {
-    var xᐝ1 = y;
-    var yᐝ1 = xᐝ1;
+    var xø1 = y;
+    var yø1 = xø1;
     return [
-        xᐝ1,
-        yᐝ1
+        xø1,
+        yø1
     ];
 }.call(this));") "same named bindings can be used")
 
@@ -617,9 +617,9 @@
                          y y]
                      (+ x y))")
 "(function () {
-    var xᐝ1 = 1;
-    var yᐝ1 = y;
-    return xᐝ1 + yᐝ1;
+    var xø1 = 1;
+    var yø1 = y;
+    return xø1 + yø1;
 }.call(this));"))
 
 
@@ -630,10 +630,10 @@
                          x (dec x)]
                      (+ x 5))")
 "(function () {
-    var xᐝ1 = 1;
-    var xᐝ2 = inc(xᐝ1);
-    var xᐝ3 = dec(xᐝ2);
-    return xᐝ3 + 5;
+    var xø1 = 1;
+    var xø2 = inc(xø1);
+    var xø3 = dec(xø2);
+    return xø3 + 5;
 }.call(this));"))
 
 ;; =>
@@ -643,19 +643,19 @@
                          x (dec x)]
                      (if x y (+ x 5)))")
 "(function () {
-    var xᐝ1 = 1;
-    var yᐝ1 = inc(xᐝ1);
-    var xᐝ2 = dec(xᐝ1);
-    return xᐝ2 ? yᐝ1 : xᐝ2 + 5;
+    var xø1 = 1;
+    var yø1 = inc(xø1);
+    var xø2 = dec(xø1);
+    return xø2 ? yø1 : xø2 + 5;
 }.call(this));"))
 
 ;; =>
 
 (is (= (transpile "(let [x x] (fn [] x))")
 "(function () {
-    var xᐝ1 = x;
+    var xø1 = x;
     return function () {
-        return xᐝ1;
+        return xø1;
     };
 }.call(this));"))
 
@@ -663,7 +663,7 @@
 
 (is (= (transpile "(let [x x] (fn [x] x))")
 "(function () {
-    var xᐝ1 = x;
+    var xø1 = x;
     return function (x) {
         return x;
     };
@@ -673,7 +673,7 @@
 
 (is (= (transpile "(let [x x] (fn x [] x))")
 "(function () {
-    var xᐝ1 = x;
+    var xø1 = x;
     return function x() {
         return x;
     };
@@ -683,16 +683,16 @@
 
 (is (= (transpile "(let [x x] (< x 2))")
 "(function () {
-    var xᐝ1 = x;
-    return xᐝ1 < 2;
+    var xø1 = x;
+    return xø1 < 2;
 }.call(this));") "macro forms inherit renaming")
 
 ;; =>
 
 (is (= (transpile "(let [a a] a.a)")
 "(function () {
-    var aᐝ1 = a;
-    return aᐝ1.a;
+    var aø1 = a;
+    return aø1.a;
 }.call(this));") "member targets also renamed")
 
 ;; =>
@@ -870,10 +870,10 @@
                           (recur (- x 2))))")
 "(function loop() {
     var recur = loop;
-    var xᐝ1 = 10;
+    var xø1 = 10;
     do {
-        recur = xᐝ1 < 7 ? console.log(xᐝ1) : (loop[0] = xᐝ1 - 2, loop);
-    } while (xᐝ1 = loop[0], recur === loop);
+        recur = xø1 < 7 ? console.log(xø1) : (loop[0] = xø1 - 2, loop);
+    } while (xø1 = loop[0], recur === loop);
     return recur;
 }.call(this));"))
 
@@ -887,11 +887,11 @@
                                  (conj result (process (first forms))))))")
 "(function loop() {
     var recur = loop;
-    var formsᐝ1 = forms;
-    var resultᐝ1 = [];
+    var formsø1 = forms;
+    var resultø1 = [];
     do {
-        recur = isEmpty(formsᐝ1) ? resultᐝ1 : (loop[0] = rest(formsᐝ1), loop[1] = conj(resultᐝ1, process(first(formsᐝ1))), loop);
-    } while (formsᐝ1 = loop[0], resultᐝ1 = loop[1], recur === loop);
+        recur = isEmpty(formsø1) ? resultø1 : (loop[0] = rest(formsø1), loop[1] = conj(resultø1, process(first(formsø1))), loop);
+    } while (formsø1 = loop[0], resultø1 = loop[1], recur === loop);
     return recur;
 }.call(this));"))
 

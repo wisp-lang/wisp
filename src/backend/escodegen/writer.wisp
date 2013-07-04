@@ -17,10 +17,10 @@
             [escodegen :refer [generate]]))
 
 
-;; Define unique character that is valid JS identifier that will
+;; Define character that is valid JS identifier that will
 ;; be used in generated symbols to avoid conflicts
-;; http://www.fileformat.info/info/unicode/char/141d/index.htm
-(def **unique-char** "ᐝ")
+;; http://www.fileformat.info/info/unicode/char/f8/index.htm
+(def **unique-char** "\u00F8")
 
 (defn ->camel-join
   [prefix key]
