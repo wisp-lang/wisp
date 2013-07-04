@@ -1,36 +1,10 @@
 (ns wisp.test.analyzer
-  (:require [wisp.src.analyzer :refer [analyze]]
+  (:require [wisp.test.util :refer [is thrown?]]
+            [wisp.src.analyzer :refer [analyze]]
             [wisp.src.ast :refer [meta symbol pr-str]]
             [wisp.src.sequence :refer [first second third map list]]
             [wisp.src.runtime :refer [=]]))
 
-(defmacro is
-  "Generic assertion macro. 'form' is any predicate test.
-  'msg' is an optional message to attach to the assertion.
-  Example: (is (= 4 (+ 2 2)) \"Two plus two should be 4\")
-
-  Special forms:
-
-  (is (thrown? c body)) checks that an instance of c is thrown from
-  body, fails if not; then returns the thing thrown.
-
-  (is (thrown-with-msg? c re body)) checks that an instance of c is
-  thrown AND that the message on the exception matches (with
-  re-find) the regular expression re."
-  ([form] `(is ~form ""))
-  ([form msg]
-   (let [op (first form)
-         actual (second form)
-         expected (third form)]
-     `(if ~form
-        true
-        (do
-          (print (str "Fail: " ~msg "\n"
-                      "expected: "
-                      (pr-str '~form) "\n"
-                      "actual:   "
-                      (pr-str (list '~op ~actual ~expected))))
-          false)))))
 
 (is (= (analyze {} ':foo)
        {:op :constant

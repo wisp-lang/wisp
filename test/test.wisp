@@ -1,11 +1,10 @@
 (ns wisp.test.index
-  (:require wisp.test.sequence
+  (:require wisp.test.util
+            wisp.test.sequence
             wisp.test.ast
             wisp.test.runtime
             wisp.test.string
             wisp.test.reader
-            wisp.test.compiler
+            wisp.test.escodegen
             ;wisp.test.analyzer
             ))
-
-(print "\n\nAll tests passed!")
