@@ -99,6 +99,12 @@
       [x]
       (identical? (typeof x) "function"))))
 
+(defn ^boolean error?
+  "Returns true if x is of error type"
+  [x]
+  (or (instance? Error x)
+      (identical? (.call to-string x) "[object Error]")))
+
 (defn ^boolean string?
   "Return true if x is a string"
   [x]
