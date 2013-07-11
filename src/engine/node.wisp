@@ -8,7 +8,9 @@
   [path]
   (let [source (read-file-sync path :utf8)
         output (compile source {:source-uri path})]
-    (:code output)))
+    (if (:error output)
+      (throw (:error output))
+      (:code output))))
 
 ;; Register `.wisp` file extension so that
 ;; modules can be simply required.
