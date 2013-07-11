@@ -56,7 +56,9 @@
     (.on stdin :data #(set! source (str source %)))
     (.on stdin :end (fn []
                       (let [output (compile source)]
-                        (.write stdout (:code output)))))))
+                        (if (:error output)
+                          (throw (:error output))
+                          (.write stdout (:code output))))))))
 
 (defn stdio-or-repl
   []
