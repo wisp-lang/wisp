@@ -1,12 +1,15 @@
 (ns wisp.test.util
   "Kind of ugly hack for defining *failures* globals"
-  (:require [wisp.sequence :refer [count]]))
+  (:require [wisp.sequence :refer [count]]
+            [wisp.ast :refer [pr-str symbol]]))
 
 (def ^:dynamic *passed* [])
 (def ^:dynamic *failed* [])
 ;; Since macros so far don't bind scope we need this hack.
 (set! global.*failed* *failed*)
 (set! global.*passed* *passed*)
+(set! global.symbol symbol)
+(set! global.pr-str pr-str)
 
 (.once process :exit (fn []
                        (print "\nPassed: " (count *passed*)
