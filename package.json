@@ -48,6 +48,6 @@
   },
   "dependencies": {
     "escodegen": "git://github.com/Constellation/escodegen.git#master",
-    "base64-encode": "~0.1.2"
+    "base64-encode": "~1.0.1"
   }
 }
