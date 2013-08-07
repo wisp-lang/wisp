@@ -128,11 +128,7 @@
 
         ;; Try
         body (if handler-form
-               (analyze-block {:parent env
-                               :bindings (assoc {}
-                                           (name (:form (:name handler)))
-                                           (:name handler))}
-                              (butlast body-form))
+               (analyze-block env (butlast body-form))
                (analyze-block env body-form))]
     {:op :try
      :form form
