@@ -7,7 +7,7 @@
 
             [wisp.backend.escodegen.generator :refer [generate]
                                               :rename {generate generate-js}]
-            [Base64 :refer [atob btoa]]))
+            [base64-encode :as btoa]))
 
 (def generate generate-js)
 

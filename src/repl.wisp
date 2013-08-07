@@ -5,7 +5,7 @@
             [wisp.sequence :refer [count list conj cons vec]]
             [wisp.compiler :refer [compile read-forms analyze-forms generate]]
             [wisp.ast :refer [pr-str]]
-            [Base64 :refer [atob btoa]]))
+            [base64-encode :as [atob btoa]]))
 
 (defn evaluate-code
   "Evaluates some text from REPL input. If multiple forms are

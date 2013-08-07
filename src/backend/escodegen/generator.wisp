@@ -19,7 +19,7 @@
             [wisp.backend.escodegen.writer :refer [write compile write*]]
 
             [escodegen :refer [generate] :rename {generate generate*}]
-            [Base64 :refer [atob btoa]]
+            [base64-encode :as [btoa]]
             [fs :refer [read-file-sync write-file-sync]]
             [path :refer [basename dirname join]
                   :rename {join join-path}]))
