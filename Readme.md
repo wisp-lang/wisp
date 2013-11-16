@@ -1,30 +1,30 @@
-# wisp
+# _wisp_
 
-[![Build Status](https://secure.travis-ci.org/Gozala/wisp.png)](http://travis-ci.org/Gozala/wisp)
+[![Build Status](https://secure.travis-ci.org/Gozala/_wisp_.png)](http://travis-ci.org/Gozala/_wisp_)
 
-Wisp is a [homoiconic][homoiconicity] JavaScript dialect with [Clojure][]
-syntax, [s-expressions][] and [macros][]. Unlike [ClojureScript][], wisp
+_wisp_ is a [homoiconic][homoiconicity] JavaScript dialect with [Clojure][]
+syntax, [s-expressions][] and [macros][]. Unlike [ClojureScript][], _wisp_
 does not depend on the JVM and is completely self-hosted, embracing
 native JavaScript data structures for better interoperability.
 
-The main goal of wisp is to provide a rich subset of Clojure(Script) so 
-that packages written in wisp can work seamlessly with Clojure(Script) and
+The main goal of _wisp_ is to provide a rich subset of Clojure(Script) so 
+that packages written in _wisp_ can work seamlessly with Clojure(Script) and
 JavaScript without data marshalling or code changes.
 
-Wisp also does its best to compile down to JavaScript you would have written
-by hand - think of wisp as [markdown] for JavaScript programming, but with
+_wisp_ also does its best to compile down to JavaScript you would have written
+by hand - think of _wisp_ as [markdown] for JavaScript programming, but with
 the added subtlety of LISP S-expressions, [homoiconicity][homoiconicity] and 
 powerful [macros] that make it the easiest way to write JavaScript.
 
 ![meta](http://upload.wikimedia.org/wikipedia/en/b/ba/DrawingHands.jpg)
 
-# Try Wisp
+# Try _Wisp_
 
-You can try wisp on your browser by [trying the interactive compiler](http://jeditoolkit.com/try-wisp/) or [an online REPL](http://jeditoolkit.com/interactivate-wisp) with syntax highlighting.
+You can try _wisp_ on your browser by [trying the interactive compiler](http://jeditoolkit.com/try-wisp/) or [an online REPL](http://jeditoolkit.com/interactivate-wisp) with syntax highlighting.
 
 # Install
 
-You can install wisp locally via `npm` by doing:
+You can install _wisp_ locally via `npm` by doing:
 
     npm install -g wisp
 
@@ -57,7 +57,7 @@ true ;; => true
 
 #### Numbers
 
-Wisp numbers are directly equivalent to JavaScript numbers:
+_wisp_ numbers are directly equivalent to JavaScript numbers:
 
 ```clojure
 1  ;; => 1
@@ -65,7 +65,7 @@ Wisp numbers are directly equivalent to JavaScript numbers:
 
 #### Strings
 
-Wisp strings are JavaScript strings:
+_wisp_ strings are JavaScript strings:
 
 ```clojure
 "Hello world"
@@ -108,12 +108,12 @@ that compiles to property access in JavaScript:
 (:bar foo) ;; => (foo || 0)["bar"]
 ```
 
-Note that keywords in wisp are not real functions so they can't be composed
+Note that keywords in _wisp_ are not real functions so they can't be composed
 or passed to high order functions.
 
 #### Vectors
 
-Wisp vectors are plain JavaScript arrays, but nevertheless all standard
+_wisp_ vectors are plain JavaScript arrays, but nevertheless all standard
 library functions are non-destructive and pure functional as in Clojure.
 
 ```clojure
@@ -126,7 +126,7 @@ Note: Commas are considered whitespace and can be used if desired:
 ```
 #### Dictionaries
 
-Wisp does not have Clojure-like value-to-value maps by default, but rather dictionaries that map to plain JavaScript objects.
+_wisp_ does not have Clojure-like value-to-value maps by default, but rather dictionaries that map to plain JavaScript objects.
 
 Therefore, unlike Clojure, keys cannot consist of arbitrary types.
 
@@ -141,7 +141,7 @@ Like with vectors, commas are optional but can come handy for separating key val
 
 #### Lists
 
-What would be a LISP without lists right ?! Wisp is homoiconic and its
+What would be a LISP without lists right ?! _wisp_ is homoiconic and its
 code is made up of lists representing expressions. As in other LISPs
 first item of the expression is an operator / function, that is passed
 rest of the list items.
@@ -158,7 +158,7 @@ to this later.
 
 #### Arrays
 
-Wisp partially emulates Clojure handling of Java arrays by using `aget`:
+_wisp_ partially emulates Clojure handling of Java arrays by using `aget`:
 
 ```clojure
 (aget an-array 2) ; => anArray[2];
@@ -167,9 +167,9 @@ Wisp partially emulates Clojure handling of Java arrays by using `aget`:
 
 ## Conventions
 
-Wisp makes it's best effort to compile to JavaScript that one would write by
+_wisp_ makes it's best effort to compile to JavaScript that one would write by
 hand, but it also trys to embrace idiomatic naming conventios of LISP.
-To make this possible wisp translates LISP name conventions to related
+To make this possible _wisp_ translates LISP name conventions to related
 JavaScript conventions:
 
 ```clojure
@@ -194,14 +194,14 @@ very natural APIs from both JavaScript and LISP perspective.
 
 ## Special forms
 
-There are some special operators in wisp, in a sense that
+There are some special operators in _wisp_, in a sense that
 they compile to JavaScript expressions rather then function calls,
 although same named functions are also available in standard
 library to allow function composition.
 
 #### Arithmetic operations
 
-Wisp comes with special form for arithmetic operations.
+_wisp_ comes with special form for arithmetic operations.
 
 ```clojure
 (+ a b)        ; => a + b
@@ -214,7 +214,7 @@ Wisp comes with special form for arithmetic operations.
 
 #### Comparison operations
 
-Wisp comes with special forms for comparisons
+_wisp_ comes with special forms for comparisons
 
 ```clojure
 (identical? a b)     ;; => a === b
@@ -229,7 +229,7 @@ Wisp comes with special forms for comparisons
 
 #### Logical operations
 
-Wisp comes with special forms for logical operations
+_wisp_ comes with special forms for logical operations
 
 ```clojure
 (and a b)            ;; => a && b
@@ -251,7 +251,7 @@ Variable definitions also happen through special forms.
 
 #### Assignments
 
-In wisp new values can be set to a variables via `set!`
+In _wisp_ new values can be set to a variables via `set!`
 special form. Note that in functional programing binding changes are
 a bad practice, avoiding those would make your programs only better!
 Still if you need it you have it.
@@ -259,11 +259,11 @@ Still if you need it you have it.
 ```clojure
 (set! a 1)
 ```
-Note that `!` suffic serves as an alert of causing side-effects.
+Note that `!` suffix serves as an alert of causing side-effects.
 
 #### Conditionals
 
-Conditional code branching in wisp is expressed via
+Conditional code branching in _wisp_ is expressed via
 if special form. First expression following `if` is a condition,
 if it evaluates to `true` result of the `if` expression is the
 second expression, otherwise it's the third expression.
@@ -285,7 +285,7 @@ Else expression is optional, if missing and conditional evaluates to
 
 #### Combining expressions
 
-In wisp is everything is an expression, but sometimes one might
+In _wisp_ is everything is an expression, but sometimes one might
 want to combine multiple expressions into one, usually for the
 purpose of evaluating expressions that have side-effects
 
@@ -317,19 +317,19 @@ are bound to their respective expression results.
 
 #### Functions
 
-Wisp functions are JavaScript functions
+_wisp_ functions are JavaScript functions
 
 ```clojure
 (fn [x] (+ x 1))
 ```
 
-Wisp functions can have names, just as in JavaScript
+_wisp_ functions can have names, just as in JavaScript
 
 ```clojure
 (fn increment [x] (+ x 1))
 ```
 
-Wisp functions can also contain documentation and some metadata.
+_wisp_ functions can also contain documentation and some metadata.
 Note: Docstrings and metadata are not presented in compiled JavaScript yet,
 but in the future they will compile to comments associated with function.
 
@@ -340,7 +340,7 @@ but in the future they will compile to comments associated with function.
   [x] (+ x 1))
 ```
 
-Wisp makes capturing of rest arguments a lot easier than JavaScript. argument
+_wisp_ makes capturing of rest arguments a lot easier than JavaScript. argument
 that follows special `&` symbol will capture rest args in standar vector
 (array).
 
@@ -351,7 +351,7 @@ that follows special `&` symbol will capture rest args in standar vector
 
 #### Overloads
 
-In wisp functions can be overloaded depending on number
+In _wisp_ functions can be overloaded depending on number
 of arguments they take, without introspection of rest arguments.
 
 ```clojure
@@ -376,10 +376,10 @@ passed to it, it throws exception.
 #### Loops
 
 The classic way to build a loop in a LISP is a recursive call,
-and it’s in wisp as well. To do that it provides `loop` `recur`
+and it's in _wisp_ as well. To do that it provides `loop` `recur`
 pair.
 
-```clojuerscript
+```clojure
 (loop [x 10]
   (if (> x 1)
     (print x)
@@ -390,7 +390,7 @@ pair.
 
 ### Instantiation
 
-In wisp type instantiation has a concise form. The type
+In _wisp_ type instantiation has a concise form. The type
 function just needs to be suffixed with `.` character
 
 ```clojure
@@ -405,7 +405,7 @@ The more verbose but more JavaScript-like form is also valid
 
 #### Method calls
 
-In wisp method calls are no different from function calls, it's just that method
+In _wisp_ method calls are no different from function calls, it's just that method
 functions are prefixed with `.` character
 
 ```clojure
@@ -420,7 +420,7 @@ More JavaScript-like forms are supported too!
 
 #### Attribute access
 
-In wisp attribute access is also just like function
+In _wisp_ attribute access is also just like function
 call. Attribute name just needs to be prefixed with `.-`
 
 ```clojure
@@ -435,7 +435,7 @@ Compound properties can be access via `get` special form
 
 #### Catching exceptions
 
-In wisp exceptions can be handled via `try` special form. As with everything
+In _wisp_ exceptions can be handled via `try` special form. As with everything
 else, the `try` form is also expression. It results to `nil` if no handling
 takes place.
 
@@ -472,8 +472,8 @@ idiomatic.
 
 ## Macros
 
-Wisp has a programmatic macro system which allows the compiler to
-be extended by user code. Many core constructs of Wisp are in fact
+_wisp_ has a programmatic macro system which allows the compiler to
+be extended by user code. Many core constructs of _wisp_ are in fact
 normal macros.
 
 #### quote
@@ -488,19 +488,19 @@ foo
 ```
 
 If you wish to refer to the literal symbol, rather than reference you
-could use
+could use:
 
 ```clojure
 (quote foo)
 ```
 
-or more usually
+or, more usually:
 
 ```clojure
 'foo
 ```
 
-Any expression can be quoted, to prevent its evaluation. Although your
+Any expression can be quoted to prevent its evaluation. Although your
 resulting programs should not have these forms compiled to JavaScript.
 
 ```clojure
@@ -509,9 +509,9 @@ resulting programs should not have these forms compiled to JavaScript.
 '(a b)
 ```
 
-Wisp doesn’t have `unless` special form or a macro, but it's trivial
-to implement it via macro. Although let's try implemting it as a
-function to understand a use case for macro!
+_wisp_ doesn't have the `unless` special form or a macro, but it's trivial
+to implement it via macro. Although let's try implementing it as a
+function to understand a use case for macros!
 
 We want to execute body unless condition is `true`.
 
@@ -521,7 +521,7 @@ We want to execute body unless condition is `true`.
 ```
 
 Although following code will log "should not print" anyway, since
-function arguments are exectued before function is called.
+function arguments are executed before function is called.
 
 ```clojure
 (unless-fn true (console.log "should not print"))
@@ -665,7 +665,7 @@ For functions there is even syntax sugar:
 ### Import
 
 Module importing is done via `ns` special form that is manually
-named. Unlike `ns` in clojure in wisp it's super minimalistic and
+named. Unlike `ns` in clojure in _wisp_ it's super minimalistic and
 supports only one essential way of importing modules:
 
 ```clojure
@@ -673,8 +673,8 @@ supports only one essential way of importing modules:
   "interactive code editing"
   (:require [interactivate.host :refer [start-host!]]
             [fs]
-            [wisp.backend.javascript.writer :as writer]
-            [wisp.sequence
+            [_wisp_.backend.javascript.writer :as writer]
+            [_wisp_.sequence
              :refer [first rest]
              :rename {first car rest cadr}]))
 ```
@@ -710,7 +710,7 @@ imported at runtime. Given example imports multiple modules:
      `car` and `cdr` names.
 
 While clojure has many other kind of reference forms they are
-not recognized by wisp and there for will be ignored.
+not recognized by _wisp_ and there for will be ignored.
 
 
 [homoiconicity]:http://en.wikipedia.org/wiki/Homoiconicity
