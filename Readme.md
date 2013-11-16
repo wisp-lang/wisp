@@ -1,53 +1,47 @@
 # wisp
 
-Wisp is a [homoiconic][homoiconicity] JavaScript dialect with [clojure][]
-syntax, [s-expressions][] and [macros][]. Unlike [clojurescript][], wisp
-does not depends on JVM and is completely self-hosted. It compromises
-clojure's awesome data structures and embraces native JS data structures
-to be a better at cooperation with JS. Goal of wisp is to present a subset
-of clojure(script) language such that packages written in wisp can be
-consumed natively by wisp, clojure(script) and JS when compiled, without
-data marshalling or any code changes.
+[![Build Status](https://secure.travis-ci.org/Gozala/wisp.png)](http://travis-ci.org/Gozala/wisp)
 
-Wisp also does it's best to compile to a JS code that you would have written
-by hand. Think of wisp as [markdown] for JS programing!
+Wisp is a [homoiconic][homoiconicity] JavaScript dialect with [Clojure][]
+syntax, [s-expressions][] and [macros][]. Unlike [ClojureScript][], wisp
+does not depend on the JVM and is completely self-hosted, embracing
+native JavaScript data structures for better interoperability.
 
-[Homoiconic][homoiconicity] syntax and [macros] are the primary features
-it can offer to a breader JS community.
+The main goal of wisp is to provide a rich subset of Clojure(Script) so 
+that packages written in wisp can work seamlessly with Clojure(Script) and
+JavaScript without data marshalling or code changes.
+
+Wisp also does its best to compile down to JavaScript you would have written
+by hand - think of wisp as [markdown] for JavaScript programming, but with
+the added subtlety of LISP S-expressions, [homoiconicity][homoiconicity] and 
+powerful [macros] that make it the easiest way to write JavaScript.
 
 ![meta](http://upload.wikimedia.org/wikipedia/en/b/ba/DrawingHands.jpg)
 
-# Try
+# Try Wisp
 
-You can try online tool that live compiles entered code to JS:
-http://jeditoolkit.com/try-wisp/
-
-You can also try interactive wisp editor that live evalutes entered
-wisp codes:
-http://jeditoolkit.com/interactivate-wisp
+You can try wisp on your browser by [trying the interactive compiler](http://jeditoolkit.com/try-wisp/) or [an online REPL](http://jeditoolkit.com/interactivate-wisp) with syntax highlighting.
 
 # Install
 
+You can install wisp locally via `npm` by doing:
+
     npm install -g wisp
 
-[![Build Status](https://secure.travis-ci.org/Gozala/wisp.png)](http://travis-ci.org/Gozala/wisp)
+...and then running `wisp` to get a REPL. To compile standalone `.wisp` files, simply do:
+
+    cat in.wisp | wisp > out.js
 
 
-# Introduction
-
-
-Wisp is homoiconic JS dialect with a clojure syntax, s-expressions and
-macros. Key difference from clojure(script) is that wisp embraces JS data
-structures but without sacrificing functional merits.
-
+# Language Essentials
 
 ## Data structures
 
 
 #### nil
 
-`nil` is just like JS `undefined` with a difference that it
-cannot be redefined. It's just a shortcut for `void(0)` in JS.
+`nil` is just like JavaScript `undefined` with the difference that it
+cannot be redefined. It compiles down to `void(0)` in JavaScript.
 
 ```clojure
 nil ;; => void(0)
@@ -55,7 +49,7 @@ nil ;; => void(0)
 
 #### Booleans
 
-Wisp booleans `true` / `false` are plain JS booleans.
+`true` / `false` are directly equivalent to plain JavaScript booleans:
 
 ```clojure
 true ;; => true
@@ -63,7 +57,7 @@ true ;; => true
 
 #### Numbers
 
-Wisp numbers are JS numbers
+Wisp numbers are directly equivalent to JavaScript numbers:
 
 ```clojure
 1  ;; => 1
@@ -71,13 +65,12 @@ Wisp numbers are JS numbers
 
 #### Strings
 
-Wisp strings are JS Strings
+Wisp strings are JavaScript strings:
 
 ```clojure
 "Hello world"
 ```
-
-Wisp strings can be multiline
+...and can be multi-line:
 
 ```clojure
 "Hello,
@@ -86,7 +79,7 @@ My name is wisp!"
 
 #### Characters
 
-Characters are syntatic sugar for strings of single character
+Characters are syntactic sugar for single character strings:
 
 ```clojure
 \a  ;; => "a"
@@ -94,70 +87,62 @@ Characters are syntatic sugar for strings of single character
 ```
 
 #### Keywords
-Keywords are symbolic identifiers that evaluate to themselves.
+Keywords are symbolic identifiers that evaluate to themselves:
 
 ```clojure
 :keyword  ;; => "keyword"
 ```
 
-Since in JS string constants fulfill the purpose of symbolic identifiers,
-keywords compile to an equivalent strings in JS. This allows using
-keywords in both clojure(script) & JS idiomatic ways:
+Since in JavaScript string constants fulfill the purpose of symbolic identifiers,
+keywords compile to equivalent strings in JavaScript. This allows using
+keywords in Clojure(Script) and JavaScript idiomatic fashion:
 
 ```clojure
 (window.addEventListener :load handler false)
 ```
 
-Keywords can also be invoked as functions, although it's just a syntax sugar
-that compiles to property access in JS:
+Keywords can also be invoked as functions, although that too is syntax sugar
+that compiles to property access in JavaScript:
 
 ```clojure
 (:bar foo) ;; => (foo || 0)["bar"]
 ```
 
 Note that keywords in wisp are not real functions so they can't be composed
-or passed to a high order functions.
+or passed to high order functions.
 
 #### Vectors
 
-Wisp vectors are plain JS arrays, but never the less all standard
-library functions are non-destructive and pure functional as it's in
-Clojure.
+Wisp vectors are plain JavaScript arrays, but nevertheless all standard
+library functions are non-destructive and pure functional as in Clojure.
 
 ```clojure
 [ 1 2 3 4 ]
 ```
-Note: Commas are whitespace & can be used if desired
+Note: Commas are considered whitespace and can be used if desired:
 
 ```clojure
 [ 1, 2, 3, 4]
 ```
-
 #### Dictionaries
 
-Wisp does not has clojure like value to value maps by default, instead
-it has dictionairies, or rather plain JS objects, there for unlike in
-clojure, keys can not be of an arbitary types.
+Wisp does not have Clojure-like value-to-value maps by default, but rather dictionaries that map to plain JavaScript objects.
+
+Therefore, unlike Clojure, keys cannot consist of arbitrary types.
 
 ```clojure
 { "foo" bar :beep-bop "bop" 1 2 }
 ```
-
-Commas are optional but can come handy for separating key value pairs.
+Like with vectors, commas are optional but can come handy for separating key value pairs.
 
 ```clojure
 { :a 1, :b 2 }
 ```
 
-Support for real Clojure like maps can be later made available via
-libraries. Idea of adding support of standard JSONs syntax is also
-being considered.
-
-
 #### Lists
 
-What would be a lisp without lists right ?! Wisp is homoiconic and its
-code is made up of lists representing expressions. As in other lisps
+What would be a LISP without lists right ?! Wisp is homoiconic and its
+code is made up of lists representing expressions. As in other LISPs
 first item of the expression is an operator / function, that is passed
 rest of the list items.
 
@@ -166,17 +151,26 @@ rest of the list items.
 (foo bar baz) ; => foo(bar, baz);
 ```
 
-In compiled JS it's quite unlikely to end up with lists as it's
+In compiled JavaScript it's quite unlikely to end up with lists as it's
 primarily serves it's purpose at compile time. Never the less lists
 are exposed by standard library and can be used, but we'll get back
 to this later.
 
+#### Arrays
+
+Wisp partially emulates Clojure handling of Java arrays by using `aget`:
+
+```clojure
+(aget an-array 2) ; => anArray[2];
+(set! (aget an-array 2) "bar") ; => anArray[2] = "bar";
+```
+
 ## Conventions
 
-Wisp makes it's best effort to compile to JS that one would write by
-hand, but it also trys to embrace idiomatic naming conventios of lisp.
-To make this possible wisp translates lisp name conventions to related
-JS conventions:
+Wisp makes it's best effort to compile to JavaScript that one would write by
+hand, but it also trys to embrace idiomatic naming conventios of LISP.
+To make this possible wisp translates LISP name conventions to related
+JavaScript conventions:
 
 ```clojure
 (dash-delimited)   ;; => dashDelimited
@@ -187,7 +181,7 @@ JS conventions:
 
 Side effect of this is that same thing may be expressed in a few differnt
 ways, although it's unlikely to cause problems instead it should lead to
-very natural APIs from both JS and lisp perspective.
+very natural APIs from both JavaScript and LISP perspective.
 
 ```clojure
 (parse-int x)
@@ -201,7 +195,7 @@ very natural APIs from both JS and lisp perspective.
 ## Special forms
 
 There are some special operators in wisp, in a sense that
-they compile to JS expressions rather then function calls,
+they compile to JavaScript expressions rather then function calls,
 although same named functions are also available in standard
 library to allow function composition.
 
@@ -323,20 +317,20 @@ are bound to their respective expression results.
 
 #### Functions
 
-Wisp functions are JS functions
+Wisp functions are JavaScript functions
 
 ```clojure
 (fn [x] (+ x 1))
 ```
 
-Wisp functions can have names, just as in JS
+Wisp functions can have names, just as in JavaScript
 
 ```clojure
 (fn increment [x] (+ x 1))
 ```
 
 Wisp functions can also contain documentation and some metadata.
-Note: Docstrings and metadata are not presented in compiled JS yet,
+Note: Docstrings and metadata are not presented in compiled JavaScript yet,
 but in the future they will compile to comments associated with function.
 
 ```clojure
@@ -346,7 +340,7 @@ but in the future they will compile to comments associated with function.
   [x] (+ x 1))
 ```
 
-Wisp makes capturing of rest arguments a lot easier than JS. argument
+Wisp makes capturing of rest arguments a lot easier than JavaScript. argument
 that follows special `&` symbol will capture rest args in standar vector
 (array).
 
@@ -381,7 +375,7 @@ passed to it, it throws exception.
 
 #### Loops
 
-The classic way to build a loop in a Lisp is a recursive call,
+The classic way to build a loop in a LISP is a recursive call,
 and it’s in wisp as well. To do that it provides `loop` `recur`
 pair.
 
@@ -403,7 +397,7 @@ function just needs to be suffixed with `.` character
 (Type. options)
 ```
 
-The more verbose but more JS-like form is also valid
+The more verbose but more JavaScript-like form is also valid
 
 ```clojure
 (new Class options)
@@ -418,7 +412,7 @@ functions are prefixed with `.` character
 (.log console "hello wisp")
 ```
 
-More JS-like forms are supported too!
+More JavaScript-like forms are supported too!
 
 ```clojure
 (window.addEventListener "load" handler false)
@@ -485,7 +479,7 @@ normal macros.
 #### quote
 
 Before diving into macros too much, we need to learn about few more
-things. In lisp any expression can be marked to prevent it from being
+things. In LISP any expression can be marked to prevent it from being
 evaluated. For instance, if you enter the symbol `foo` you will be
 evaluating the reference to the value of the corresponding variable.
 
@@ -507,7 +501,7 @@ or more usually
 ```
 
 Any expression can be quoted, to prevent its evaluation. Although your
-resulting programs should not have these forms compiled to JS.
+resulting programs should not have these forms compiled to JavaScript.
 
 ```clojure
 'foo
@@ -545,7 +539,7 @@ arguments and return new form that is compiled instead.
 ```
 
 The body of unless macro executes at macro expansion time, producing an `if`
-form for compilation. Later this is compiled as usual. This way the compiled JS
+form for compilation. Later this is compiled as usual. This way the compiled JavaScript
 is a conditional instead of function call.
 
 ```clojure
@@ -611,8 +605,8 @@ and compile time resulting into diff program output.
 Not all of the macros can be expressed via templating, but all of the
 language is available at hand to assemble macro expanded form.
 For instance let's define a macro to ease functional chaining popular
-in JS but usually expressed via method chaining. For example following
-API is pioneered by jQuery is very common in JS:
+in JavaScript but usually expressed via method chaining. For example following
+API is pioneered by jQuery is very common in JavaScript:
 
 ```javascript
 open(target, "keypress").
