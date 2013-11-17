@@ -65,12 +65,9 @@
   ([source] (compile source {}))
   ([source options]
    (let [uri (:source-uri options)
-         source-uri (or uri
-                        (str "data:application/wisp;charset=utf-8;base64,"
-                             (btoa source)))
+         source-uri (or uri "anonymous.wisp")
          output-uri (or (:output-uri options)
-                        (if uri (replace uri #".wisp$" ".js")))
-
+                        (replace source-uri #".wisp$" ".js"))
          forms (read-forms source source-uri)
 
          ast (if (:error forms)
