@@ -673,8 +673,8 @@ supports only one essential way of importing modules:
   "interactive code editing"
   (:require [interactivate.host :refer [start-host!]]
             [fs]
-            [_wisp_.backend.javascript.writer :as writer]
-            [_wisp_.sequence
+            [wisp.backend.javascript.writer :as writer]
+            [wisp.sequence
              :refer [first rest]
              :rename {first car rest cadr}]))
 ```
