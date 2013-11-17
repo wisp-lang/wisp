@@ -79,7 +79,8 @@
                   (try              ;; TODO: Remove this
                                     ;; Old compiler has incorrect apply.
                     (apply generate (vec (cons (conj options
-                                                     {:source-uri source-uri
+                                                     {:source source
+                                                      :source-uri source-uri
                                                       :output-uri output-uri})
                                                (:ast ast))))
                     (catch error {:error error})))
