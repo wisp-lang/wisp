@@ -158,12 +158,22 @@ to this later.
 
 #### Arrays
 
-_wisp_ partially emulates Clojure handling of Java arrays by using `aget`:
+_wisp_ partially emulates Clojure(Script) handling of arrays in two ways:
+
+1. By using `get`, which compiles to guarded access in JavaScript:
+
+```clojure
+(get [1 2 3] 1) ; => ([1, 2, 3] || 0)[0]
+```
+
+2. By using `aget`, which compiles to unguarded access and can (for the moment) also be used to perform item assignments:
 
 ```clojure
 (aget an-array 2) ; => anArray[2];
 (set! (aget an-array 2) "bar") ; => anArray[2] = "bar";
 ```
+
+(`aset` will be added ASAP for symmetry, but you can easily define an equivalent macro for the moment)
 
 ## Conventions
 
@@ -329,16 +339,24 @@ _wisp_ functions can have names, just as in JavaScript
 (fn increment [x] (+ x 1))
 ```
 
-_wisp_ functions can also contain documentation and some metadata.
-Note: Docstrings and metadata are not presented in compiled JavaScript yet,
-but in the future they will compile to comments associated with function.
+_wisp_ function _declarations_ can also contain documentation and some metadata.
 
 ```clojure
-(fn incerement
-  "Returns a number one greater than given."
+(defn sum
+  "Return the sum of all arguments"
+  {:version "1.0"}
+  [x] (+ x 1))
+```
+
+Function _expressions, though, can only have names:
+
+```clojure
+(fn increment
   {:added "1.0"}
   [x] (+ x 1))
 ```
+
+_Note: Docstrings and metadata are not included in compiled JavaScript yet, but support for that is planned._
 
 _wisp_ makes capturing of rest arguments a lot easier than JavaScript. argument
 that follows special `&` symbol will capture rest args in standar vector
