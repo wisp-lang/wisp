@@ -26,20 +26,22 @@
 
 (defn generate
   [options & nodes]
-  (let [source-map-uri (:source-map-uri options)
-        ast (apply write* nodes)
+  (let [ast (apply write* nodes)
 
-        output (generate* ast {:file (:output-uri options)
+        output (generate* ast {:sourceContent (:source options)
                                :sourceMap (:source-uri options)
                                :sourceMapRoot (:source-root options)
                                :sourceMapWithCode true})]
 
+    ;; Workaround the fact that escodegen does not yet includes source
+    (.setSourceContent (:map output)
+                       (:source-uri options)
+                       (:source options))
+
     {:code (str (:code output)
                 "\n//# sourceMappingURL="
-                (if source-map-uri
-                  source-map-uri
-                  (str "data:application/json;charset=utf-8;base64,"
-                       (btoa (str (:map output)))))
+                "data:application/json;charset=utf-8;base64,"
+                (btoa (str (:map output)))
                 "\n")
      :source-map (:map output)
      :ast-js (if (:include-js-ast options) ast)}))
