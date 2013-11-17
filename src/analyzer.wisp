@@ -17,11 +17,20 @@
 (defn syntax-error
   [message form]
   (let [metadata (meta form)
+        line (:line (:start metadata))
+        uri (:uri metadata)
+        column (:column (:start metadata))
         error (SyntaxError (str message "\n"
                                 "Form: " (pr-str form) "\n"
-                                "URI: " (:uri metadata) "\n"
-                                "Line: " (:line (:start metadata)) "\n"
-                                "Column: " (:column (:start metadata))))]
+                                "URI: " uri "\n"
+                                "Line: " line "\n"
+                                "Column: " column))]
+    (set! error.lineNumber line)
+    (set! error.line line)
+    (set! error.columnNumber column)
+    (set! error.column column)
+    (set! error.fileName uri)
+    (set! error.uri uri)
     (throw error)))
 
 
