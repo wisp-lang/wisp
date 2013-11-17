@@ -1,7 +1,7 @@
 (ns wisp.wisp
   "Wisp program that reads wisp code from stdin and prints
   compiled javascript code into stdout"
-  (:require [fs :refer [read-file-sync write-file-sync]]
+  (:require [fs :refer [createReadStream]]
             [path :refer [basename dirname join resolve]]
             [module :refer [Module]]
 
@@ -9,7 +9,7 @@
             [wisp.sequence :refer [first second last count reduce
                                    conj partition]]
 
-            [wisp.repl :refer [start]]
+            [wisp.repl :refer [start] :rename {start start-repl}]
             [wisp.engine.node]
             [wisp.runtime :refer [str subs =]]
             [wisp.compiler :refer [compile]]))
@@ -20,59 +20,46 @@
   (identical? "--" (subs param 0 2)))
 
 ;; Just mungle all the `--param value` pairs into global *env* hash.
-(set! global.*env*
-      (reduce (fn [env param]
-                (let [name (first param)
-                      value (second param)]
-                  (if (flag? name)
-                    (set! (get env (subs name 2))
-                          (if (flag? value)
-                            true
-                            value)))
-                  env))
-              {}
-              (partition 2 1 process.argv)))
-
-
-(defn timeout-stdio
-  [task]
-  (setTimeout (fn []
-                (if (identical? process.stdin.bytes-read 0)
-                  (do
-                    (.removeAllListeners process.stdin :data)
-                    (.removeAllListeners process.stdin :end)
-                    (task))))
-              20))
-
-(defn compile-stdio
-  "Attach the appropriate listeners to compile scripts incoming
-  over stdin, and write them back to stdout."
+(defn parse-params
   []
-  (let [stdin process.stdin
-        stdout process.stdout
-        source ""]
-    (.resume stdin)
-    (.setEncoding stdin :utf8)
-    (.on stdin :data #(set! source (str source %)))
-    (.on stdin :end (fn []
-                      (let [output (compile source)]
-                        (if (:error output)
-                          (throw (:error output))
-                          (.write stdout (:code output))))))))
+  (reduce (fn [env param]
+            (let [name (first param)
+                  value (second param)]
+              (if (flag? name)
+                (set! (get env (subs name 2))
+                      (if (flag? value)
+                        true
+                        value)))
+              env))
+          {}
+          (partition 2 1 process.argv)))
 
-(defn stdio-or-repl
-  []
-  (compile-stdio)
-  (timeout-stdio start))
+
+
+(defn compile-stdin
+  [options]
+  (.resume process.stdin)
+  (compile-stream process.stdin options))
 
 (defn compile-file
   [path options]
-  (let [source (read-file-sync path {:encoding :utf-8})
-        output (compile source (conj {:source-uri path} options))]
-    (write-file-sync (:output-uri output) (:code output))
-    (if (:source-map-uri output)
-      (write-file-sync (:source-map-uri output)
-                       (:source-map output)))))
+  (compile-stream (createReadStream path)
+                  (conj {:source-uri path} options)))
+
+(defn compile-stream
+  [input options]
+  (let [source ""]
+    (.setEncoding input "utf8")
+    (.on input "data" #(set! source (str source %)))
+    (.once input "end" (fn [] (compile-string source options)))))
+
+(defn compile-string
+  [source options]
+  (let [output (compile source options)]
+    (if (:error output)
+      (throw (:error output))
+      (.write process.stdout (:code output)))))
+
 
 (defn run
   [path]
@@ -82,9 +69,9 @@
 
 (defn main
   []
-  (cond (< (count process.argv) 3) (stdio-or-repl)
-        (and (= (count process.argv) 3)
-             (not (flag? (last process.argv)))) (run (last process.argv))
-        (:compile *env*) (compile-file (:compile *env*) *env*)
-        (:repl *env*) (repl)
-        (:stdio *env*) (compile-stdio)))
+  (let [options (parse-params)]
+    (cond (not process.stdin.isTTY) (compile-stdin options)
+          (< (count process.argv) 3) (start-repl)
+          (and (= (count process.argv) 3)
+               (not (flag? (last process.argv)))) (run (last process.argv))
+          (:compile options) (compile-file (:compile options) options))))
