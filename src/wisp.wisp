@@ -6,12 +6,13 @@
             [module :refer [Module]]
 
             [wisp.string :refer [split join upper-case replace]]
-            [wisp.sequence :refer [first second last count reduce
-                                   conj partition]]
+            [wisp.sequence :refer [first second last count reduce rest
+                                   conj partition assoc drop empty?]]
 
             [wisp.repl :refer [start] :rename {start start-repl}]
             [wisp.engine.node]
-            [wisp.runtime :refer [str subs =]]
+            [wisp.runtime :refer [str subs = nil?]]
+            [wisp.ast :refer [pr-str]]
             [wisp.compiler :refer [compile]]))
 
 
@@ -19,46 +20,59 @@
   [param]
   (identical? "--" (subs param 0 2)))
 
+(defn flag->key
+  [flag]
+  (subs flag 2))
+
 ;; Just mungle all the `--param value` pairs into global *env* hash.
 (defn parse-params
-  []
-  (reduce (fn [env param]
-            (let [name (first param)
-                  value (second param)]
-              (if (flag? name)
-                (set! (get env (subs name 2))
-                      (if (flag? value)
-                        true
-                        value)))
-              env))
-          {}
-          (partition 2 1 process.argv)))
+  [params]
+  (loop [input params
+         output {}]
+    (if (empty? input)
+      output
+      (let [name (first input)
+            value (second input)]
+        (if (flag? name)
+          (if (or (nil? value) (flag? value))
+            (recur (rest input)
+                   (assoc output (flag->key name) true))
+            (recur (drop 2 input)
+                   (assoc output (flag->key name) value)))
+          (recur (rest input)
+                 output))))))
 
 
 
 (defn compile-stdin
   [options]
-  (.resume process.stdin)
-  (compile-stream process.stdin options))
+  (with-stream-content process.stdin
+                       compile-string
+                       options))
 
 (defn compile-file
   [path options]
-  (compile-stream (createReadStream path)
-                  (conj {:source-uri path} options)))
-
-(defn compile-stream
-  [input options]
-  (let [source ""]
-    (.setEncoding input "utf8")
-    (.on input "data" #(set! source (str source %)))
-    (.once input "end" (fn [] (compile-string source options)))))
+  (with-stream-content (createReadStream path)
+                       compile-string
+                       (conj {:source-uri path} options)))
 
 (defn compile-string
   [source options]
-  (let [output (compile source options)]
-    (if (:error output)
-      (throw (:error output))
-      (.write process.stdout (:code output)))))
+  (let [channel (or (:print options) :code)
+        output (compile source options)
+        content (if (= channel :code)
+                  (:code output)
+                  (JSON.stringify (get output channel) 2 2))]
+    (.write process.stdout (or content "nil"))
+    (if (:error output) (throw (:error output)))))
+
+(defn with-stream-content
+  [input resume options]
+  (let [content ""]
+    (.setEncoding input "utf8")
+    (.resume input)
+    (.on input "data" #(set! content (str content %)))
+    (.once input "end" (fn [] (resume content options)))))
 
 
 (defn run
@@ -67,9 +81,10 @@
   ;; https://github.com/joyent/node/blob/master/lib/module.js#L489-493
   (Module._load (resolve path) null true))
 
+
 (defn main
   []
-  (let [options (parse-params)]
+  (let [options (parse-params (drop 2 process.argv))]
     (cond (not process.stdin.isTTY) (compile-stdin options)
           (< (count process.argv) 3) (start-repl)
           (and (= (count process.argv) 3)
