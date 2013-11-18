@@ -64,10 +64,7 @@
                     by adding `.map` file extension."
   ([source] (compile source {}))
   ([source options]
-   (let [uri (:source-uri options)
-         source-uri (or uri "anonymous.wisp")
-         output-uri (or (:output-uri options)
-                        (replace source-uri #".wisp$" ".js"))
+   (let [source-uri (or (:source-uri options) "anonymous.wisp")
          forms (read-forms source source-uri)
 
          ast (if (:error forms)
@@ -80,17 +77,14 @@
                                     ;; Old compiler has incorrect apply.
                     (apply generate (vec (cons (conj options
                                                      {:source source
-                                                      :source-uri source-uri
-                                                      :output-uri output-uri})
+                                                      :source-uri source-uri})
                                                (:ast ast))))
                     (catch error {:error error})))
 
          result {:source-uri source-uri
-                 :output-uri output-uri
-                 :source-map-uri (:source-map-uri options)
-                 :ast (if (:include-ast options) (:ast ast))
-                 :forms (if (:include-forms options) (:forms forms))}]
-     (conj output result))))
+                 :ast (:ast ast)
+                 :forms (:forms forms)}]
+     (conj options output result))))
 
 (defn evaluate
   [source]
