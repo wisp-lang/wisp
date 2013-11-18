@@ -17,7 +17,7 @@
     "name of foo is foo")
 (is (identical? (name (read-string "foo/bar")) "bar")
     "name of foo/bar is bar")
-(is (identical? (name (read-string "\"foo\"")) "foo")
+(is (= (name (read-string "\"foo\"")) "foo")
     "name of \"foo\" is foo")
 
 

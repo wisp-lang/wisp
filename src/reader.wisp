@@ -352,8 +352,12 @@
      (nil? ch) (reader-error reader "EOF while reading string")
      (identical? \\ ch) (recur (str buffer (escape-char buffer reader))
                                (read-char reader))
-     (identical? "\"" ch) buffer
+     (identical? "\"" ch) (String. buffer)
      :default (recur (str buffer ch) (read-char reader)))))
+
+(defn read-character
+  [reader]
+  (String. (read-char reader)))
 
 (defn read-unquote
   "Reads unquote form ~form or ~(foo bar)"
@@ -501,6 +505,7 @@
 (defn macros [c]
   (cond
    (identical? c "\"") read-string
+   (identical? c \\) read-character
    (identical? c \:) read-keyword
    (identical? c ";") read-comment
    (identical? c \') (wrapping-reader 'quote)
@@ -514,7 +519,6 @@
    (identical? c \]) read-unmatched-delimiter
    (identical? c \{) read-map
    (identical? c \}) read-unmatched-delimiter
-   (identical? c \\) read-char
    (identical? c \%) read-param
    (identical? c \#) read-dispatch
    :else nil))
@@ -546,8 +550,7 @@
     (cond (identical? form reader) form
           ;; TODO consider boxing primitives into associtade
           ;; types to include metadata on those.
-          (not (or (string? form)
-                   (number? form)
+          (not (or (number? form)
                    (boolean? form)
                    (nil? form)
                    (keyword? form))) (with-meta form
