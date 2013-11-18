@@ -45,7 +45,7 @@
                 (btoa (str (:map output)))
                 "\n")
      :source-map (:map output)
-     :ast-js (if (:include-js-ast options) ast)}))
+     :js-ast ast}))
 
 
 (defn expand-defmacro
