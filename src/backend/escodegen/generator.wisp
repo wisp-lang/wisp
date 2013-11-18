@@ -28,7 +28,8 @@
   [options & nodes]
   (let [ast (apply write* nodes)
 
-        output (generate* ast {:sourceContent (:source options)
+        output (generate* ast {:file (:output-uri options)
+                               :sourceContent (:source options)
                                :sourceMap (:source-uri options)
                                :sourceMapRoot (:source-root options)
                                :sourceMapWithCode true})]
