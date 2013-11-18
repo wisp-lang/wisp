@@ -288,7 +288,8 @@
   ([x y] (or (identical? x y)
              (cond (nil? x) (nil? y)
                    (nil? y) (nil? x)
-                   (string? x) false
+                   (string? x) (and (string? y) (identical? (.toString x)
+                                                            (.toString y)))
                    (number? x) false
                    (fn? x) false
                    (boolean? x) false
