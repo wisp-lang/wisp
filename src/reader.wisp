@@ -339,7 +339,7 @@
         (def match (match-number buffer))
         (if (nil? match)
             (reader-error reader "Invalid number format [" buffer "]")
-            match))
+            (Number. match)))
       (recur (str buffer (read-char reader))
              (peek-char reader)))))
 
@@ -550,8 +550,7 @@
     (cond (identical? form reader) form
           ;; TODO consider boxing primitives into associtade
           ;; types to include metadata on those.
-          (not (or (number? form)
-                   (boolean? form)
+          (not (or (boolean? form)
                    (nil? form)
                    (keyword? form))) (with-meta form
                                        (conj location (meta form)))

@@ -152,7 +152,7 @@
   [form]
   (cond (nil? form) (write-nil form)
         (keyword? form) (write-literal (name form))
-        (number? form) (write-number form)
+        (number? form) (write-number (.valueOf form))
         (string? form) (write-string form)
         :else (write-literal form)))
 (install-writer! :constant #(write-constant (:form %)))

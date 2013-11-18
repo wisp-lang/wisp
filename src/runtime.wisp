@@ -290,7 +290,8 @@
                    (nil? y) (nil? x)
                    (string? x) (and (string? y) (identical? (.toString x)
                                                             (.toString y)))
-                   (number? x) false
+                   (number? x) (and (number? y) (identical? (.valueOf x)
+                                                            (.valueOf y)))
                    (fn? x) false
                    (boolean? x) false
                    (date? x) (date-equal? x y)
