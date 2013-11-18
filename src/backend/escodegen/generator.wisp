@@ -41,7 +41,7 @@
 
     {:code (str (:code output)
                 "\n//# sourceMappingURL="
-                "data:application/json;charset=utf-8;base64,"
+                "data:application/json;base64,"
                 (btoa (str (:map output)))
                 "\n")
      :source-map (:map output)
