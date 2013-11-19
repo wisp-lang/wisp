@@ -92,7 +92,7 @@
       {:start {:line (inc (:line start))
                :column (:column start)}
        :end {:line (inc (:line end))
-             :column (inc (:column end))}})))
+             :column (:column end)}})))
 
 (def **writers** {})
 (defn install-writer!
@@ -336,7 +336,8 @@
   (if (get **statements** (:type node))
     node
     {:type :ExpressionStatement
-     :expression node}))
+     :expression node
+     :loc (:loc node)}))
 
 (defn ->return
   [form]

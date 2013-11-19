@@ -543,7 +543,7 @@
                    (number-literal? reader ch) (read-number reader ch)
                    :else (read-symbol reader ch))
         end {:line (:line reader)
-             :column (:column reader)}
+             :column (inc (:column reader))}
         location {:uri (:uri reader)
                   :start start
                   :end end}]
