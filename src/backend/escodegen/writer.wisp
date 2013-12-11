@@ -728,22 +728,30 @@
 
 (defn write-ns
   [form]
-  (let [requirer (:name form)
+  (let [node (:form form)
+        requirer (:name form)
         ns-binding {:op :def
+                    :original-form node
                     :id {:op :var
                          :type :identifier
+                         :original-form (first node)
                          :form '*ns*}
                     :init {:op :dictionary
+                           :form node
                            :keys [{:op :var
                                    :type :identifier
+                                   :original-form node
                                    :form 'id}
                                   {:op :var
                                    :type :identifier
+                                   :original-form node
                                    :form 'doc}]
                            :values [{:op :constant
                                      :type :identifier
+                                     :original-form (:name form)
                                      :form (name (:name form))}
                                     {:op :constant
+                                     :original-form node
                                      :form (:doc form)}]}}
         requirements (vec (apply concat (map #(write-require % requirer)
                                              (:require form))))]
