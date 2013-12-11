@@ -252,9 +252,11 @@
           :target {:op :member-expression
                    :computed false
                    :target {:op :var
-                            :form 'exports}
-                   :property (:id form)}
-          :value (:init form)}))
+                            :form (with-meta 'exports (meta (:form (:id form))))}
+                   :property (:id form)
+                   :form (:form (:id form))}
+          :value (:init form)
+          :form (:form (:id form))}))
 
 (defn write-def
   [form]
