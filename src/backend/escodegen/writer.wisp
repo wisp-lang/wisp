@@ -104,7 +104,7 @@
   [op form]
   (let [writer (get **writers** op)]
     (assert writer (str "Unsupported operation: " op))
-    (conj {:loc (write-location (:form form))}
+    (conj {:loc (write-location (:form form) (:original-form form))}
           (writer form))))
 
 (def **specials** {})
@@ -114,7 +114,7 @@
 
 (defn write-special
   [writer form]
-  (conj {:loc (write-location (:form form))}
+  (conj {:loc (write-location (:form form) (:original-form form))}
         (apply writer (:params form))))
 
 
@@ -260,7 +260,7 @@
   [form]
   {:type :VariableDeclaration
    :kind :var
-   :loc (write-location (:form form))
+   :loc (write-location (:form form) (:original-form form))
    :declarations [{:type :VariableDeclarator
                    :id (write (:id form))
                    :loc (write-location (:form (:id form)))
@@ -343,7 +343,7 @@
 (defn ->return
   [form]
   {:type :ReturnStatement
-   :loc (write-location (:form form))
+   :loc (write-location (:form form) (:original-form form))
    :argument (write form)})
 
 (defn write-body
