@@ -84,15 +84,16 @@
   (throw (SyntaxError (str "Wrong number of arguments (" n ") passed to: " callee))))
 
 (defn write-location
-  [form]
+  [form original]
   (let [data (meta form)
-        start (:start data)
-        end (:end data)]
+        inherited (meta original)
+        start (or (:start form) (:start data) (:start inherited))
+        end (or (:end form) (:end data) (:end inherited))]
     (if (not (nil? start))
-      {:start {:line (inc (:line start))
-               :column (:column start)}
-       :end {:line (inc (:line end))
-             :column (:column end)}})))
+      {:start {:line (inc (:line start -1))
+               :column (:column start -1)}
+       :end {:line (inc (:line end -1))
+             :column (:column end -1)}})))
 
 (def **writers** {})
 (defn install-writer!
