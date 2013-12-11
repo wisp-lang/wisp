@@ -83,6 +83,14 @@
   [callee n]
   (throw (SyntaxError (str "Wrong number of arguments (" n ") passed to: " callee))))
 
+(defn inherit-location
+  [body]
+  (let [start (:start (:loc (first body)))
+        end (:loc (last body))]
+    (if (not (or (nil? start) (nil? end)))
+      {:start start :end end})))
+
+
 (defn write-location
   [form original]
   (let [data (meta form)
@@ -90,10 +98,11 @@
         start (or (:start form) (:start data) (:start inherited))
         end (or (:end form) (:end data) (:end inherited))]
     (if (not (nil? start))
-      {:start {:line (inc (:line start -1))
-               :column (:column start -1)}
-       :end {:line (inc (:line end -1))
-             :column (:column end -1)}})))
+      {:loc {:start {:line (inc (:line start -1))
+                     :column (:column start -1)}
+             :end {:line (inc (:line end -1))
+                   :column (:column end -1)}}}
+      {})))
 
 (def **writers** {})
 (defn install-writer!
@@ -104,7 +113,7 @@
   [op form]
   (let [writer (get **writers** op)]
     (assert writer (str "Unsupported operation: " op))
-    (conj {:loc (write-location (:form form) (:original-form form))}
+    (conj (write-location (:form form) (:original-form form))
           (writer form))))
 
 (def **specials** {})
@@ -114,7 +123,7 @@
 
 (defn write-special
   [writer form]
-  (conj {:loc (write-location (:form form) (:original-form form))}
+  (conj (write-location (:form form) (:original-form form))
         (apply writer (:params form))))
 
 
@@ -194,7 +203,7 @@
                                **unique-char**
                                (:depth form))
                           id))
-          {:loc (write-location (:id form))})))
+          (write-location (:id form)))))
 
 (defn write-var
   "handler for {:op :var} type forms. Such forms may
@@ -210,8 +219,8 @@
   [node]
   (if (= :binding (:type (:binding node)))
     (conj (write-binding-var (:binding node))
-          {:loc (write-location (:form node))})
-    (conj {:loc (write-location (:form node))}
+          (write-location (:form node)))
+    (conj (write-location (:form node))
           (->identifier (name (:form node))))))
 (install-writer! :var write-var)
 (install-writer! :param write-var)
@@ -260,15 +269,15 @@
 
 (defn write-def
   [form]
-  {:type :VariableDeclaration
-   :kind :var
-   :loc (write-location (:form form) (:original-form form))
-   :declarations [{:type :VariableDeclarator
-                   :id (write (:id form))
-                   :loc (write-location (:form (:id form)))
-                   :init (conj (if (:export form)
-                                 (write-export form)
-                                 (write (:init form))))}]})
+  (conj {:type :VariableDeclaration
+         :kind :var
+         :declarations [(conj {:type :VariableDeclarator
+                               :id (write (:id form))
+                               :init (conj (if (:export form)
+                                             (write-export form)
+                                             (write (:init form))))}
+                              (write-location (:form (:id form))))]}
+        (write-location (:form form) (:original-form form))))
 (install-writer! :def write-def)
 
 (defn write-binding
@@ -277,8 +286,7 @@
         init (write (:init form))]
     {:type :VariableDeclaration
      :kind :var
-     :loc {:start (:start (:loc id))
-           :end (:end (:loc init))}
+     :loc (inherit-location [id init])
      :declarations [{:type :VariableDeclarator
                      :id id
                      :init init}]}))
@@ -286,8 +294,9 @@
 
 (defn write-throw
   [form]
-  (->expression {:type :ThrowStatement
-                 :argument (write (:throw form))}))
+  (->expression (conj {:type :ThrowStatement
+                       :argument (write (:throw form))}
+                      (write-location (:form form) (:original-form form)))))
 (install-writer! :throw write-throw)
 
 (defn write-new
@@ -340,13 +349,14 @@
     node
     {:type :ExpressionStatement
      :expression node
-     :loc (:loc node)}))
+     :loc (:loc node)
+     }))
 
 (defn ->return
   [form]
-  {:type :ReturnStatement
-   :loc (write-location (:form form) (:original-form form))
-   :argument (write form)})
+  (conj {:type :ReturnStatement
+         :argument (write form)}
+        (write-location (:form form) (:original-form form))))
 
 (defn write-body
   "Takes form that may contain `:statements` vector
@@ -389,15 +399,19 @@
 
 (defn ->block
   [body]
-  {:type :BlockStatement
-   :body (if (vector? body)
-           body
-           [body])})
+  (if (vector? body)
+    {:type :BlockStatement
+     :body body
+     :loc (inherit-location body)}
+    {:type :BlockStatement
+     :body [body]
+     :loc (:loc body)}))
 
 (defn ->expression
-  [body]
+  [& body]
   {:type :CallExpression
    :arguments []
+   :loc (inherit-location body)
    :callee (->sequence [{:type :FunctionExpression
                          :id nil
                          :params []
@@ -409,7 +423,7 @@
 
 (defn write-do
   [form]
-  (->expression (write-body form)))
+  (apply ->expression (write-body form)))
 (install-writer! :do write-do)
 
 (defn write-if
@@ -424,17 +438,18 @@
   [form]
   (let [handler (:handler form)
         finalizer (:finalizer form)]
-    (->expression {:type :TryStatement
-                   :guardedHandlers []
-                   :block (->block (write-body (:body form)))
-                   :handlers (if handler
-                               [{:type :CatchClause
-                                 :param (write (:name handler))
-                                 :body (->block (write-body handler))}]
-                               [])
-                   :finalizer (cond finalizer (->block (write-body finalizer))
-                                    (not handler) (->block [])
-                                    :else nil)})))
+    (->expression (conj {:type :TryStatement
+                         :guardedHandlers []
+                         :block (->block (write-body (:body form)))
+                         :handlers (if handler
+                                     [{:type :CatchClause
+                                       :param (write (:name handler))
+                                       :body (->block (write-body handler))}]
+                                     [])
+                         :finalizer (cond finalizer (->block (write-body finalizer))
+                                          (not handler) (->block [])
+                                          :else nil)}
+                        (write-location (:form form) (:original-form form))))))
 (install-writer! :try write-try)
 
 (defn- write-binding-value
@@ -788,7 +803,8 @@
   [& forms]
   (let [body (map write-statement forms)]
     {:type :Program
-     :body body}))
+     :body body
+     :loc (inherit-location body)}))
 
 
 (defn compile
