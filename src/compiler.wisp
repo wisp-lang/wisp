@@ -4,6 +4,7 @@
             [wisp.string :refer [replace]]
             [wisp.sequence :refer [map conj cons vec first rest empty? count]]
             [wisp.runtime :refer [error?]]
+            [wisp.ast :refer [name]]
 
             [wisp.backend.escodegen.generator :refer [generate]
                                               :rename {generate generate-js}]
@@ -64,7 +65,7 @@
                     by adding `.map` file extension."
   ([source] (compile source {}))
   ([source options]
-   (let [source-uri (or (:source-uri options) "anonymous.wisp")
+   (let [source-uri (or (:source-uri options) (name :anonymous.wisp)) ;; HACK: Workaround for segfault #6691
          forms (read-forms source source-uri)
 
          ast (if (:error forms)

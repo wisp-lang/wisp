@@ -12,13 +12,14 @@
             [wisp.repl :refer [start] :rename {start start-repl}]
             [wisp.engine.node]
             [wisp.runtime :refer [str subs = nil?]]
-            [wisp.ast :refer [pr-str]]
+            [wisp.ast :refer [pr-str name]]
             [wisp.compiler :refer [compile]]))
 
 
 (defn flag?
   [param]
-  (identical? "--" (subs param 0 2)))
+  ;; HACK: Workaround for segfault #6691
+  (identical? (subs param 0 2) (name :--)))
 
 (defn flag->key
   [flag]
