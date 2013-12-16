@@ -1,4 +1,4 @@
-(ns wisp.backend.escodegen.compiler
+(ns wisp.backend.escodegen.generator
   (:require [wisp.reader :refer [read-from-string read*]
                          :rename {read-from-string read-string}]
             [wisp.ast :refer [meta with-meta symbol? symbol keyword? keyword
