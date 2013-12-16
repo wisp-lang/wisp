@@ -86,7 +86,7 @@
 (defn inherit-location
   [body]
   (let [start (:start (:loc (first body)))
-        end (:loc (last body))]
+        end (:end (:loc (last body)))]
     (if (not (or (nil? start) (nil? end)))
       {:start start :end end})))
 
