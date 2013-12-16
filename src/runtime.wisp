@@ -71,6 +71,12 @@
     (Object.create Object.prototype))))
 
 
+(defn ^boolean satisfies?
+  "Returns true if x satisfies the protocol"
+  [protocol x]
+  ;; TODO: Need some workaround for `nil`.
+  (and x (aget x protocol.id)))
+
 (defn ^boolean contains-vector?
   "Returns true if vector contains given element"
   [vector element]
