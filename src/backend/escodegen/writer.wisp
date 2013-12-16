@@ -423,7 +423,7 @@
 
 (defn write-do
   [form]
-  (if (:private (meta (first (:form form))))
+  (if (:block (meta (first (:form form))))
     (->block (write-body (conj form {:result nil
                                      :statements (conj (:statements form)
                                                        (:result form))})))
@@ -1061,7 +1061,7 @@
         protocol {:id (str ns "/" protocol-name)
                   :methods (:methods spec)
                   :signatures (:signatures spec)}]
-    `(~(with-meta 'do {:private true})
+    `(~(with-meta 'do {:block true})
        (def ~id ~protocol)
        ~@fns)))
 (install-macro! :defprotocol (with-meta expand-defprotocol {:implicit [:&env]}))
