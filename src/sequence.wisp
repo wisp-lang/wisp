@@ -116,7 +116,7 @@
   first item, followed by applying f to the second items, until sequence is
   exhausted."
   [f sequence]
-  (cond (vector? sequence) (.map sequence f)
+  (cond (vector? sequence) (.map sequence #(f %))
         (list? sequence) (map-list f sequence)
         (nil? sequence) '()
         :else (map f (seq sequence))))
@@ -423,3 +423,71 @@
       result
       (recur (dec n)
              (conj result x)))))
+
+(defn every?
+  [predicate sequence]
+  (.every (vec sequence) #(predicate %)))
+
+(defn some
+  "Returns the first logical true value of (pred x) for any x in coll,
+  else nil.  One common idiom is to use a set as pred, for example
+  this will return :fred if :fred is in the sequence, otherwise nil:
+  (some even? [1 3]) => false
+  (some even? [1 2 3 4] => true"
+  [predicate sequence]
+  (loop [items sequence]
+    (cond (empty? items) false
+          (predicate (first items)) true
+          :else (recur (rest items)))))
+
+
+(defn partition
+  ([n coll] (partition n n coll))
+  ([n step coll] (partition n step [] coll))
+  ([n step pad coll]
+   (loop [result []
+          items (seq coll)]
+     (let [chunk (take n items)
+           size (count chunk)]
+       (cond (identical? size n) (recur (conj result chunk)
+                                        (drop step items))
+             (identical? 0 size) result
+             (> n (+ size (count pad))) result
+             :else (conj result
+                         (take n (vec (concat chunk
+                                              pad)))))))))
+
+(defn interleave
+  ([ax bx]
+   (loop [cx []
+          ax ax
+          bx bx]
+     (if (or (empty? ax)
+             (empty? bx))
+       (seq cx)
+       (recur (conj cx
+                    (first ax)
+                    (first bx))
+              (rest ax)
+              (rest bx)))))
+  ([& sequences]
+   (loop [result []
+          sequences sequences]
+     (if (some empty? sequences)
+       result
+       (recur (concat result (map first sequences))
+              (map rest sequences))))))
+
+(defn nth
+  "Returns nth item of the sequence"
+  [sequence index not-found]
+  (cond (nil? sequence) not-found
+        (list? sequence) (if (< index (count sequence))
+                           (first (drop index sequence))
+                           not-found)
+        (or (vector? sequence)
+            (string? sequence)) (if (< index (count sequence))
+                                  (aget sequence index)
+                                  not-found)
+        (lazy-seq? sequence) (nth (lazy-seq-value sequence) index not-found)
+        :else (throw (TypeError "Unsupported type"))))

@@ -3,7 +3,7 @@
   as wisp data structures"
   (:require [wisp.sequence :refer [list list? count empty? first second third
                                    rest map vec cons conj rest concat last
-                                   butlast sort lazy-seq]]
+                                   butlast sort lazy-seq reduce]]
             [wisp.runtime :refer [odd? dictionary keys nil? inc dec vector? string?
                                   number? boolean? object? dictionary? re-pattern
                                   re-matches re-find str subs char vals =]]
@@ -260,21 +260,16 @@
 (defn read-delimited-list
   "Reads out delimited list"
   [delim reader recursive?]
-  (loop [form []]
-    (let [ch (read-past whitespace? reader)]
+  (loop [forms []]
+    (let [_ (read-past whitespace? reader)
+          ch (read-char reader)]
       (if (not ch) (reader-error reader :EOF))
       (if (identical? delim ch)
-        (do (read-char reader) form)
-        (let [macro (macros ch)]
-          (if macro
-            (let [result (macro reader (read-char reader))]
-              (recur (if (identical? result reader)
-                       form
-                       (conj form result))))
-            (let [o (read reader true nil recursive?)]
-              (recur (if (identical? o reader)
-                       form
-                       (conj form o))))))))))
+        forms
+        (let [form (read-form reader ch)]
+          (recur (if (identical? form reader)
+                   forms
+                   (conj forms form))))))))
 
 ;; data structure readers
 
@@ -344,7 +339,7 @@
         (def match (match-number buffer))
         (if (nil? match)
             (reader-error reader "Invalid number format [" buffer "]")
-            match))
+            (Number. match)))
       (recur (str buffer (read-char reader))
              (peek-char reader)))))
 
@@ -357,8 +352,12 @@
      (nil? ch) (reader-error reader "EOF while reading string")
      (identical? \\ ch) (recur (str buffer (escape-char buffer reader))
                                (read-char reader))
-     (identical? "\"" ch) buffer
+     (identical? "\"" ch) (String. buffer)
      :default (recur (str buffer ch) (read-char reader)))))
+
+(defn read-character
+  [reader]
+  (String. (read-char reader)))
 
 (defn read-unquote
   "Reads unquote form ~form or ~(foo bar)"
@@ -412,13 +411,19 @@
         (keyword ns name)))))
 
 (defn desugar-meta
-  [f]
-  (cond
-   ;; keyword should go before string since it is a string.
-   (keyword? f) (dictionary (name f) true)
-   (symbol? f) {:tag f}
-   (string? f) {:tag f}
-   :else f))
+  [form]
+  ;; keyword should go before string since it is a string.
+  (cond (keyword? form) (dictionary (name form) true)
+        (symbol? form) {:tag form}
+        (string? form) {:tag form}
+        (dictionary? form) (reduce (fn [result pair]
+                                     (set! (get result
+                                                (name (first pair)))
+                                           (second pair))
+                                     result)
+                                   {}
+                                   form)
+        :else form))
 
 (defn wrapping-reader
   [prefix]
@@ -500,6 +505,7 @@
 (defn macros [c]
   (cond
    (identical? c "\"") read-string
+   (identical? c \\) read-character
    (identical? c \:) read-keyword
    (identical? c ";") read-comment
    (identical? c \') (wrapping-reader 'quote)
@@ -513,7 +519,6 @@
    (identical? c \]) read-unmatched-delimiter
    (identical? c \{) read-map
    (identical? c \}) read-unmatched-delimiter
-   (identical? c \\) read-char
    (identical? c \%) read-param
    (identical? c \#) read-dispatch
    :else nil))
@@ -536,17 +541,19 @@
         read-macro (macros ch)
         form (cond read-macro (read-macro reader ch)
                    (number-literal? reader ch) (read-number reader ch)
-                   :else (read-symbol reader ch))]
+                   :else (read-symbol reader ch))
+        end {:line (:line reader)
+             :column (inc (:column reader))}
+        location {:uri (:uri reader)
+                  :start start
+                  :end end}]
     (cond (identical? form reader) form
-          (not (or (string? form)
-                   (number? form)
-                   (boolean? form)
+          ;; TODO consider boxing primitives into associtade
+          ;; types to include metadata on those.
+          (not (or (boolean? form)
                    (nil? form)
                    (keyword? form))) (with-meta form
-                                                (conj {:start start
-                                                       :end {:line (:line reader)
-                                                             :column (:column reader)}}
-                                                      (meta form)))
+                                       (conj location (meta form)))
           :else form)))
 
 (defn read
@@ -565,7 +572,7 @@
                                            is-recursive)
                 :else (read-form reader ch))]
       (if (identical? form reader)
-        (recur eof-is-error sentinel is-recursive)
+        (recur)
         form))))
 
 (defn read*

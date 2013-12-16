@@ -22,15 +22,15 @@
 (defn dictionary
   "Creates dictionary of given arguments. Odd indexed arguments
   are used for keys and evens for values"
-  []
+  [& pairs]
   ; TODO: We should convert keywords to names to make sure that keys are not
   ; used in their keyword form.
-  (loop [key-values (.call Array.prototype.slice arguments)
+  (loop [key-values pairs
          result {}]
     (if (.-length key-values)
       (do
-        (set! (get result (get key-values 0))
-              (get key-values 1))
+        (set! (aget result (aget key-values 0))
+              (aget key-values 1))
         (recur (.slice key-values 2) result))
       result)))
 
@@ -87,16 +87,23 @@
 
 (def to-string Object.prototype.to-string)
 
-(def fn?
+(def
+  ^{:tag boolean
+    :doc "Returns true if x is a function"}
+  fn?
   (if (identical? (typeof #".") "function")
-    (fn ^boolean fn?
-      "Returns true if x is a function"
+    (fn
       [x]
       (identical? (.call to-string x) "[object Function]"))
-    (fn ^boolean fn?
-      "Returns true if x is a function"
+    (fn
       [x]
       (identical? (typeof x) "function"))))
+
+(defn ^boolean error?
+  "Returns true if x is of error type"
+  [x]
+  (or (instance? Error x)
+      (identical? (.call to-string x) "[object Error]")))
 
 (defn ^boolean string?
   "Return true if x is a string"
@@ -110,13 +117,13 @@
   (or (identical? (typeof x) "number")
       (identical? (.call to-string x) "[object Number]")))
 
-(def vector?
+(def
+  ^{:tag boolean
+    :doc "Returns true if x is a vector"}
+  vector?
   (if (fn? Array.isArray)
     Array.isArray
-    (fn ^boolean vector?
-      "Returns true if x is a vector"
-      [x]
-      (identical? (.call to-string x) "[object Array]"))))
+    (fn [x] (identical? (.call to-string x) "[object Array]"))))
 
 (defn ^boolean date?
   "Returns true if x is a date"
@@ -281,8 +288,10 @@
   ([x y] (or (identical? x y)
              (cond (nil? x) (nil? y)
                    (nil? y) (nil? x)
-                   (string? x) false
-                   (number? x) false
+                   (string? x) (and (string? y) (identical? (.toString x)
+                                                            (.toString y)))
+                   (number? x) (and (number? y) (identical? (.valueOf x)
+                                                            (.valueOf y)))
                    (fn? x) false
                    (boolean? x) false
                    (date? x) (date-equal? x y)
@@ -510,3 +519,6 @@
 (defn print
   [& more]
   (apply console.log more))
+
+(def max Math.max)
+(def min Math.min)

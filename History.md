@@ -1,5 +1,20 @@
 # History
 
+## 0.8.1
+
+  - Remove support for third non-standard argument for `aget`.
+  - Implement `interleave` high order function.
+  - Implement `some` high order function.
+  - Implement `partition` high order function.
+  - Implement `every?` function.
+  - Rewrite `get` as macro compiling to `aget` forms.
+  - Make re-pattern writer.
+  - Alias `compile*` as `compile-program`.
+  - Implement `.` operator as a macro.
+  - Fix `aget` with for quoted attributes `(aget foo 'bar).
+  - Move `instance?` form expander to a writer.
+  - Add `(debugger!)` form to generate `debugger;` statements.
+
 ## 0.8.0
 
   - Remove `:use` forms in favor of `:require`.

@@ -1,6 +1,6 @@
 (ns wisp.ast
   (:require [wisp.sequence :refer [list? sequential? first second count
-                                   last map vec]]
+                                   last map vec repeat]]
             [wisp.string :refer [split join]]
             [wisp.runtime :refer [nil? vector? number? string? boolean?
                                   object? date? re-pattern? dictionary?
@@ -15,7 +15,7 @@
 (defn meta
   "Returns the metadata of the given value or nil if there is no metadata."
   [value]
-  (if (object? value) (.-metadata value)))
+  (if (nil? value) nil (.-metadata value)))
 
 (def **ns-separator** "\u2044")
 
@@ -29,10 +29,11 @@
 (set! Symbol.prototype.type Symbol.type)
 (set! Symbol.prototype.to-string
       (fn []
-        (let [ns (namespace this)]
+        (let [prefix (str "\uFEFF" "'")
+              ns (namespace this)]
           (if ns
-            (str ns "/" (name this))
-            (str (name this))))))
+            (str prefix ns "/" (name this))
+            (str prefix (name this))))))
 
 (defn symbol
   "Returns a Symbol with the given namespace and name."
@@ -44,7 +45,11 @@
    :else (Symbol. ns id)))
 
 (defn ^boolean symbol? [x]
-  (and x (identical? Symbol.type x.type)))
+  (or (and (string? x)
+           (identical? "\uFEFF" (aget x 0))
+           (identical? "'" (aget x 1)))
+      (and x
+           (identical? Symbol.type x.type))))
 
 (defn ^boolean keyword? [x]
   (and (string? x)
@@ -65,10 +70,15 @@
   [value]
   (last (split (subs value 1) **ns-separator**)))
 
+(defn- symbol-name
+  [value]
+  (or (.-name value)
+      (last (split (subs value 2) **ns-separator**))))
+
 (defn name
   "Returns the name String of a string, symbol or keyword."
   [value]
-  (cond (symbol? value) (.-name value)
+  (cond (symbol? value) (symbol-name value)
         (keyword? value) (keyword-name value)
         (string? value) value
         :else (throw (TypeError. (str "Doesn't support name: " value)))))
@@ -76,12 +86,19 @@
 (defn- keyword-namespace
   [x]
   (let [parts (split (subs x 1) **ns-separator**)]
-    (if (> (count parts) 1) (get parts 0))))
+    (if (> (count parts) 1) (aget parts 0))))
+
+(defn- symbol-namespace
+  [x]
+  (let [parts (if (string? x)
+                (split (subs x 1) **ns-separator**)
+                [(.-namespace x) (.-name x)])]
+    (if (> (count parts) 1) (aget parts 0))))
 
 (defn namespace
   "Returns the namespace String of a symbol or keyword, or nil if not present."
   [x]
-  (cond (symbol? x) (.-namespace x)
+  (cond (symbol? x) (symbol-namespace x)
         (keyword? x) (keyword-namespace x)
         :else (throw (TypeError. (str "Doesn't supports namespace: " x)))))
 
@@ -133,31 +150,41 @@
   (str "\"" s "\""))
 
 (defn ^string pr-str
-  [x]
-  (cond (nil? x) "nil"
-        (keyword? x) (if (namespace x)
-                        (str ":" (namespace x) "/" (name x))
-                        (str ":" (name x)))
-        (string? x) (quote-string x)
-        (date? x) (str "#inst \""
-                       (.getUTCFullYear x) "-"
-                       (normalize (inc (.getUTCMonth x)) 2) "-"
-                       (normalize (.getUTCDate x) 2) "T"
-                       (normalize (.getUTCHours x) 2) ":"
-                       (normalize (.getUTCMinutes x) 2) ":"
-                       (normalize (.getUTCSeconds x) 2) "."
-                       (normalize (.getUTCMilliseconds x) 3) "-"
-                       "00:00\"")
-        (vector? x) (str "[" (join " " (map pr-str (vec x))) "]")
-        (dictionary? x) (str "{"
-                             (join ", "
-                                   (map (fn [pair]
-                                          (str
-                                           (pr-str (first pair))
-                                           " "
-                                           (pr-str (second pair))))
-                                        x))
-                             "}")
-        (sequential? x) (str "(" (join " " (map pr-str (vec x))) ")")
-        (re-pattern? x) (str "#\"" (join "\\/" (split (.-source x) "/")) "\"")
-        :else (str x)))
+  [x offset]
+  (let [offset (or offset 0)]
+    (cond (nil? x) "nil"
+          (keyword? x) (if (namespace x)
+                         (str ":" (namespace x) "/" (name x))
+                         (str ":" (name x)))
+          (symbol? x) (if (namespace x)
+                        (str (namespace x) "/" (name x))
+                        (name x))
+          (string? x) (quote-string x)
+          (date? x) (str "#inst \""
+                         (.getUTCFullYear x) "-"
+                         (normalize (inc (.getUTCMonth x)) 2) "-"
+                         (normalize (.getUTCDate x) 2) "T"
+                         (normalize (.getUTCHours x) 2) ":"
+                         (normalize (.getUTCMinutes x) 2) ":"
+                         (normalize (.getUTCSeconds x) 2) "."
+                         (normalize (.getUTCMilliseconds x) 3) "-"
+                         "00:00\"")
+          (vector? x) (str "[" (join (str "\n " (join (repeat (inc offset) " ")))
+                                     (map #(pr-str % (inc offset))
+                                          (vec x)))
+                           "]")
+          (dictionary? x) (str "{"
+                               (join (str ",\n" (join (repeat (inc offset) " ")))
+                                     (map (fn [pair]
+                                            (let [indent (join (repeat offset " "))
+                                                  key (pr-str (first pair)
+                                                              (inc offset))
+                                                  value (pr-str (second pair)
+                                                                (+ 2 offset (count key)))]
+                                              (str key " " value)))
+                                          x))
+                               "}")
+          (sequential? x) (str "(" (join " " (map #(pr-str % (inc offset))
+                                                  (vec x))) ")")
+          (re-pattern? x) (str "#\"" (join "\\/" (split (.-source x) "/")) "\"")
+          :else (str x))))
