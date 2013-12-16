@@ -39,11 +39,13 @@
                        (:source-uri options)
                        (:source options))
 
-    {:code (str (:code output)
-                "\n//# sourceMappingURL="
-                "data:application/json;base64,"
-                (btoa (str (:map output)))
-                "\n")
+    {:code (if (:no-map options)
+             (:code output)
+             (str (:code output)
+                  "\n//# sourceMappingURL="
+                  "data:application/json;base64,"
+                  (btoa (str (:map output)))
+                  "\n"))
      :source-map (:map output)
      :js-ast ast}))
 
