@@ -40,7 +40,7 @@ writer:
 	mkdir -p ./backend/javascript/
 	cat ./src/backend/javascript/writer.wisp | $(WISP) --source-uri wisp/backend/javascript/writer.wisp > ./backend/javascript/writer.js
 
-escodegen: escodegen-writer escodegen-compiler escodegen-generator
+escodegen: escodegen-writer escodegen-generator
 
 escodegen-writer:
 	mkdir -p ./backend/escodegen/
