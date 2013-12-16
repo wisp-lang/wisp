@@ -149,11 +149,11 @@
 (defn macroexpand-1
   "If form represents a macro form, returns its expansion,
   else returns form."
-  [form]
+  [form env]
   (let [op (and (list? form)
                 (first form))
         expander (macro op)]
-    (cond expander (expand expander form)
+    (cond expander (expand expander form env)
           ;; Calling a keyword compiles to getting value from given
           ;; object associted with that key:
           ;; '(:foo bar) => '(get bar :foo)
@@ -169,12 +169,12 @@
 (defn macroexpand
   "Repeatedly calls macroexpand-1 on form until it no longer
   represents a macro form, then returns it."
-  [form]
+  [form env]
   (loop [original form
-         expanded (macroexpand-1 form)]
+         expanded (macroexpand-1 form env)]
     (if (identical? original expanded)
       original
-      (recur expanded (macroexpand-1 expanded)))))
+      (recur expanded (macroexpand-1 expanded env)))))
 
 
 ;; Define core macros

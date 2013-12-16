@@ -6,7 +6,7 @@
             [wisp.sequence :refer [empty? count list? list first second third
                                    rest cons conj butlast reverse reduce vec
                                    last map filter take concat partition
-                                   repeat interleave]]
+                                   repeat interleave assoc]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
@@ -423,7 +423,11 @@
 
 (defn write-do
   [form]
-  (apply ->expression (write-body form)))
+  (if (:private (meta (first (:form form))))
+    (->block (write-body (conj form {:result nil
+                                     :statements (conj (:statements form)
+                                                       (:result form))})))
+    (apply ->expression (write-body form))))
 (install-writer! :do write-do)
 
 (defn write-if
@@ -698,7 +702,7 @@
 
 (defn id->ns
   "Takes namespace identifier symbol and translates to new
-  simbol without . special characters
+  symbol without . special characters
   wisp.core -> wisp*core"
   [id]
   (symbol nil (join \* (split (name id) \.))))
@@ -1024,3 +1028,84 @@
                                        ~form)))))))
 (install-macro! :assert expand-assert)
 
+
+(defn expand-defprotocol
+  [&env id & forms]
+  (let [ns (:name (:name (:ns &env)))
+        protocol-name (name id)
+        spec (reduce (fn [spec form]
+                       (let [signatures (:signatures spec)
+                             method-name (first form)
+                             params (map name (second form))
+                             id (id->ns (str ns "$"
+                                             protocol-name "$"
+                                             (name method-name)))
+                             method-id (translate-identifier-word id)]
+                         (conj spec
+                               {:signatures (assoc signatures
+                                              method-name params)
+                                :methods (assoc (:methods spec)
+                                           method-name method-id)
+                                :fns (conj (:fns spec)
+                                           `(defn ~method-name [instance]
+                                              (.apply
+                                               (aget instance '~id)
+                                               instance arguments)))})))
+
+                     {:fns []
+                      :methods {}
+                      :signatures {}}
+
+                     forms)
+        fns (:fns spec)
+        protocol {:id (str ns "/" protocol-name)
+                  :methods (:methods spec)
+                  :signatures (:signatures spec)}]
+    `(~(with-meta 'do {:private true})
+       (def ~id ~protocol)
+       ~@fns)))
+(install-macro! :defprotocol (with-meta expand-defprotocol {:implicit [:&env]}))
+
+(defn expand-deftype
+  [name fields & forms]
+  (let [type-init (map (fn [field] `(set! (aget this '~field) ~field))
+                       fields)
+        constructor (conj type-init 'this)
+        method-init (map (fn [field] `(def ~field (aget this '~field)))
+                         fields)
+        make-method (fn [protocol form]
+                      (let [method-name (first form)
+                            params (second form)
+                            body (rest (rest form))]
+                        `(set! (aget (.-prototype ~name)
+                                     (aget (.-methods ~protocol)
+                                           '~method-name))
+                               (fn ~params ~@method-init ~@body))))
+        satisfy (fn [protocol]
+                  `(set! (aget (.-prototype ~name)
+                               (aget ~protocol 'id))
+                         true))
+
+        body (reduce (fn [type form]
+                       (print form type)
+                       (if (list? form)
+                         (conj type
+                               {:body (conj (:body type)
+                                            (make-method (:protocol type)
+                                                         form))})
+                         (conj type {:protocol form
+                                     :body (conj (:body type)
+                                                 (satisfy form))})))
+
+                       {:protocol nil
+                        :body []}
+
+                       forms)
+
+        methods (:body body)]
+    `(def ~name (do
+       (defn- ~name ~fields ~@constructor)
+       ~@methods
+       ~name))))
+(install-macro! :deftype expand-deftype)
+(install-macro! :defrecord expand-deftype)

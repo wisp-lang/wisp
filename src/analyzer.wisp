@@ -705,7 +705,7 @@
   def, fn, let... than associated is dispatched, otherwise form is
   analyzed as invoke expression."
   [env form]
-  (let [expansion (macroexpand form)
+  (let [expansion (macroexpand form env)
         ;; Special operators must be symbols and stored in the
         ;; **specials** hash by operator name.
         operator (first form)
