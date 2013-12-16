@@ -1,7 +1,7 @@
 {
   "name": "wisp",
   "id": "wisp",
-  "version": "0.9.0-beta1",
+  "version": "0.9.0-beta2",
   "description": "Homoiconic JS with clojure syntax, s-expressions & macros",
   "author": "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)",
   "homepage": "https://github.com/Gozala/wisp",
@@ -32,8 +32,8 @@
     }
   ],
   "devDependencies": {
-    "browserify": "2.14.1",
-    "wisp": "0.9.0-alpha3"
+    "browserify": "2.35.2",
+    "wisp": "0.9.0-beta1"
   },
   "engines": {
     "node": ">=0.4.0"
