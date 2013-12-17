@@ -463,7 +463,7 @@
   [env form]
   (let [statements (or (:statements env) [])
         bindings (or (:bindings env) [])
-        statement (analyze env form)
+        statement (analyze (conj env {:statements nil}) form)
         op (:op statement)
 
         defs (cond (= op :def) [(:var statement)]
