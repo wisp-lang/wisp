@@ -1087,7 +1087,6 @@
                          true))
 
         body (reduce (fn [type form]
-                       (print form type)
                        (if (list? form)
                          (conj type
                                {:body (conj (:body type)
@@ -1109,3 +1108,60 @@
        ~name))))
 (install-macro! :deftype expand-deftype)
 (install-macro! :defrecord expand-deftype)
+
+(defn expand-extend-type
+  [type & forms]
+  (let [satisfy (fn [protocol]
+                  `(set! (aget (.-prototype ~type)
+                               (aget ~protocol 'id))
+                         true))
+        make-method (fn [protocol form]
+                      (let [method-name (first form)
+                            params (second form)
+                            body (rest (rest form))]
+                        `(set! (aget (.-prototype ~type)
+                                     (aget (.-methods ~protocol)
+                                           '~method-name))
+                               (fn ~params ~@body))))
+
+        body (reduce (fn [body form]
+                       (if (list? form)
+                         (conj body
+                               {:methods (conj (:methods body)
+                                               (make-method (:protocol body)
+                                                            form))})
+                         (conj body {:protocol form
+                                     :methods (conj (:methods body)
+                                                    (satisfy form))})))
+
+                       {:protocol nil
+                        :methods []}
+
+                       forms)
+        methods (:methods body)]
+    `(do ~@methods nil)))
+(install-macro! :extend-type expand-extend-type)
+
+(defn expand-extend-protocol
+  [protocol & forms]
+  (let [specs (reduce (fn [specs form]
+                        (if (list? form)
+                          (cons {:type (:type (first specs))
+                                 :methods (conj (:methods (first specs))
+                                                form)}
+                                (rest specs))
+                          (cons {:type form
+                                 :methods []}
+                                specs)))
+                      nil
+                      forms)
+        body (map (fn [form]
+                    `(extend-type ~(:type form)
+                       ~protocol
+                       ~@(:methods form)
+                       ))
+                  specs)]
+
+
+    `(do ~@body nil)))
+(install-macro! :extend-protocol expand-extend-protocol)
