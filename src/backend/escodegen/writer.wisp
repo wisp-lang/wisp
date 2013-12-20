@@ -1033,36 +1033,33 @@
   [&env id & forms]
   (let [ns (:name (:name (:ns &env)))
         protocol-name (name id)
-        spec (reduce (fn [spec form]
-                       (let [signatures (:signatures spec)
-                             method-name (first form)
-                             params (map name (second form))
-                             id (id->ns (str ns "$"
-                                             protocol-name "$"
-                                             (name method-name)))
-                             method-id (translate-identifier-word id)]
-                         (conj spec
-                               {:signatures (assoc signatures
-                                              method-name params)
-                                :methods (assoc (:methods spec)
-                                           method-name method-id)
-                                :fns (conj (:fns spec)
-                                           `(defn ~method-name [instance]
-                                              (.apply
-                                               (aget instance '~id)
-                                               instance arguments)))})))
+        protocol (reduce (fn [protocol form]
+                           (let [method-name (first form)
+                                 id (id->ns (str ns "$"
+                                                 protocol-name "$"
+                                                 (name method-name)))]
+                             (assoc protocol
+                               method-name
+                               `(fn ~id [self]
+                                  (def f (cond (identical? self null)
+                                               (.-nil ~id)
 
-                     {:fns []
-                      :methods {}
-                      :signatures {}}
+                                               (identical? self nil)
+                                               (.-nil ~id)
 
-                     forms)
-        fns (:fns spec)
-        protocol {:id (str ns "/" protocol-name)
-                  :methods (:methods spec)
-                  :signatures (:signatures spec)}]
+                                               :else (or (aget self '~id)
+                                                         (.-_ ~id))))
+                                  (.apply f self arguments)))))
+
+                         {}
+
+                         forms)
+        fns (map (fn [form] `(def ~(first form) ~(first form)))
+                 protocol)
+        satisfy (assoc {} 'wisp$core$IProtocol$id (str ns "/" protocol-name))
+        body (conj satisfy protocol)]
     `(~(with-meta 'do {:block true})
-       (def ~id ~protocol)
+       (def ~id ~body)
        ~@fns)))
 (install-macro! :defprotocol (with-meta expand-defprotocol {:implicit [:&env]}))
 
@@ -1078,12 +1075,11 @@
                             params (second form)
                             body (rest (rest form))]
                         `(set! (aget (.-prototype ~name)
-                                     (aget (.-methods ~protocol)
-                                           '~method-name))
+                                     (.-name (aget ~protocol '~method-name)))
                                (fn ~params ~@method-init ~@body))))
         satisfy (fn [protocol]
                   `(set! (aget (.-prototype ~name)
-                               (aget ~protocol 'id))
+                               (.-wisp$core$IProtocol$id ~protocol))
                          true))
 
         body (reduce (fn [type form]
@@ -1111,18 +1107,33 @@
 
 (defn expand-extend-type
   [type & forms]
-  (let [satisfy (fn [protocol]
-                  `(set! (aget (.-prototype ~type)
-                               (aget ~protocol 'id))
-                         true))
+  (let [default-type? (= type 'default)
+        nil-type? (nil? type)
+        satisfy (fn [protocol]
+                  (cond default-type?
+                        `(set! (.-wisp$core$IProtocol$_ ~protocol) true)
+
+                        nil-type?
+                        `(set! (.-wisp$core$IProtocol$nil ~protocol) true)
+
+                        :else
+                        `(set! (aget (.-prototype ~type)
+                                     (.-wisp$core$IProtocol$id ~protocol))
+                               true)))
         make-method (fn [protocol form]
                       (let [method-name (first form)
                             params (second form)
-                            body (rest (rest form))]
-                        `(set! (aget (.-prototype ~type)
-                                     (aget (.-methods ~protocol)
-                                           '~method-name))
-                               (fn ~params ~@body))))
+                            body (rest (rest form))
+                            target (cond default-type?
+                                         `(.-_ (aget ~protocol '~method-name))
+
+                                         nil-type?
+                                         `(.-nil (aget ~protocol '~method-name))
+
+                                         :else
+                                         `(aget (.-prototype ~type)
+                                                (.-name (aget ~protocol '~method-name))))]
+                        `(set! ~target (fn ~params ~@body))))
 
         body (reduce (fn [body form]
                        (if (list? form)

@@ -74,8 +74,14 @@
 (defn ^boolean satisfies?
   "Returns true if x satisfies the protocol"
   [protocol x]
-  ;; TODO: Need some workaround for `nil`.
-  (and x (aget x protocol.id)))
+  (cond (identical? x nil)
+        (.-wisp$core$IProtocol$nil protocol)
+
+        (identical? x null)
+        (.-wisp$core$IProtocol$nil protocol)
+
+        :else (or (aget x (aget protocol 'wisp$core$IProtocol$id))
+                  (.-wisp$core$IProtocol$_ protocol))))
 
 (defn ^boolean contains-vector?
   "Returns true if vector contains given element"
