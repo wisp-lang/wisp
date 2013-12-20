@@ -40,7 +40,7 @@
 (is (= (transpile "foo") "foo;"))
 (is (= (transpile "foo-bar") "fooBar;"))
 (is (= (transpile "ba-ra-baz") "baRaBaz;"))
-(is (= (transpile "-boom") "boom;"))
+(is (= (transpile "-boom") "_boom;"))
 (is (= (transpile "foo?") "isFoo;"))
 (is (= (transpile "foo-bar?") "isFooBar;"))
 (is (= (transpile "**private**") "__private__;"))

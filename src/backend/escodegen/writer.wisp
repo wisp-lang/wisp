@@ -12,7 +12,7 @@
                                   number? vector? boolean? subs re-find true?
                                   false? nil? re-pattern? inc dec str char
                                   int = ==]]
-            [wisp.string :refer [split join upper-case replace]]
+            [wisp.string :refer [split join upper-case replace triml]]
             [wisp.expander :refer [install-macro!]]
             [escodegen :refer [generate]]))
 
@@ -23,12 +23,23 @@
 (def **unique-char** "\u00F8")
 
 (defn ->camel-join
+  "Takes dash delimited name "
   [prefix key]
   (str prefix
        (if (and (not (empty? prefix))
                 (not (empty? key)))
          (str (upper-case (get key 0)) (subs key 1))
          key)))
+
+(defn ->private-prefix
+  [id]
+  (let [space-delimited (join " " (split id #"-"))
+        left-trimmed (triml space-delimited)
+        n (- (count id) (count left-trimmed))]
+    (if (> n 0)
+      (str (join "_" (repeat (inc n) "")) (subs id n))
+      id)))
+
 
 (defn translate-identifier-word
   "Translates references from clojure convention to JS:
@@ -57,7 +68,9 @@
   ;; **macros** ->  __macros__
   (set! id (join "_" (split id "*")))
   ;; list->vector ->  listToVector
-  (set! id (join "-to-" (split id "->")))
+  (set! id (if (identical? (subs id 0 2) "->")
+             (subs (join "-to-" (split id "->")) 1)
+             (join "-to-" (split id "->"))))
   ;; set! ->  set
   (set! id (join (split id "!")))
   (set! id (join "$" (split id "%")))
@@ -71,8 +84,11 @@
   (set! id (if (identical? (last id) "?")
              (str "is-" (subs id 0 (dec (count id))))
              id))
+  ;; -foo -> _foo
+  (set! id (->private-prefix id))
   ;; create-server -> createServer
   (set! id (reduce ->camel-join "" (split id "-")))
+
   id)
 
 (defn translate-identifier
