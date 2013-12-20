@@ -38,7 +38,9 @@
          forms forms
          env {:locals {} :bindings [] :top true}]
     (let [node (analyze-form env (first forms))
-          ns (if (= (:op node) :ns) node)]
+          ns (if (= (:op node) :ns)
+               node
+               (:ns env))]
       (cond (error? node) {:ast nodes :error node}
             (<= (count forms) 1) {:ast (conj nodes node)}
             :else (recur (conj nodes node)
