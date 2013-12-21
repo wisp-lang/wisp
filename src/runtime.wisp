@@ -75,13 +75,13 @@
   "Returns true if x satisfies the protocol"
   [protocol x]
   (cond (identical? x nil)
-        (.-wisp$core$IProtocol$nil protocol)
+        (.-wisp_core$IProtocol$nil protocol)
 
         (identical? x null)
-        (.-wisp$core$IProtocol$nil protocol)
+        (.-wisp_core$IProtocol$nil protocol)
 
-        :else (or (aget x (aget protocol 'wisp$core$IProtocol$id))
-                  (.-wisp$core$IProtocol$_ protocol))))
+        :else (or (aget x (aget protocol 'wisp_core$IProtocol$id))
+                  (.-wisp_core$IProtocol$_ protocol))))
 
 (defn ^boolean contains-vector?
   "Returns true if vector contains given element"

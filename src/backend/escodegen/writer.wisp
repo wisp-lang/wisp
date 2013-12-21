@@ -1049,8 +1049,13 @@
   [&env id & forms]
   (let [ns (:name (:name (:ns &env)))
         protocol-name (name id)
-        protocol (reduce (fn [protocol form]
-                           (let [method-name (first form)
+        protocol-doc (if (string? (first forms))
+                       (first forms))
+        protocol-methods (if protocol-doc
+                           (rest forms)
+                           forms)
+        protocol (reduce (fn [protocol method]
+                           (let [method-name (first method)
                                  id (id->ns (str ns "$"
                                                  protocol-name "$"
                                                  (name method-name)))]
@@ -1069,14 +1074,15 @@
 
                          {}
 
-                         forms)
+                         protocol-methods)
         fns (map (fn [form] `(def ~(first form) ~(first form)))
                  protocol)
-        satisfy (assoc {} 'wisp$core$IProtocol$id (str ns "/" protocol-name))
+        satisfy (assoc {} 'wisp_core$IProtocol$id (str ns "/" protocol-name))
         body (conj satisfy protocol)]
     `(~(with-meta 'do {:block true})
        (def ~id ~body)
-       ~@fns)))
+       ~@fns
+       ~id)))
 (install-macro! :defprotocol (with-meta expand-defprotocol {:implicit [:&env]}))
 
 (defn expand-deftype
