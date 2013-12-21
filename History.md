@@ -1,5 +1,26 @@
 # History
 
+## 0.9.0
+
+  - Compiler no longer does dummy string concatinations instead
+    JS AST is emited from which `esprima` generates JS.
+  - Implement analyzer that does analyzes read forms to add
+    variable shadowing info, do macroexpansion etc..
+  - Reader now includes source location into all read forms
+    except primitives.
+  - Compiler generates source maps unless disabled manually.
+  - `fn` form no longer supports clojure(script) incompatible
+    API.
+  - Improvements in conventional name translations.
+  - Compiler now throws errors on invalid forms, instead of
+    generating invalid JS.
+  - Add support for binding shadowing in let and loop forms,
+    now bindings defined in those forms get unique names with
+    suffix of the shadow depth.
+  - Bunch of reader improvements.
+  - Macros now support special `&env` and `&form` arguments.
+  - Enhanced CLI tool.
+
 ## 0.8.1
 
   - Remove support for third non-standard argument for `aget`.
