@@ -32,6 +32,8 @@
          key)))
 
 (defn ->private-prefix
+  "Translate private identifiers like -foo to a JS equivalent
+  forms like _foo"
   [id]
   (let [space-delimited (join " " (split id #"-"))
         left-trimmed (triml space-delimited)
@@ -1086,7 +1088,7 @@
 (install-macro! :defprotocol (with-meta expand-defprotocol {:implicit [:&env]}))
 
 (defn expand-deftype
-  [name fields & forms]
+  [id fields & forms]
   (let [type-init (map (fn [field] `(set! (aget this '~field) ~field))
                        fields)
         constructor (conj type-init 'this)
@@ -1095,13 +1097,16 @@
         make-method (fn [protocol form]
                       (let [method-name (first form)
                             params (second form)
-                            body (rest (rest form))]
-                        `(set! (aget (.-prototype ~name)
-                                     (.-name (aget ~protocol '~method-name)))
+                            body (rest (rest form))
+                            field-name (if (= (name protocol) "Object")
+                                         `(quote ~method-name)
+                                         `(.-name (aget ~protocol '~method-name)))]
+
+                        `(set! (aget (.-prototype ~id) ~field-name)
                                (fn ~params ~@method-init ~@body))))
         satisfy (fn [protocol]
-                  `(set! (aget (.-prototype ~name)
-                               (.-wisp$core$IProtocol$id ~protocol))
+                  `(set! (aget (.-prototype ~id)
+                               (.-wisp_core$IProtocol$id ~protocol))
                          true))
 
         body (reduce (fn [type form]
@@ -1120,10 +1125,10 @@
                        forms)
 
         methods (:body body)]
-    `(def ~name (do
-       (defn- ~name ~fields ~@constructor)
+    `(def ~id (do
+       (defn- ~id ~fields ~@constructor)
        ~@methods
-       ~name))))
+       ~id))))
 (install-macro! :deftype expand-deftype)
 (install-macro! :defrecord expand-deftype)
 
@@ -1133,14 +1138,14 @@
         nil-type? (nil? type)
         satisfy (fn [protocol]
                   (cond default-type?
-                        `(set! (.-wisp$core$IProtocol$_ ~protocol) true)
+                        `(set! (.-wisp_core$IProtocol$_ ~protocol) true)
 
                         nil-type?
-                        `(set! (.-wisp$core$IProtocol$nil ~protocol) true)
+                        `(set! (.-wisp_core$IProtocol$nil ~protocol) true)
 
                         :else
                         `(set! (aget (.-prototype ~type)
-                                     (.-wisp$core$IProtocol$id ~protocol))
+                                     (.-wisp_core$IProtocol$id ~protocol))
                                true)))
         make-method (fn [protocol form]
                       (let [method-name (first form)
@@ -1198,3 +1203,22 @@
 
     `(do ~@body nil)))
 (install-macro! :extend-protocol expand-extend-protocol)
+
+(defn aset-expand
+  ([target field value]
+   `(set! (aget ~target ~field) ~value))
+  ([target field sub-field & sub-fields&value]
+   (let [resolved-target (reduce (fn [form node]
+                                   `(aget ~form ~node))
+                                 `(aget ~target ~field)
+                                 (cons sub-field (butlast sub-fields&value)))
+         value (last sub-fields&value)]
+     `(set! ~resolved-target ~value))))
+(install-macro! :aset aset-expand)
+
+(defn alength-expand
+  "Returns the length of the array. Works on arrays of all types."
+  [array]
+  `(.-length ~array))
+(install-macro! :alength alength-expand)
+
