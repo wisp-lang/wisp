@@ -54,7 +54,7 @@
   red=            redEqual
   create-server   createServer"
   [form]
-  (def id (name form))
+  (def ^:private id (name form))
   (set! id (cond (identical? id  "*") "multiply"
                  (identical? id "/") "divide"
                  (identical? id "+") "sum"
@@ -69,6 +69,8 @@
 
   ;; **macros** ->  __macros__
   (set! id (join "_" (split id "*")))
+  ;; foo.bar -> foo_bar
+  (set! id (join "_" (split id ".")))
   ;; list->vector ->  listToVector
   (set! id (if (identical? (subs id 0 2) "->")
              (subs (join "-to-" (split id "->")) 1)
@@ -95,7 +97,10 @@
 
 (defn translate-identifier
   [form]
-  (join \. (map translate-identifier-word (split (name form) \.))))
+  (str (if (namespace form)
+         (str (translate-identifier-word (namespace form)) ".")
+         "")
+       (join \. (map translate-identifier-word (split (name form) \.)))))
 
 (defn error-arg-count
   [callee n]
@@ -239,7 +244,7 @@
     (conj (write-binding-var (:binding node))
           (write-location (:form node)))
     (conj (write-location (:form node))
-          (->identifier (name (:form node))))))
+          (->identifier (:form node)))))
 (install-writer! :var write-var)
 (install-writer! :param write-var)
 
