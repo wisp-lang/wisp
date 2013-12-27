@@ -4,7 +4,7 @@
             [wisp.string :refer [replace]]
             [wisp.sequence :refer [map conj cons vec first rest empty? count]]
             [wisp.runtime :refer [error? =]]
-            [wisp.ast :refer [name]]
+            [wisp.ast :refer [name symbol]]
 
             [wisp.backend.escodegen.generator :refer [generate]
                                               :rename {generate generate-js}]
@@ -36,7 +36,10 @@
   [forms]
   (loop [nodes []
          forms forms
-         env {:locals {} :bindings [] :top true}]
+         env {:locals {}
+              :bindings []
+              :top true
+              :ns {:name 'user.wisp}}]
     (let [node (analyze-form env (first forms))
           ns (if (= (:op node) :ns)
                node

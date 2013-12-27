@@ -1049,7 +1049,7 @@
 
 (defn expand-defprotocol
   [&env id & forms]
-  (let [ns (:name (:name (:ns &env)))
+  (let [ns (name (:name (:ns &env)))
         protocol-name (name id)
         protocol-doc (if (string? (first forms))
                        (first forms))
