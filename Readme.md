@@ -757,7 +757,7 @@ Clojure(Script) via [satisfies?](http://clojuredocs.org/clojure_core/clojure.cor
 ```
 
 New types (that translate to JS classes) can be defined same as in
-Clojure(Script) via [deftype][http://clojuredocs.org/clojure_core/clojure.core/deftype]
+Clojure(Script) via [deftype](http://clojuredocs.org/clojure_core/clojure.core/deftype)
 form:
 
 ```clojure
