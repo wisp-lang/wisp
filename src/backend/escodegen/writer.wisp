@@ -1144,13 +1144,14 @@
   (let [default-type? (= type 'default)
         nil-type? (nil? type)
 
-        type-name (cond (= type 'default) '_
-                        (nil? type) (symbol "nil")
+        type-name (cond (nil? type) (symbol "nil")
+                        (= type 'default) '_
                         (= type 'number) 'Number
                         (= type 'string) 'String
                         (= type 'boolean) 'Boolean
                         (= type 'vector) 'Array
                         (= type 'function) 'Function
+                        (= type 're-pattern) 'RegExp
                         (= (namespace type) "js") type
                         :else nil)
 
