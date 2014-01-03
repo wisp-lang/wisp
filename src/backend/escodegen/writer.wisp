@@ -1061,26 +1061,29 @@
                                  id (id->ns (str ns "$"
                                                  protocol-name "$"
                                                  (name method-name)))]
-                             (assoc protocol
-                               method-name
-                               `(fn ~id [self]
-                                  (def f (cond (identical? self null)
-                                               (.-nil ~id)
+                             (conj protocol
+                                   {:id method-name
+                                    :fn `(fn ~id [self]
+                                           (def f (cond (identical? self null)
+                                                        (.-nil ~id)
 
-                                               (identical? self nil)
-                                               (.-nil ~id)
+                                                        (identical? self nil)
+                                                        (.-nil ~id)
 
-                                               :else (or (aget self '~id)
-                                                         (.-_ ~id))))
-                                  (.apply f self arguments)))))
+                                                        :else (or (aget self '~id)
+                                                                  (.-_ ~id))))
+                                           (.apply f self arguments))})))
 
-                         {}
-
+                         []
                          protocol-methods)
-        fns (map (fn [form] `(def ~(first form) (aget ~id '~(first form))))
+        fns (map (fn [form]
+                   `(def ~(:id form) (aget ~id '~(:id form))))
                  protocol)
         satisfy (assoc {} 'wisp_core$IProtocol$id (str ns "/" protocol-name))
-        body (conj satisfy protocol)]
+        body (reduce (fn [body method]
+                       (assoc body (:id method) (:fn method)))
+                     satisfy
+                     protocol)]
     `(~(with-meta 'do {:block true})
        (def ~id ~body)
        ~@fns

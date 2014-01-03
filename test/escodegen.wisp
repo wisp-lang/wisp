@@ -1439,12 +1439,33 @@
 
 
 (is (= (transpile
-"(defprotocol Fn
+"(defprotocol ^:private Fn
   \"Marker protocol\")")
 "{
-    var Fn = exports.Fn = { wisp_core$IProtocol$id: 'user.wisp/Fn' };
+    var Fn = { wisp_core$IProtocol$id: 'user.wisp/Fn' };
     Fn;
-}") "protocol with just name and doc")
+}") "protocol defs can be private")
+
+(is (= (transpile
+"(defprotocol ^:private IFooBar
+  (^:private foo [])
+  (bar []))")
+"{
+    var IFooBar = {
+            wisp_core$IProtocol$id: 'user.wisp/IFooBar',
+            foo: function user_wisp$IFooBar$foo(self) {
+                var f = self === null ? user_wisp$IFooBar$foo.nil : self === void 0 ? user_wisp$IFooBar$foo.nil : 'else' ? self.user_wisp$IFooBar$foo || user_wisp$IFooBar$foo._ : void 0;
+                return f.apply(self, arguments);
+            },
+            bar: function user_wisp$IFooBar$bar(self) {
+                var f = self === null ? user_wisp$IFooBar$bar.nil : self === void 0 ? user_wisp$IFooBar$bar.nil : 'else' ? self.user_wisp$IFooBar$bar || user_wisp$IFooBar$bar._ : void 0;
+                return f.apply(self, arguments);
+            }
+        };
+    var foo = IFooBar.foo;
+    var bar = exports.bar = IFooBar.bar;
+    IFooBar;
+}") "protocol methods can be private")
 
 (is (= (transpile
 "(defprotocol ICounted
