@@ -1395,11 +1395,11 @@
     var ISeq = exports.ISeq = {
             wisp_core$IProtocol$id: 'user.wisp/ISeq',
             _first: function user_wisp$ISeq$First(self) {
-                var f = self === null ? user_wisp$ISeq$First.nil : self === void 0 ? user_wisp$ISeq$First.nil : 'else' ? self.user_wisp$ISeq$First || user_wisp$ISeq$First._ : void 0;
+                var f = self === null ? user_wisp$ISeq$First.nil : self === void 0 ? user_wisp$ISeq$First.nil : 'else' ? self.user_wisp$ISeq$First || user_wisp$ISeq$First[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ISeq$First._ : void 0;
                 return f.apply(self, arguments);
             },
             _rest: function user_wisp$ISeq$Rest(self) {
-                var f = self === null ? user_wisp$ISeq$Rest.nil : self === void 0 ? user_wisp$ISeq$Rest.nil : 'else' ? self.user_wisp$ISeq$Rest || user_wisp$ISeq$Rest._ : void 0;
+                var f = self === null ? user_wisp$ISeq$Rest.nil : self === void 0 ? user_wisp$ISeq$Rest.nil : 'else' ? self.user_wisp$ISeq$Rest || user_wisp$ISeq$Rest[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ISeq$Rest._ : void 0;
                 return f.apply(self, arguments);
             }
         };
@@ -1424,11 +1424,11 @@
     var ISeq = exports.ISeq = {
             wisp_core$IProtocol$id: 'wisp.core/ISeq',
             _first: function wisp_core$ISeq$First(self) {
-                var f = self === null ? wisp_core$ISeq$First.nil : self === void 0 ? wisp_core$ISeq$First.nil : 'else' ? self.wisp_core$ISeq$First || wisp_core$ISeq$First._ : void 0;
+                var f = self === null ? wisp_core$ISeq$First.nil : self === void 0 ? wisp_core$ISeq$First.nil : 'else' ? self.wisp_core$ISeq$First || wisp_core$ISeq$First[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || wisp_core$ISeq$First._ : void 0;
                 return f.apply(self, arguments);
             },
             _rest: function wisp_core$ISeq$Rest(self) {
-                var f = self === null ? wisp_core$ISeq$Rest.nil : self === void 0 ? wisp_core$ISeq$Rest.nil : 'else' ? self.wisp_core$ISeq$Rest || wisp_core$ISeq$Rest._ : void 0;
+                var f = self === null ? wisp_core$ISeq$Rest.nil : self === void 0 ? wisp_core$ISeq$Rest.nil : 'else' ? self.wisp_core$ISeq$Rest || wisp_core$ISeq$Rest[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || wisp_core$ISeq$Rest._ : void 0;
                 return f.apply(self, arguments);
             }
         };
@@ -1454,11 +1454,11 @@
     var IFooBar = {
             wisp_core$IProtocol$id: 'user.wisp/IFooBar',
             foo: function user_wisp$IFooBar$foo(self) {
-                var f = self === null ? user_wisp$IFooBar$foo.nil : self === void 0 ? user_wisp$IFooBar$foo.nil : 'else' ? self.user_wisp$IFooBar$foo || user_wisp$IFooBar$foo._ : void 0;
+                var f = self === null ? user_wisp$IFooBar$foo.nil : self === void 0 ? user_wisp$IFooBar$foo.nil : 'else' ? self.user_wisp$IFooBar$foo || user_wisp$IFooBar$foo[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$IFooBar$foo._ : void 0;
                 return f.apply(self, arguments);
             },
             bar: function user_wisp$IFooBar$bar(self) {
-                var f = self === null ? user_wisp$IFooBar$bar.nil : self === void 0 ? user_wisp$IFooBar$bar.nil : 'else' ? self.user_wisp$IFooBar$bar || user_wisp$IFooBar$bar._ : void 0;
+                var f = self === null ? user_wisp$IFooBar$bar.nil : self === void 0 ? user_wisp$IFooBar$bar.nil : 'else' ? self.user_wisp$IFooBar$bar || user_wisp$IFooBar$bar[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$IFooBar$bar._ : void 0;
                 return f.apply(self, arguments);
             }
         };
@@ -1474,7 +1474,7 @@
     var ICounted = exports.ICounted = {
             wisp_core$IProtocol$id: 'user.wisp/ICounted',
             _count: function user_wisp$ICounted$Count(self) {
-                var f = self === null ? user_wisp$ICounted$Count.nil : self === void 0 ? user_wisp$ICounted$Count.nil : 'else' ? self.user_wisp$ICounted$Count || user_wisp$ICounted$Count._ : void 0;
+                var f = self === null ? user_wisp$ICounted$Count.nil : self === void 0 ? user_wisp$ICounted$Count.nil : 'else' ? self.user_wisp$ICounted$Count || user_wisp$ICounted$Count[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ICounted$Count._ : void 0;
                 return f.apply(self, arguments);
             }
         };
@@ -1596,8 +1596,8 @@
   IEquiv
   (-equiv [x o] (identical? x o)))")
 "(function () {
-    number.prototype[IEquiv.wisp_core$IProtocol$id] = true;
-    number.prototype[IEquiv._equiv.name] = function (x, o) {
+    IEquiv.wisp_core$IProtocol$Number = true;
+    IEquiv._equiv.Number = function (x, o) {
         return x === o;
     };
     return void 0;

@@ -1071,6 +1071,10 @@
                                                         (.-nil ~id)
 
                                                         :else (or (aget self '~id)
+                                                                  (aget ~id
+                                                                        (.replace (.replace (.call Object.prototype.toString self)
+                                                                                            "[object " "")
+                                                                                  #"\]$" ""))
                                                                   (.-_ ~id))))
                                            (.apply f self arguments))})))
 
@@ -1139,30 +1143,35 @@
   [type & forms]
   (let [default-type? (= type 'default)
         nil-type? (nil? type)
+
+        type-name (cond (= type 'default) '_
+                        (nil? type) (symbol "nil")
+                        (= type 'number) 'Number
+                        (= type 'string) 'String
+                        (= type 'boolean) 'Boolean
+                        (= type 'vector) 'Array
+                        (= type 'function) 'Function
+                        (= (namespace type) "js") type
+                        :else nil)
+
         satisfy (fn [protocol]
-                  (cond default-type?
-                        `(set! (.-wisp_core$IProtocol$_ ~protocol) true)
+                  (if type-name
+                    `(set! (aget ~protocol
+                                 '~(symbol (str "wisp_core$IProtocol$"
+                                                (name type-name))))
+                           true)
+                    `(set! (aget (.-prototype ~type)
+                                 (.-wisp_core$IProtocol$id ~protocol))
+                           true)))
 
-                        nil-type?
-                        `(set! (.-wisp_core$IProtocol$nil ~protocol) true)
-
-                        :else
-                        `(set! (aget (.-prototype ~type)
-                                     (.-wisp_core$IProtocol$id ~protocol))
-                               true)))
         make-method (fn [protocol form]
                       (let [method-name (first form)
                             params (second form)
                             body (rest (rest form))
-                            target (cond default-type?
-                                         `(.-_ (aget ~protocol '~method-name))
-
-                                         nil-type?
-                                         `(.-nil (aget ~protocol '~method-name))
-
-                                         :else
-                                         `(aget (.-prototype ~type)
-                                                (.-name (aget ~protocol '~method-name))))]
+                            target (if type-name
+                                     `(aget (aget ~protocol '~method-name) '~type-name)
+                                     `(aget (.-prototype ~type)
+                                            (.-name (aget ~protocol '~method-name))))]
                         `(set! ~target (fn ~params ~@body))))
 
         body (reduce (fn [body form]
