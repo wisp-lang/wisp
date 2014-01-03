@@ -1077,7 +1077,7 @@
                          {}
 
                          protocol-methods)
-        fns (map (fn [form] `(def ~(first form) ~(first form)))
+        fns (map (fn [form] `(def ~(first form) (aget ~id '~(first form))))
                  protocol)
         satisfy (assoc {} 'wisp_core$IProtocol$id (str ns "/" protocol-name))
         body (conj satisfy protocol)]

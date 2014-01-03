@@ -1403,8 +1403,8 @@
                 return f.apply(self, arguments);
             }
         };
-    var _first = exports._first = _first;
-    var _rest = exports._rest = _rest;
+    var _first = exports._first = ISeq._first;
+    var _rest = exports._rest = ISeq._rest;
     ISeq;
 }") "methods can are also generated & exported")
 
@@ -1432,8 +1432,8 @@
                 return f.apply(self, arguments);
             }
         };
-    var _first = exports._first = _first;
-    var _rest = exports._rest = _rest;
+    var _first = exports._first = ISeq._first;
+    var _rest = exports._rest = ISeq._rest;
     ISeq;
 }") "method names take into account defined namespace")
 
@@ -1457,7 +1457,7 @@
                 return f.apply(self, arguments);
             }
         };
-    var _count = exports._count = _count;
+    var _count = exports._count = ICounted._count;
     ICounted;
 }") "protocol methods with docs")
 
