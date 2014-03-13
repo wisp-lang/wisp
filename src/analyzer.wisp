@@ -625,7 +625,7 @@
 (install-special! :fn analyze-fn)
 
 (defn parse-references
-  "Takes part of namespace difinition and creates hash
+  "Takes part of namespace definition and creates hash
   of reference forms"
   [forms]
   (reduce (fn [references form]
@@ -763,7 +763,7 @@
   :context - One of the following :statement, :expression, :return. That
              information is included in resulting nodes and is meant for
              writer that may output different forms based on context.
-  :ns      - Namespace of the forms being analized.
+  :ns      - Namespace of the forms being analyzed.
 
   Analyzer performs all the macro & syntax expansions and transforms form
   into AST node of an expression. Each such node contains at least following
