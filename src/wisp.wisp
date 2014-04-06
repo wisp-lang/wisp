@@ -86,7 +86,8 @@
 (defn main
   []
   (let [options (parse-params (drop 2 process.argv))]
-    (cond (not process.stdin.isTTY) (compile-stdin options)
+    (cond (:run options) (run (:run options))
+          (not process.stdin.isTTY) (compile-stdin options)
           (< (count process.argv) 3) (start-repl)
           (and (= (count process.argv) 3)
                (not (flag? (last process.argv)))) (run (last process.argv))
