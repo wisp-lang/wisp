@@ -33,6 +33,8 @@ You can install _wisp_ locally via `npm` by doing:
 ...and then running `wisp` to get a REPL. To compile standalone `.wisp` files, simply do:
 
     cat in.wisp | wisp > out.js
+    
+or `wisp --no-map true` if you don't want the source-map appended.
 
 
 # Language Essentials
