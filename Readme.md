@@ -630,9 +630,9 @@ But using macros we can achieve similar chaining without such tradeoffs, and cha
 
 (->
  (open target :keypress)
- (filter enter-key?)
- (map get-input-text)
- (reduce render))
+ (.filter enter-key?)
+ (.map get-input-text)
+ (.reduce render))
 ```
 
 ## Import/Export (Symbols and Modules)
