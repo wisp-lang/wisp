@@ -1,7 +1,7 @@
 (ns wisp.wisp
   "Wisp program that reads wisp code from stdin and prints
   compiled javascript code into stdout"
-  (:require [fs :refer [createReadStream]]
+  (:require [fs :refer [createReadStream writeFileSync]]
             [path :refer [basename dirname join resolve]]
             [module :refer [Module]]
             [commander]
@@ -15,36 +15,6 @@
             [wisp.runtime :refer [str subs = nil?]]
             [wisp.ast :refer [pr-str name]]
             [wisp.compiler :refer [compile]]))
-
-
-(defn flag?
-  [param]
-  ;; HACK: Workaround for segfault #6691
-  (identical? (subs param 0 2) (name :--)))
-
-(defn flag->key
-  [flag]
-  (subs flag 2))
-
-;; Just mungle all the `--param value` pairs into global *env* hash.
-(defn parse-params
-  [params]
-  (loop [input params
-         output {}]
-    (if (empty? input)
-      output
-      (let [name (first input)
-            value (second input)]
-        (if (flag? name)
-          (if (or (nil? value) (flag? value))
-            (recur (rest input)
-                   (assoc output (flag->key name) true))
-            (recur (drop 2 input)
-                   (assoc output (flag->key name) value)))
-          (recur (rest input)
-                 output))))))
-
-
 
 (defn compile-stdin
   [options]
@@ -70,9 +40,11 @@
                               (.write process.stdout
                                       (str (pr-str item.form) "\n")))
                               output.ast))
-    (if (:js-ast options) (.write process.stdout
-                                      (str (pr-str (:body (:js-ast output))) "\n")))
-    (.write process.stdout (or content "nil"))
+    (if (and (:output options) (:source-uri options) content)
+      (writeFileSync (path.join (:output options) ;; `join` relies on `path`
+                           (str (basename (:source-uri options) ".wisp") ".js"))
+                     content)
+      (.write process.stdout (or content "nil")))
     (if (:error output) (throw (:error output)))))
 
 (defn with-stream-content
@@ -107,14 +79,11 @@
       (.option "-r, --run"           "Compile and execute the file")
       (.option "-c, --compile"       "Compile to JavaScript and save as .js files")
       (.option "-i, --interactive"   "Run an interactive wisp REPL")
-      (.option "-p, --print"         "Print compiled JavaScript")
+      (.option "--debug, --print <type>"    "Print debug information. Possible values are `form`, `ast` and `js-ast`")
       (.option "-o, --output <dir>"  "Output to specified directory")
       (.option "--no-map"            "Disable source map generation")
-      (.option "--ast"               "Print the wisp AST produced by the reader")
-      (.option "--js-ast"            "Print the JavaScript AST produced by the compiler")
       (.parse process.argv))
-    (set! (aget options "no-map") (aget options "noMap")) ;; commander auto translates to camelCase
-    (set! (aget options "js-ast") (aget options "jsAst"))
+    (set! (aget options "no-map") (not (aget options "map"))) ;; commander auto translates to camelCase
     (cond options.run (run options.args)
           (not process.stdin.isTTY) (compile-stdin options)
           options.interactive (start-repl)
