@@ -37,7 +37,7 @@
                   (= channel :code) (:code output)
                   (= channel :expansion) (:expansion output)
                   :else (JSON.stringify (get output channel) 2 2))]
-      (.write process.stdout (or content "nil")))
+      (.write process.stdout (or content "nil"))
     (if (:error output) (throw (.-error output)))))
 
 (defn with-stream-content
@@ -79,7 +79,7 @@
     (cond options.run (run (get options.args 0))
           (not process.stdin.isTTY) (compile-stdin options)
           options.interactive (start-repl)
-          options.compile (compile-file options.args options)
+          options.compile (compile-file (get options.args 0) options)
           options.args (run options.args)
           :else (start-repl)
    )))
