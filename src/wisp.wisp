@@ -39,9 +39,7 @@
         output (compile source options)
         content (cond
                   (= channel :code) (:code output)
-                  (= channel :expansion) (reduce (fn [result item]
-                                               (str result (pr-str (.-form item)) "\n"))
-                                             "" (.-ast output))
+                  (= channel :expansion) (:expansion output)
                   :else (JSON.stringify (get output channel) 2 2))]
     (if (and (:output options) (:source-uri options) content)
       (writeFileSync (path.join (.-output options) ;; `join` relies on `path`
@@ -83,7 +81,7 @@
       (.option "-c, --compile"       "Compile to JavaScript and save as .js files")
       (.option "-i, --interactive"   "Run an interactive wisp REPL")
       (.option "--debug, --print <type>"    "Print debug information. Possible values are `expansion`,`forms`, `ast` and `js-ast`")
-      (.option "-o, --output <dir>"  "Output to specified directory")
+      ;(.option "-o, --output <dir>"  "Output to specified directory")
       (.option "--no-map"            "Disable source map generation")
       (.parse process.argv))
     (set! (aget options "no-map") (not (aget options "map"))) ;; commander auto translates to camelCase
