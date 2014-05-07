@@ -25,28 +25,30 @@
 
 (defn compile-file
   [path options]
-  (map (fn [file] (with-stream-content
-                       (createReadStream file)
+  (with-stream-content (createReadStream path)
                        compile-string
-                       (conj {:source-uri file} options))) path))
+                       (conj {:source-uri path} options)))
+
+(defn compile-files
+   [paths options]
+   (map #(compile-file % options) paths))
 
 (defn compile-string
   [source options]
   (let [channel (or (:print options) :code)
         output (compile source options)
-        content (if (= channel :code)
-                  (:code output)
-                  (JSON.stringify (get output channel) 2 2))]
-    (if (:ast options) (map (fn [item]
-                              (.write process.stdout
-                                      (str (pr-str item.form) "\n")))
-                              output.ast))
+        content (cond
+                  (= channel :code) (:code output)
+                  (= channel :expansion) (reduce (fn [result item]
+                                               (str result (pr-str (.-form item)) "\n"))
+                                             "" (.-ast output))
+                  :else (JSON.stringify (get output channel) 2 2))]
     (if (and (:output options) (:source-uri options) content)
-      (writeFileSync (path.join (:output options) ;; `join` relies on `path`
+      (writeFileSync (path.join (.-output options) ;; `join` relies on `path`
                            (str (basename (:source-uri options) ".wisp") ".js"))
                      content)
       (.write process.stdout (or content "nil")))
-    (if (:error output) (throw (:error output)))))
+    (if (:error output) (throw (.-error output)))))
 
 (defn with-stream-content
   [input resume options]
@@ -61,7 +63,7 @@
   [path]
   ;; Loading module as main one, same way as nodejs does it:
   ;; https://github.com/joyent/node/blob/master/lib/module.js#L489-493
-  (Module._load (resolve (get path 0)) null true))
+  (Module._load (resolve path) null true))
 
 (defmacro ->
   [& operations]
@@ -80,15 +82,15 @@
       (.option "-r, --run"           "Compile and execute the file")
       (.option "-c, --compile"       "Compile to JavaScript and save as .js files")
       (.option "-i, --interactive"   "Run an interactive wisp REPL")
-      (.option "--debug, --print <type>"    "Print debug information. Possible values are `form`, `ast` and `js-ast`")
+      (.option "--debug, --print <type>"    "Print debug information. Possible values are `expansion`,`forms`, `ast` and `js-ast`")
       (.option "-o, --output <dir>"  "Output to specified directory")
       (.option "--no-map"            "Disable source map generation")
       (.parse process.argv))
     (set! (aget options "no-map") (not (aget options "map"))) ;; commander auto translates to camelCase
-    (cond options.run (run options.args)
+    (cond options.run (run (get options.args 0))
           (not process.stdin.isTTY) (compile-stdin options)
           options.interactive (start-repl)
-          options.compile (compile-file options.args options)
+          options.compile (compile-files options.args options)
           options.args (run options.args)
           :else (start-repl)
    )))
