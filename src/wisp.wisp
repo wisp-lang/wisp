@@ -34,12 +34,13 @@
   [source options]
   (let [channel (or (:print options) :code)
         output (compile source options)
-        content (cond
-                  (= channel :code) (:code output)
-                  (= channel :forms) (map (fn [item]
-                                            (str (pr-str (:form item)) "\n"))
-                                          (:ast output))
-                  :else (pr-str (get output channel) 2 2))]
+        content (if (= channel :code)
+                  (:code output)
+                  (JSON.stringify (get output channel) 2 2))]
+    (if (:ast options) (map (fn [item]
+                              (.write process.stdout
+                                      (str (pr-str item.form) "\n")))
+                              output.ast))
     (if (and (:output options) (:source-uri options) content)
       (writeFileSync (path.join (:output options) ;; `join` relies on `path`
                            (str (basename (:source-uri options) ".wisp") ".js"))
