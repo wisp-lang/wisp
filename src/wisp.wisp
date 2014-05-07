@@ -1,13 +1,13 @@
 (ns wisp.wisp
   "Wisp program that reads wisp code from stdin and prints
   compiled javascript code into stdout"
-  (:require [fs :refer [createReadStream writeFileSync]]
+  (:require [fs :refer [createReadStream]]
             [path :refer [basename dirname join resolve]]
             [module :refer [Module]]
             [commander]
 
             [wisp.string :refer [split join upper-case replace]]
-            [wisp.sequence :refer [first second last count reduce rest map
+            [wisp.sequence :refer [first second last count reduce rest
                                    conj partition assoc drop empty?]]
 
             [wisp.repl :refer [start] :rename {start start-repl}]
@@ -29,10 +29,6 @@
                        compile-string
                        (conj {:source-uri path} options)))
 
-(defn compile-files
-   [paths options]
-   (map #(compile-file % options) paths))
-
 (defn compile-string
   [source options]
   (let [channel (or (:print options) :code)
@@ -41,10 +37,6 @@
                   (= channel :code) (:code output)
                   (= channel :expansion) (:expansion output)
                   :else (JSON.stringify (get output channel) 2 2))]
-    (if (and (:output options) (:source-uri options) content)
-      (writeFileSync (path.join (.-output options) ;; `join` relies on `path`
-                           (str (basename (:source-uri options) ".wisp") ".js"))
-                     content)
       (.write process.stdout (or content "nil")))
     (if (:error output) (throw (.-error output)))))
 
@@ -81,14 +73,13 @@
       (.option "-c, --compile"       "Compile to JavaScript and save as .js files")
       (.option "-i, --interactive"   "Run an interactive wisp REPL")
       (.option "--debug, --print <type>"    "Print debug information. Possible values are `expansion`,`forms`, `ast` and `js-ast`")
-      ;(.option "-o, --output <dir>"  "Output to specified directory")
       (.option "--no-map"            "Disable source map generation")
       (.parse process.argv))
     (set! (aget options "no-map") (not (aget options "map"))) ;; commander auto translates to camelCase
     (cond options.run (run (get options.args 0))
           (not process.stdin.isTTY) (compile-stdin options)
           options.interactive (start-repl)
-          options.compile (compile-files options.args options)
+          options.compile (compile-file options.args options)
           options.args (run options.args)
           :else (start-repl)
    )))
