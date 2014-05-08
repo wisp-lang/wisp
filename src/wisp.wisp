@@ -4,6 +4,7 @@
   (:require [fs :refer [createReadStream]]
             [path :refer [basename dirname join resolve]]
             [module :refer [Module]]
+            [commander]
 
             [wisp.string :refer [split join upper-case replace]]
             [wisp.sequence :refer [first second last count reduce rest
@@ -15,41 +16,12 @@
             [wisp.ast :refer [pr-str name]]
             [wisp.compiler :refer [compile]]))
 
-
-(defn flag?
-  [param]
-  ;; HACK: Workaround for segfault #6691
-  (identical? (subs param 0 2) (name :--)))
-
-(defn flag->key
-  [flag]
-  (subs flag 2))
-
-;; Just mungle all the `--param value` pairs into global *env* hash.
-(defn parse-params
-  [params]
-  (loop [input params
-         output {}]
-    (if (empty? input)
-      output
-      (let [name (first input)
-            value (second input)]
-        (if (flag? name)
-          (if (or (nil? value) (flag? value))
-            (recur (rest input)
-                   (assoc output (flag->key name) true))
-            (recur (drop 2 input)
-                   (assoc output (flag->key name) value)))
-          (recur (rest input)
-                 output))))))
-
-
-
 (defn compile-stdin
   [options]
   (with-stream-content process.stdin
                        compile-string
-                       options))
+                       (conj {} options)))
+;; (conj {:source-uri options}) causes segfault for some reason
 
 (defn compile-file
   [path options]
@@ -61,11 +33,12 @@
   [source options]
   (let [channel (or (:print options) :code)
         output (compile source options)
-        content (if (= channel :code)
-                  (:code output)
-                  (JSON.stringify (get output channel) 2 2))]
-    (.write process.stdout (or content "nil"))
-    (if (:error output) (throw (:error output)))))
+        content (cond
+                  (= channel :code) (:code output)
+                  (= channel :expansion) (:expansion output)
+                  :else (JSON.stringify (get output channel) 2 2))]
+      (.write process.stdout (or content "nil"))
+    (if (:error output) (throw (.-error output)))))
 
 (defn with-stream-content
   [input resume options]
@@ -82,12 +55,31 @@
   ;; https://github.com/joyent/node/blob/master/lib/module.js#L489-493
   (Module._load (resolve path) null true))
 
+(defmacro ->
+  [& operations]
+  (reduce
+   (fn [form operation]
+     (cons (first operation)
+           (cons form (rest operation))))
+   (first operations)
+   (rest operations)))
 
 (defn main
   []
-  (let [options (parse-params (drop 2 process.argv))]
-    (cond (not process.stdin.isTTY) (compile-stdin options)
-          (< (count process.argv) 3) (start-repl)
-          (and (= (count process.argv) 3)
-               (not (flag? (last process.argv)))) (run (last process.argv))
-          (:compile options) (compile-file (:compile options) options))))
+  (let [options commander]
+    (-> options
+      (.usage "[options] <file ...>")
+      (.option "-r, --run"           "Compile and execute the file")
+      (.option "-c, --compile"       "Compile to JavaScript and save as .js files")
+      (.option "-i, --interactive"   "Run an interactive wisp REPL")
+      (.option "--debug, --print <type>"    "Print debug information. Possible values are `expansion`,`forms`, `ast` and `js-ast`")
+      (.option "--no-map"            "Disable source map generation")
+      (.parse process.argv))
+    (set! (aget options "no-map") (not (aget options "map"))) ;; commander auto translates to camelCase
+    (cond options.run (run (get options.args 0))
+          (not process.stdin.isTTY) (compile-stdin options)
+          options.interactive (start-repl)
+          options.compile (compile-file (get options.args 0) options)
+          options.args (run options.args)
+          :else (start-repl)
+   )))

@@ -2,9 +2,9 @@
   (:require [wisp.analyzer :refer [analyze]]
             [wisp.reader :refer [read* read push-back-reader]]
             [wisp.string :refer [replace]]
-            [wisp.sequence :refer [map conj cons vec first rest empty? count]]
+            [wisp.sequence :refer [map reduce conj cons vec first rest empty? count]]
             [wisp.runtime :refer [error?]]
-            [wisp.ast :refer [name]]
+            [wisp.ast :refer [pr-str name]]
 
             [wisp.backend.escodegen.generator :refer [generate]
                                               :rename {generate generate-js}]
@@ -82,9 +82,15 @@
                                                (:ast ast))))
                     (catch error {:error error})))
 
+         expansion (if (identical? :expansion (:print options))
+                     (reduce (fn [result item]
+                                  (str result (pr-str (.-form item)) "\n"))
+                                  "" (.-ast ast)))
+
          result {:source-uri source-uri
                  :ast (:ast ast)
-                 :forms (:forms forms)}]
+                 :forms (:forms forms)
+                 :expansion expansion}]
      (conj options output result))))
 
 (defn evaluate

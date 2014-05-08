@@ -291,7 +291,7 @@
 
 (defn read-unmatched-delimiter
   [rdr ch]
-  (reader-error rdr "Unmached delimiter " ch))
+  (reader-error rdr "Unmatched delimiter " ch))
 
 (defn read-list
   [reader _]
