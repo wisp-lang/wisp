@@ -6,5 +6,6 @@
             wisp.test.string
             wisp.test.reader
             wisp.test.escodegen
+            wisp.test.protocols
             ;wisp.test.analyzer
             ))
