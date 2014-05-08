@@ -137,8 +137,8 @@
 
         ;; Try
         body (if handler-form
-               (analyze-block env (butlast body-form))
-               (analyze-block env body-form))]
+               (analyze-block (sub-env env) (butlast body-form))
+               (analyze-block (sub-env env) body-form))]
     {:op :try
      :form form
      :body body
