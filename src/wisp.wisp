@@ -5,6 +5,7 @@
             [path :refer [basename dirname join resolve]]
             [module :refer [Module]]
             [commander]
+            [wisp.package :refer [version]]
 
             [wisp.string :refer [split join upper-case replace]]
             [wisp.sequence :refer [first second last count reduce rest
@@ -64,22 +65,34 @@
    (first operations)
    (rest operations)))
 
+(defn parse-params
+  [params]
+  (let [options (-> commander
+                    (.version version)
+                    (.usage "[options] <file ...>")
+                    (.option "-r, --run"
+                             "compile and execute the file (same as wisp path/to/file.wisp)")
+                    (.option "-c, --compile"
+                             "compile given file and prints to stdout")
+                    (.option "-i, --interactive"
+                             "run an interactive wisp REPL (same as wisp with no params)")
+                    (.option "--print <format>"
+                             "use custom print output `expansion`,`forms`, `ast`, `js-ast` or (default) `code`"
+                             str
+                             "code")
+                    (.option "--no-map"
+                             "disable source map generation")
+                    (.parse params))]
+    (conj {:no-map (not (:map options))}
+          options)))
+
 (defn main
   []
-  (let [options commander]
-    (-> options
-      (.usage "[options] <file ...>")
-      (.option "-r, --run"           "Compile and execute the file")
-      (.option "-c, --compile"       "Compile to JavaScript and save as .js files")
-      (.option "-i, --interactive"   "Run an interactive wisp REPL")
-      (.option "--debug, --print <type>"    "Print debug information. Possible values are `expansion`,`forms`, `ast` and `js-ast`")
-      (.option "--no-map"            "Disable source map generation")
-      (.parse process.argv))
-    (set! (aget options "no-map") (not (aget options "map"))) ;; commander auto translates to camelCase
-    (cond options.run (run (get options.args 0))
+  (let [options (parse-params process.argv)
+        path (aget options.args 0)]
+    (cond options.run (run path)
           (not process.stdin.isTTY) (compile-stdin options)
           options.interactive (start-repl)
-          options.compile (compile-file (get options.args 0) options)
-          options.args (run options.args)
-          :else (start-repl)
-   )))
+          options.compile (compile-file path options)
+          path (run path)
+          :else (start-repl))))
