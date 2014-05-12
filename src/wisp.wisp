@@ -1,14 +1,14 @@
 (ns wisp.wisp
   "Wisp program that reads wisp code from stdin and prints
   compiled javascript code into stdout"
-  (:require [fs :refer [createReadStream]]
+  (:require [fs :refer [createReadStream writeFileSync]]
             [path :refer [basename dirname join resolve]]
             [module :refer [Module]]
             [commander]
             [wisp.package :refer [version]]
 
             [wisp.string :refer [split join upper-case replace]]
-            [wisp.sequence :refer [first second last count reduce rest
+            [wisp.sequence :refer [first second last count reduce rest map
                                    conj partition assoc drop empty?]]
 
             [wisp.repl :refer [start] :rename {start start-repl}]
@@ -30,6 +30,10 @@
                        compile-string
                        (conj {:source-uri path} options)))
 
+(defn compile-files
+   [paths options]
+   (map #(compile-file % options) paths))
+
 (defn compile-string
   [source options]
   (let [channel (or (:print options) :code)
@@ -38,7 +42,11 @@
                   (= channel :code) (:code output)
                   (= channel :expansion) (:expansion output)
                   :else (JSON.stringify (get output channel) 2 2))]
-      (.write process.stdout (or content "nil"))
+    (if (and (= channel :code) (:output options) (:source-uri options) content)
+      (writeFileSync (path.join (.-output options) ;; `join` relies on `path`
+                           (str (basename (:source-uri options) ".wisp") ".js"))
+                     content)
+      (.write process.stdout (or content "nil")))
     (if (:error output) (throw (.-error output)))))
 
 (defn with-stream-content
@@ -78,8 +86,8 @@
                              "run an interactive wisp REPL (same as wisp with no params)")
                     (.option "--print <format>"
                              "use custom print output `expansion`,`forms`, `ast`, `js-ast` or (default) `code`"
-                             str
                              "code")
+                    (.option "-o, --output <dir>"  "Output to specified directory")
                     (.option "--no-map"
                              "disable source map generation")
                     (.parse params))]
@@ -93,6 +101,6 @@
     (cond options.run (run path)
           (not process.stdin.isTTY) (compile-stdin options)
           options.interactive (start-repl)
-          options.compile (compile-file path options)
+          options.compile (compile-files options.args options)
           path (run path)
           :else (start-repl))))
