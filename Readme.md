@@ -20,7 +20,9 @@ powerful [macros] that make it the easiest way to write JavaScript.
 
 # Try _Wisp_
 
-You can try _wisp_ on your browser by [trying the interactive compiler](http://jeditoolkit.com/try-wisp/) or [an online REPL](http://jeditoolkit.com/interactivate-wisp) with syntax highlighting.
+You can try _wisp_ on your browser by [trying the interactive compiler](http://jeditoolkit.com/try-wisp/)
+([repo](https://github.com/Gozala/try-wisp)) or [an online REPL](http://jeditoolkit.com/interactivate-wisp)
+with syntax highlighting.
 
 # Install
 
