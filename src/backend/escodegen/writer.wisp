@@ -6,13 +6,13 @@
             [wisp.sequence :refer [empty? count list? list first second third
                                    rest cons conj butlast reverse reduce vec
                                    last map filter take concat partition
-                                   repeat interleave]]
+                                   repeat interleave assoc]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
                                   false? nil? re-pattern? inc dec str char
                                   int = ==]]
-            [wisp.string :refer [split join upper-case replace]]
+            [wisp.string :refer [split join upper-case replace triml]]
             [wisp.expander :refer [install-macro!]]
             [escodegen :refer [generate]]))
 
@@ -23,12 +23,25 @@
 (def **unique-char** "\u00F8")
 
 (defn ->camel-join
+  "Takes dash delimited name "
   [prefix key]
   (str prefix
        (if (and (not (empty? prefix))
                 (not (empty? key)))
          (str (upper-case (get key 0)) (subs key 1))
          key)))
+
+(defn ->private-prefix
+  "Translate private identifiers like -foo to a JS equivalent
+  forms like _foo"
+  [id]
+  (let [space-delimited (join " " (split id #"-"))
+        left-trimmed (triml space-delimited)
+        n (- (count id) (count left-trimmed))]
+    (if (> n 0)
+      (str (join "_" (repeat (inc n) "")) (subs id n))
+      id)))
+
 
 (defn translate-identifier-word
   "Translates references from clojure convention to JS:
@@ -57,7 +70,9 @@
   ;; **macros** ->  __macros__
   (set! id (join "_" (split id "*")))
   ;; list->vector ->  listToVector
-  (set! id (join "-to-" (split id "->")))
+  (set! id (if (identical? (subs id 0 2) "->")
+             (subs (join "-to-" (split id "->")) 1)
+             (join "-to-" (split id "->"))))
   ;; set! ->  set
   (set! id (join (split id "!")))
   (set! id (join "$" (split id "%")))
@@ -71,8 +86,11 @@
   (set! id (if (identical? (last id) "?")
              (str "is-" (subs id 0 (dec (count id))))
              id))
+  ;; -foo -> _foo
+  (set! id (->private-prefix id))
   ;; create-server -> createServer
   (set! id (reduce ->camel-join "" (split id "-")))
+
   id)
 
 (defn translate-identifier
@@ -423,7 +441,11 @@
 
 (defn write-do
   [form]
-  (apply ->expression (write-body form)))
+  (if (:block (meta (first (:form form))))
+    (->block (write-body (conj form {:result nil
+                                     :statements (conj (:statements form)
+                                                       (:result form))})))
+    (apply ->expression (write-body form))))
 (install-writer! :do write-do)
 
 (defn write-if
@@ -698,7 +720,7 @@
 
 (defn id->ns
   "Takes namespace identifier symbol and translates to new
-  simbol without . special characters
+  symbol without . special characters
   wisp.core -> wisp*core"
   [id]
   (symbol nil (join \* (split (name id) \.))))
@@ -1023,4 +1045,193 @@
                                        ~message
                                        ~form)))))))
 (install-macro! :assert expand-assert)
+
+
+(defn expand-defprotocol
+  [&env id & forms]
+  (let [ns (name (:name (:ns &env)))
+        protocol-name (name id)
+        protocol-doc (if (string? (first forms))
+                       (first forms))
+        protocol-methods (if protocol-doc
+                           (rest forms)
+                           forms)
+        protocol (reduce (fn [protocol method]
+                           (let [method-name (first method)
+                                 id (id->ns (str ns "$"
+                                                 protocol-name "$"
+                                                 (name method-name)))]
+                             (conj protocol
+                                   {:id method-name
+                                    :fn `(fn ~id [self]
+                                           (def f (cond (identical? self null)
+                                                        (.-nil ~id)
+
+                                                        (identical? self nil)
+                                                        (.-nil ~id)
+
+                                                        :else (or (aget self '~id)
+                                                                  (aget ~id
+                                                                        (.replace (.replace (.call Object.prototype.toString self)
+                                                                                            "[object " "")
+                                                                                  #"\]$" ""))
+                                                                  (.-_ ~id))))
+                                           (.apply f self arguments))})))
+
+                         []
+                         protocol-methods)
+        fns (map (fn [form]
+                   `(def ~(:id form) (aget ~id '~(:id form))))
+                 protocol)
+        satisfy (assoc {} 'wisp_core$IProtocol$id (str ns "/" protocol-name))
+        body (reduce (fn [body method]
+                       (assoc body (:id method) (:fn method)))
+                     satisfy
+                     protocol)]
+    `(~(with-meta 'do {:block true})
+       (def ~id ~body)
+       ~@fns
+       ~id)))
+(install-macro! :defprotocol (with-meta expand-defprotocol {:implicit [:&env]}))
+
+(defn expand-deftype
+  [id fields & forms]
+  (let [type-init (map (fn [field] `(set! (aget this '~field) ~field))
+                       fields)
+        constructor (conj type-init 'this)
+        method-init (map (fn [field] `(def ~field (aget this '~field)))
+                         fields)
+        make-method (fn [protocol form]
+                      (let [method-name (first form)
+                            params (second form)
+                            body (rest (rest form))
+                            field-name (if (= (name protocol) "Object")
+                                         `(quote ~method-name)
+                                         `(.-name (aget ~protocol '~method-name)))]
+
+                        `(set! (aget (.-prototype ~id) ~field-name)
+                               (fn ~params ~@method-init ~@body))))
+        satisfy (fn [protocol]
+                  `(set! (aget (.-prototype ~id)
+                               (.-wisp_core$IProtocol$id ~protocol))
+                         true))
+
+        body (reduce (fn [type form]
+                       (if (list? form)
+                         (conj type
+                               {:body (conj (:body type)
+                                            (make-method (:protocol type)
+                                                         form))})
+                         (conj type {:protocol form
+                                     :body (conj (:body type)
+                                                 (satisfy form))})))
+
+                       {:protocol nil
+                        :body []}
+
+                       forms)
+
+        methods (:body body)]
+    `(def ~id (do
+       (defn- ~id ~fields ~@constructor)
+       ~@methods
+       ~id))))
+(install-macro! :deftype expand-deftype)
+(install-macro! :defrecord expand-deftype)
+
+(defn expand-extend-type
+  [type & forms]
+  (let [default-type? (= type 'default)
+        nil-type? (nil? type)
+
+        type-name (cond (nil? type) (symbol "nil")
+                        (= type 'default) '_
+                        (= type 'number) 'Number
+                        (= type 'string) 'String
+                        (= type 'boolean) 'Boolean
+                        (= type 'vector) 'Array
+                        (= type 'function) 'Function
+                        (= type 're-pattern) 'RegExp
+                        (= (namespace type) "js") type
+                        :else nil)
+
+        satisfy (fn [protocol]
+                  (if type-name
+                    `(set! (aget ~protocol
+                                 '~(symbol (str "wisp_core$IProtocol$"
+                                                (name type-name))))
+                           true)
+                    `(set! (aget (.-prototype ~type)
+                                 (.-wisp_core$IProtocol$id ~protocol))
+                           true)))
+
+        make-method (fn [protocol form]
+                      (let [method-name (first form)
+                            params (second form)
+                            body (rest (rest form))
+                            target (if type-name
+                                     `(aget (aget ~protocol '~method-name) '~type-name)
+                                     `(aget (.-prototype ~type)
+                                            (.-name (aget ~protocol '~method-name))))]
+                        `(set! ~target (fn ~params ~@body))))
+
+        body (reduce (fn [body form]
+                       (if (list? form)
+                         (conj body
+                               {:methods (conj (:methods body)
+                                               (make-method (:protocol body)
+                                                            form))})
+                         (conj body {:protocol form
+                                     :methods (conj (:methods body)
+                                                    (satisfy form))})))
+
+                       {:protocol nil
+                        :methods []}
+
+                       forms)
+        methods (:methods body)]
+    `(do ~@methods nil)))
+(install-macro! :extend-type expand-extend-type)
+
+(defn expand-extend-protocol
+  [protocol & forms]
+  (let [specs (reduce (fn [specs form]
+                        (if (list? form)
+                          (cons {:type (:type (first specs))
+                                 :methods (conj (:methods (first specs))
+                                                form)}
+                                (rest specs))
+                          (cons {:type form
+                                 :methods []}
+                                specs)))
+                      nil
+                      forms)
+        body (map (fn [form]
+                    `(extend-type ~(:type form)
+                       ~protocol
+                       ~@(:methods form)
+                       ))
+                  specs)]
+
+
+    `(do ~@body nil)))
+(install-macro! :extend-protocol expand-extend-protocol)
+
+(defn aset-expand
+  ([target field value]
+   `(set! (aget ~target ~field) ~value))
+  ([target field sub-field & sub-fields&value]
+   (let [resolved-target (reduce (fn [form node]
+                                   `(aget ~form ~node))
+                                 `(aget ~target ~field)
+                                 (cons sub-field (butlast sub-fields&value)))
+         value (last sub-fields&value)]
+     `(set! ~resolved-target ~value))))
+(install-macro! :aset aset-expand)
+
+(defn alength-expand
+  "Returns the length of the array. Works on arrays of all types."
+  [array]
+  `(.-length ~array))
+(install-macro! :alength alength-expand)
 

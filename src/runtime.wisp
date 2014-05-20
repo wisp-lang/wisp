@@ -71,6 +71,24 @@
     (Object.create Object.prototype))))
 
 
+(defn ^boolean satisfies?
+  "Returns true if x satisfies the protocol"
+  [protocol x]
+  (or (.-wisp_core$IProtocol$_ protocol)
+      (cond (identical? x nil)
+            (or (.-wisp_core$IProtocol$nil protocol) false)
+
+            (identical? x null)
+            (or (.-wisp_core$IProtocol$nil protocol) false)
+
+            :else (or (aget x (aget protocol 'wisp_core$IProtocol$id))
+                      (aget protocol
+                            (str "wisp_core$IProtocol$"
+                                 (.replace (.replace (.call Object.prototype.toString x)
+                                                     "[object " "")
+                                           #"\]$" "")))
+                      false))))
+
 (defn ^boolean contains-vector?
   "Returns true if vector contains given element"
   [vector element]

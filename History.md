@@ -1,5 +1,10 @@
 # History
 
+## 0.10.0
+
+  - Implement support for `defprotocol`, `deftype`, `defrecord`,
+  `extend-type` and `extend-protocol` forms.
+
 ## 0.9.0
 
   - Compiler no longer does dummy string concatinations instead

@@ -3,8 +3,8 @@
             [wisp.reader :refer [read* read push-back-reader]]
             [wisp.string :refer [replace]]
             [wisp.sequence :refer [map reduce conj cons vec first rest empty? count]]
-            [wisp.runtime :refer [error?]]
-            [wisp.ast :refer [pr-str name]]
+            [wisp.runtime :refer [error? =]]
+            [wisp.ast :refer [name symbol pr-str]]
 
             [wisp.backend.escodegen.generator :refer [generate]
                                               :rename {generate generate-js}]
@@ -29,17 +29,26 @@
                          (read-form reader eof))))))
 
 (defn analyze-form
-  [form]
-  (try (analyze form) (catch error error)))
+  [env form]
+  (try (analyze env form) (catch error error)))
 
 (defn analyze-forms
   [forms]
   (loop [nodes []
-         forms forms]
-    (let [node (analyze-form (first forms))]
+         forms forms
+         env {:locals {}
+              :bindings []
+              :top true
+              :ns {:name 'user.wisp}}]
+    (let [node (analyze-form env (first forms))
+          ns (if (= (:op node) :ns)
+               node
+               (:ns env))]
       (cond (error? node) {:ast nodes :error node}
             (<= (count forms) 1) {:ast (conj nodes node)}
-            :else (recur (conj nodes node) (rest forms))))))
+            :else (recur (conj nodes node)
+                         (rest forms)
+                         (conj env {:ns ns}))))))
 
 (defn compile
   "Compiler takes wisp code in form of string and returns a hash

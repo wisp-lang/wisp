@@ -1,5 +1,5 @@
 (ns wisp.string
-  (:require [wisp.runtime :refer [str subs re-matches nil? string?]]
+  (:require [wisp.runtime :refer [str subs re-matches nil? string? re-pattern?]]
             [wisp.sequence :refer [vec empty?]]))
 
 (defn split
@@ -7,6 +7,11 @@
   the maximum number of splits. Not lazy. Returns vector of the splits."
   [string pattern limit]
   (.split string pattern limit))
+
+(defn split-lines
+  "Splits s on \n or \r\n."
+  [s]
+  (split s #"\n|\r\n"))
 
 (defn join
   "Returns a string of all elements in coll, as returned by (seq coll),
@@ -40,6 +45,23 @@
       (str (upper-case (subs s 0 1))
            (lower-case (subs s 1)))))
 
+(def ^:private ESCAPE_PATTERN
+  (RegExp. "([-()\\[\\]{}+?*.$\\^|,:#<!\\\\])" "g"))
+
+(defn pattern-escape
+  [source]
+  (.replace (.replace source ESCAPE_PATTERN "\\$1")
+            (RegExp. "\\x08" "g"), "\\x08"))
+
+(defn replace-first
+  "Replaces the first instance of match with replacement in s.
+  match/replacement can be:
+
+  string / string
+  pattern / (string or function of match)."
+  [string match replacement]
+  (.replace string match replacement))
+
 (defn replace
   "Replaces all instance of match with replacement in s.
 
@@ -51,7 +73,14 @@
 
    See also replace-first."
   [string match replacement]
-  (.replace string match replacement))
+  (cond (string? match)
+        (replace string (RegExp. pattern-escape match) "g" replacement)
+
+        (re-pattern? match)
+        (.replace s (RegExp. (.-source match) "g") replacement)
+
+        :else
+        (throw (str "Invalid match arg: " match))))
 
 
 ;(def **WHITESPACE** (str "[\x09\x0A\x0B\x0C\x0D\x20\xA0\u1680\u180E\u2000"
@@ -97,3 +126,8 @@
   (or (nil? string)
       (empty? string)
       (re-matches **SPACES** string)))
+
+(defn reverse
+  "Returns s with its characters reversed."
+  [string]
+  (join "" (.reverse (split string ""))))

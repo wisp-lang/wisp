@@ -7,13 +7,13 @@ syntax, [s-expressions][] and [macros][]. Unlike [ClojureScript][], _wisp_
 does not depend on the JVM and is completely self-hosted, embracing
 native JavaScript data structures for better interoperability.
 
-The main goal of _wisp_ is to provide a rich subset of Clojure(Script) so 
+The main goal of _wisp_ is to provide a rich subset of Clojure(Script) so
 that packages written in _wisp_ can work seamlessly with Clojure(Script) and
 JavaScript without data marshalling or code changes.
 
 _wisp_ also does its best to compile down to JavaScript you would have written
 by hand - think of _wisp_ as [markdown] for JavaScript programming, but with
-the added subtlety of LISP S-expressions, [homoiconicity][homoiconicity] and 
+the added subtlety of LISP S-expressions, [homoiconicity][homoiconicity] and
 powerful [macros] that make it the easiest way to write JavaScript.
 
 ![meta](http://upload.wikimedia.org/wikipedia/en/b/ba/DrawingHands.jpg)
@@ -176,7 +176,7 @@ _wisp_ partially emulates Clojure(Script) handling of arrays in two ways:
 
 ## Conventions
 
-_wisp_ tries very hard to compile to JavaScript that feels hand-crafted while trying to embrace LISP-style idioms and naming conventions, and translates them to equivalent JavaScript conventions: 
+_wisp_ tries very hard to compile to JavaScript that feels hand-crafted while trying to embrace LISP-style idioms and naming conventions, and translates them to equivalent JavaScript conventions:
 
 ```clojure
 (dash-delimited)   ; => dashDelimited
@@ -468,7 +468,7 @@ In a non-idiomatic twist (but largely for symmetry and JavaScript interop), the 
 ## Macros
 
 _wisp_ has a powerful programmatic macro system which allows the compiler to
-be extended by user code. 
+be extended by user code.
 
 Many core constructs of _wisp_ are in fact normal macros, and you are encouraged to study the source to learn how to build your own. Nevertheless, the following sections are a quick primer on macros.
 
@@ -662,8 +662,8 @@ All the top level definitions in a file are exported by default:
 ### Importing
 
 Module importing is done via an `ns` special form that is manually
-named. Unlike `ns` in Clojure(Script), _wisp_ takes a minimalistic approach and
-supports only one essential way of importing modules:
+named. Unlike `ns` in Clojure(Script), _wisp_ takes a minimalistic
+approach and supports only one essential way of importing modules:
 
 ```clojure
 (ns interactivate.core.main
@@ -708,6 +708,83 @@ imported at runtime, and the example above imports multiple modules:
 While Clojure has many other kinds of reference forms they are
 not recognized by _wisp_ and will therefore be ignored.
 
+### Types and Protocols
+
+In wisp protocols can be defined same as in Clojure(Script),
+via [defprotocol](http://clojuredocs.org/clojure_core/clojure.core/defprotocol):
+
+```clojure
+(defprotocol ISeq
+  (-first [coll])
+  (-rest [coll]))
+
+(defprotocol ICounted
+  (^number count [coll] "constant time count"))
+```
+
+Above code will define `ISeq`, `ICounted` protocols (objects representing
+those protocol) and `_first`, `_rest`, `count` functions, that dispatch on
+first argument (that must implement associated protocol).
+
+
+Existing types / classes (defined either in wisp or JS) can be
+extended to implement specific protocol using
+[extend-type](http://clojuredocs.org/clojure_core/clojure.core/extend-type):
+
+```clojure
+(extend-type Array
+  ICounted
+  (count [array] (.-length array))
+  ISeq
+  (-first [array] (aget array 0))
+  (-rest [array] (.slice array 1)))
+```
+
+Once type / class implemnets some protocol, it's functions can be used
+on the instances of that type / class.
+
+```clojure
+(count [])        ;; => 0
+(count [1 2])     ;; => 2
+(-first [1 2 3])  ;; => 1
+(-rest [1 2 3])   ;; => [2 3]
+```
+
+In wisp value can be checked to satisfy given protocol same as in
+Clojure(Script) via [satisfies?](http://clojuredocs.org/clojure_core/clojure.core/satisfies_q):
+
+```clojure
+(satisfies? ICounted [1 2])
+(satisfies? ISeq [])
+```
+
+New types (that translate to JS classes) can be defined same as in
+Clojure(Script) via [deftype](http://clojuredocs.org/clojure_core/clojure.core/deftype)
+form:
+
+```clojure
+(deftype List [head tail size]
+  ICounted
+  (count [_] size)
+  ISeq
+  (-first [_] head)
+  (-rest [_] tail)
+  Object
+  (toString [self] (str "(" (join " " self) ")")))
+```
+
+Note: Protocol functions are defined as methods with unique names
+(that include namespace info where protocol was defined, protocol
+name & method name) to avoid name collisions on types / classes
+implementing them. This implies that such methods aren't very
+useful from JS side. Special `Object` protocol can be used to
+define methods who's names will be kept as is, which can be used
+to define interface to be used from JS side (like `toString`
+method above).
+
+In wisp multiple types can be extended to implement a specific
+protocol using [extend-protocol](http://clojuredocs.org/clojure_core/clojure.core/extend-protocol)
+form same as in Clojure(Script) too.
 
 [homoiconicity]:http://en.wikipedia.org/wiki/Homoiconicity
 [clojure]:http://clojure.org/

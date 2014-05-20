@@ -137,8 +137,8 @@
 
         ;; Try
         body (if handler-form
-               (analyze-block env (butlast body-form))
-               (analyze-block env body-form))]
+               (analyze-block (sub-env env) (butlast body-form))
+               (analyze-block (sub-env env) body-form))]
     {:op :try
      :form form
      :body body
@@ -463,7 +463,7 @@
   [env form]
   (let [statements (or (:statements env) [])
         bindings (or (:bindings env) [])
-        statement (analyze env form)
+        statement (analyze (conj env {:statements nil}) form)
         op (:op statement)
 
         defs (cond (= op :def) [(:var statement)]
@@ -705,7 +705,7 @@
   def, fn, let... than associated is dispatched, otherwise form is
   analyzed as invoke expression."
   [env form]
-  (let [expansion (macroexpand form)
+  (let [expansion (macroexpand form env)
         ;; Special operators must be symbols and stored in the
         ;; **specials** hash by operator name.
         operator (first form)

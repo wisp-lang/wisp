@@ -5,18 +5,17 @@
                                        lazy-seq? seq nth map]]
             [wisp.src.runtime :refer [subs = dec identity keys nil? vector?
                                       string? dec re-find]]
-            [wisp.src.analyzer :refer [empty-env analyze analyze*]]
+            [wisp.src.compiler :refer [compile]]
             [wisp.src.reader :refer [read* read-from-string]
                              :rename {read-from-string read-string}]
-            [wisp.src.ast :refer [meta name pr-str symbol]]
-            [wisp.src.backend.escodegen.writer :refer [write compile write*]]))
+            [wisp.src.ast :refer [meta name pr-str symbol]]))
 
 (defn transpile
-  [code options]
-  (let [forms (read* code)
-        analyzed (map analyze forms)
-        compiled (apply compile options analyzed)]
-    compiled))
+  [code]
+  (let [output (compile code {:no-map true})]
+    (if (:error output)
+      (throw (:error output))
+      (:code output))))
 
 
 ;; =>
@@ -40,7 +39,7 @@
 (is (= (transpile "foo") "foo;"))
 (is (= (transpile "foo-bar") "fooBar;"))
 (is (= (transpile "ba-ra-baz") "baRaBaz;"))
-(is (= (transpile "-boom") "boom;"))
+(is (= (transpile "-boom") "_boom;"))
 (is (= (transpile "foo?") "isFoo;"))
 (is (= (transpile "foo-bar?") "isFooBar;"))
 (is (= (transpile "**private**") "__private__;"))
@@ -1373,3 +1372,331 @@
        "x instanceof Number;"))
 
 ;; =>
+
+
+(is (= (transpile "(defprotocol IFoo)")
+"{
+    var IFoo = exports.IFoo = { wisp_core$IProtocol$id: 'user.wisp/IFoo' };
+    IFoo;
+}") "protocol defined")
+
+(is (= (transpile "(defprotocol IBar \"optional docs\")")
+"{
+    var IBar = exports.IBar = { wisp_core$IProtocol$id: 'user.wisp/IBar' };
+    IBar;
+}") "optionally docs can be provided")
+
+
+(is (= (transpile
+"(defprotocol ISeq
+  (-first [coll])
+  (^clj -rest [coll]))")
+"{
+    var ISeq = exports.ISeq = {
+            wisp_core$IProtocol$id: 'user.wisp/ISeq',
+            _first: function user_wisp$ISeq$First(self) {
+                var f = self === null ? user_wisp$ISeq$First.nil : self === void 0 ? user_wisp$ISeq$First.nil : 'else' ? self.user_wisp$ISeq$First || user_wisp$ISeq$First[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ISeq$First._ : void 0;
+                return f.apply(self, arguments);
+            },
+            _rest: function user_wisp$ISeq$Rest(self) {
+                var f = self === null ? user_wisp$ISeq$Rest.nil : self === void 0 ? user_wisp$ISeq$Rest.nil : 'else' ? self.user_wisp$ISeq$Rest || user_wisp$ISeq$Rest[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ISeq$Rest._ : void 0;
+                return f.apply(self, arguments);
+            }
+        };
+    var _first = exports._first = ISeq._first;
+    var _rest = exports._rest = ISeq._rest;
+    ISeq;
+}") "methods can are also generated & exported")
+
+(is (= (transpile
+"(ns wisp.core)
+(defprotocol ISeq
+  (-first [coll])
+  (^clj -rest [coll]))
+")
+"{
+    var _ns_ = {
+            id: 'wisp.core',
+            doc: void 0
+        };
+}
+{
+    var ISeq = exports.ISeq = {
+            wisp_core$IProtocol$id: 'wisp.core/ISeq',
+            _first: function wisp_core$ISeq$First(self) {
+                var f = self === null ? wisp_core$ISeq$First.nil : self === void 0 ? wisp_core$ISeq$First.nil : 'else' ? self.wisp_core$ISeq$First || wisp_core$ISeq$First[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || wisp_core$ISeq$First._ : void 0;
+                return f.apply(self, arguments);
+            },
+            _rest: function wisp_core$ISeq$Rest(self) {
+                var f = self === null ? wisp_core$ISeq$Rest.nil : self === void 0 ? wisp_core$ISeq$Rest.nil : 'else' ? self.wisp_core$ISeq$Rest || wisp_core$ISeq$Rest[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || wisp_core$ISeq$Rest._ : void 0;
+                return f.apply(self, arguments);
+            }
+        };
+    var _first = exports._first = ISeq._first;
+    var _rest = exports._rest = ISeq._rest;
+    ISeq;
+}") "method names take into account defined namespace")
+
+
+(is (= (transpile
+"(defprotocol ^:private Fn
+  \"Marker protocol\")")
+"{
+    var Fn = { wisp_core$IProtocol$id: 'user.wisp/Fn' };
+    Fn;
+}") "protocol defs can be private")
+
+(is (= (transpile
+"(defprotocol ^:private IFooBar
+  (^:private foo [])
+  (bar []))")
+"{
+    var IFooBar = {
+            wisp_core$IProtocol$id: 'user.wisp/IFooBar',
+            foo: function user_wisp$IFooBar$foo(self) {
+                var f = self === null ? user_wisp$IFooBar$foo.nil : self === void 0 ? user_wisp$IFooBar$foo.nil : 'else' ? self.user_wisp$IFooBar$foo || user_wisp$IFooBar$foo[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$IFooBar$foo._ : void 0;
+                return f.apply(self, arguments);
+            },
+            bar: function user_wisp$IFooBar$bar(self) {
+                var f = self === null ? user_wisp$IFooBar$bar.nil : self === void 0 ? user_wisp$IFooBar$bar.nil : 'else' ? self.user_wisp$IFooBar$bar || user_wisp$IFooBar$bar[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$IFooBar$bar._ : void 0;
+                return f.apply(self, arguments);
+            }
+        };
+    var foo = IFooBar.foo;
+    var bar = exports.bar = IFooBar.bar;
+    IFooBar;
+}") "protocol methods can be private")
+
+(is (= (transpile
+"(defprotocol ICounted
+  (^number -count [coll] \"constant time count\"))")
+"{
+    var ICounted = exports.ICounted = {
+            wisp_core$IProtocol$id: 'user.wisp/ICounted',
+            _count: function user_wisp$ICounted$Count(self) {
+                var f = self === null ? user_wisp$ICounted$Count.nil : self === void 0 ? user_wisp$ICounted$Count.nil : 'else' ? self.user_wisp$ICounted$Count || user_wisp$ICounted$Count[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ICounted$Count._ : void 0;
+                return f.apply(self, arguments);
+            }
+        };
+    var _count = exports._count = ICounted._count;
+    ICounted;
+}") "protocol methods with docs")
+
+(is (= (transpile "(defrecord Employee [name surname])")
+"var Employee = exports.Employee = (function () {
+        var Employee = function Employee(name, surname) {
+            this.name = name;
+            this.surname = surname;
+            return this;
+        };
+        return Employee;
+    })();") "simple record")
+
+(is (= (transpile
+"(defrecord Employee [name surname]
+  Object
+  (toString [_] (str name \" \" surname))
+  User
+  (greet [_] (str \"Hi \" name)))")
+"var Employee = exports.Employee = (function () {
+        var Employee = function Employee(name, surname) {
+            this.name = name;
+            this.surname = surname;
+            return this;
+        };
+        Employee.prototype[Object.wisp_core$IProtocol$id] = true;
+        Employee.prototype.toString = function (_) {
+            var name = this.name;
+            var surname = this.surname;
+            return '' + name + ' ' + surname;
+        };
+        Employee.prototype[User.wisp_core$IProtocol$id] = true;
+        Employee.prototype[User.greet.name] = function (_) {
+            var name = this.name;
+            var surname = this.surname;
+            return '' + 'Hi ' + name;
+        };
+        return Employee;
+    })();") "more advance record implementing protocols")
+
+(is (= (transpile
+"(deftype Reduced [val]
+  IDeref
+  (-deref [o] val))")
+"var Reduced = exports.Reduced = (function () {
+        var Reduced = function Reduced(val) {
+            this.val = val;
+            return this;
+        };
+        Reduced.prototype[IDeref.wisp_core$IProtocol$id] = true;
+        Reduced.prototype[IDeref._deref.name] = function (o) {
+            var val = this.val;
+            return val;
+        };
+        return Reduced;
+    })();") "method with one type")
+
+(is (= (transpile
+"(deftype Point [x y]
+  Object
+  (toJSON [_] [x y]))")
+"var Point = exports.Point = (function () {
+        var Point = function Point(x, y) {
+            this.x = x;
+            this.y = y;
+            return this;
+        };
+        Point.prototype[Object.wisp_core$IProtocol$id] = true;
+        Point.prototype.toJSON = function (_) {
+            var x = this.x;
+            var y = this.y;
+            return [
+                x,
+                y
+            ];
+        };
+        return Point;
+    })();") "Object methods names are kept as is")
+
+(is (= (transpile
+"(deftype Point [x y]
+  Object
+  (toJSON [_] [x y])
+  JSON
+  (toJSON [] {:x x :y y}))")
+"var Point = exports.Point = (function () {
+        var Point = function Point(x, y) {
+            this.x = x;
+            this.y = y;
+            return this;
+        };
+        Point.prototype[Object.wisp_core$IProtocol$id] = true;
+        Point.prototype.toJSON = function (_) {
+            var x = this.x;
+            var y = this.y;
+            return [
+                x,
+                y
+            ];
+        };
+        Point.prototype[JSON.wisp_core$IProtocol$id] = true;
+        Point.prototype[JSON.toJSON.name] = function () {
+            var x = this.x;
+            var y = this.y;
+            return {
+                'x': x,
+                'y': y
+            };
+        };
+        return Point;
+    })();") "Non Object protocol method names taken from protocol")
+
+(is (= (transpile
+"(extend-type number
+  IEquiv
+  (-equiv [x o] (identical? x o)))")
+"(function () {
+    IEquiv.wisp_core$IProtocol$Number = true;
+    IEquiv._equiv.Number = function (x, o) {
+        return x === o;
+    };
+    return void 0;
+})();") "extend type")
+
+(is (= (transpile
+"(extend-type nil
+  ICounted
+  (-count [_] 0))")
+"(function () {
+    ICounted.wisp_core$IProtocol$nil = true;
+    ICounted._count.nil = function (_) {
+        return 0;
+    };
+    return void 0;
+})();") "extend type works with nil")
+
+(is (= (transpile
+"(extend-type default
+  IHash
+  (-hash [o]
+    (getUID o)))")
+"(function () {
+    IHash.wisp_core$IProtocol$_ = true;
+    IHash._hash._ = function (o) {
+        return getUID(o);
+    };
+    return void 0;
+})();") "extend default type")
+
+(is (= (transpile
+"(extend-type Set ICounted)")
+"(function () {
+    Set.prototype[ICounted.wisp_core$IProtocol$id] = true;
+    return void 0;
+})();") "implement protocol without methods")
+
+(is (= (transpile
+"(extend-protocol ISeq
+  List
+  (first [list] (:head list))
+  (rest [list] (:rest list))
+  nil
+  (first [_] nil)
+  (rest [_] ())
+  Array
+  (first [array] (aget array 0))
+  (rest [array] (.slice array 1)))")
+"(function () {
+    (function () {
+        Array.prototype[ISeq.wisp_core$IProtocol$id] = true;
+        Array.prototype[ISeq.first.name] = function (array) {
+            return array[0];
+        };
+        Array.prototype[ISeq.rest.name] = function (array) {
+            return array.slice(1);
+        };
+        return void 0;
+    })();
+    (function () {
+        ISeq.wisp_core$IProtocol$nil = true;
+        ISeq.first.nil = function (_) {
+            return void 0;
+        };
+        ISeq.rest.nil = function (_) {
+            return list();
+        };
+        return void 0;
+    })();
+    (function () {
+        List.prototype[ISeq.wisp_core$IProtocol$id] = true;
+        List.prototype[ISeq.first.name] = function (list) {
+            return (list || 0)['head'];
+        };
+        List.prototype[ISeq.rest.name] = function (list) {
+            return (list || 0)['rest'];
+        };
+        return void 0;
+    })();
+    return void 0;
+})();") "extend protocol expands to extent-type calls")
+
+(is (= (transpile
+"(extend-protocol IFoo
+  nil
+  Number
+  String)")
+"(function () {
+    (function () {
+        String.prototype[IFoo.wisp_core$IProtocol$id] = true;
+        return void 0;
+    })();
+    (function () {
+        Number.prototype[IFoo.wisp_core$IProtocol$id] = true;
+        return void 0;
+    })();
+    (function () {
+        IFoo.wisp_core$IProtocol$nil = true;
+        return void 0;
+    })();
+    return void 0;
+})();") "extend protocol without methods")
