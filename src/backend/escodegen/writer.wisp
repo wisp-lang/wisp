@@ -217,16 +217,18 @@
 
 (defn write-binding-var
   [form]
-  (let [id (name (:id form))]
-    ;; If identifiers binding shadows other binding rename it according
-    ;; to shadowing depth. This allows bindings initializer safely
-    ;; access binding before shadowing it.
-    (conj (->identifier (if (:shadow form)
-                          (str (translate-identifier id)
-                               **unique-char**
-                               (:depth form))
-                          id))
-          (write-location (:id form)))))
+  ;; If identifiers binding shadows other binding rename it according
+  ;; to shadowing depth. This allows bindings initializer safely
+  ;; access binding before shadowing it.
+  (let [base-id (:id form)
+        resolved-id (if (:shadow form)
+                      (symbol nil
+                              (str (translate-identifier base-id)
+                                   **unique-char**
+                                   (:depth form)))
+             base-id)]
+    (conj (->identifier resolved-id)
+          (write-location base-id))))
 
 (defn write-var
   "handler for {:op :var} type forms. Such forms may
