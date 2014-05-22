@@ -35,9 +35,10 @@
                                :sourceMapWithCode true})]
 
     ;; Workaround the fact that escodegen does not yet includes source
-    (.setSourceContent (:map output)
-                       (:source-uri options)
-                       (:source options))
+    (if (:map output)
+      (.setSourceContent (:map output)
+                         (:source-uri options)
+                         (:source options)))
 
     {:code (if (:no-map options)
              (:code output)
