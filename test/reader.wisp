@@ -1,6 +1,6 @@
 (ns wisp.test.reader
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.ast :refer [symbol quote deref name keyword
+            [wisp.src.ast :refer [symbol quote deref name namespace keyword
                                   unquote meta dictionary pr-str]]
             [wisp.src.runtime :refer [dictionary nil? str =]]
             [wisp.src.reader :refer [read-from-string]]
@@ -13,10 +13,16 @@
     "name of :foo is foo")
 (is (identical? (name (read-string ":foo/bar")) "bar")
     "name of :foo/bar is bar")
+(is (identical? (namespace (read-string ":foo/bar")) "foo")
+    "namespace of :foo/bar is foo")
 (is (identical? (name (read-string "foo")) "foo")
     "name of foo is foo")
+(is (identical? (namespace (read-string "foo")) nil)
+    "namespace of foo is nil")
 (is (identical? (name (read-string "foo/bar")) "bar")
     "name of foo/bar is bar")
+(is (identical? (namespace (read-string "foo/bar")) "foo")
+    "namespace of foo/bar is foo")
 (is (= (name (read-string "\"foo\"")) "foo")
     "name of \"foo\" is foo")
 

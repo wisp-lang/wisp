@@ -52,6 +52,9 @@
 (is (= (transpile "->string") "toString;"))
 (is (= (transpile "%a") "$a;"))
 (is (= (transpile "what.man?.->you.**.=") "what.isMan.toYou.__.isEqual;"))
+(is (= (transpile "foo/bar") "foo.bar;"))
+(is (= (transpile "foo.bar/baz") "foo_bar.baz;"))
+
 
 ;; =>
 ;; re-pattern
