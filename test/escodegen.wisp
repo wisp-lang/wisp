@@ -55,6 +55,13 @@
 (is (= (transpile "foo/bar") "foo.bar;"))
 (is (= (transpile "foo.bar/baz") "foo_bar.baz;"))
 
+;; =>
+;; keywords
+
+(is (= (transpile ":foo") "'foo';"))
+(is (= (transpile ":foo/bar") "'foo/bar';"))
+(is (= (transpile ":foo.bar/baz") "'foo.bar/baz';"))
+
 
 ;; =>
 ;; re-pattern
