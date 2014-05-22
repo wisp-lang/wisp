@@ -184,7 +184,9 @@
 (defn write-constant
   [form]
   (cond (nil? form) (write-nil form)
-        (keyword? form) (write-literal (name form))
+        (keyword? form) (write-literal (if (namespace form)
+                                         (str (namespace form) "/" (name form))
+                                         (name form)))
         (number? form) (write-number (.valueOf form))
         (string? form) (write-string form)
         :else (write-literal form)))
