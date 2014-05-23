@@ -54,6 +54,7 @@
 (is (= (transpile "what.man?.->you.**.=") "what.isMan.toYou.__.isEqual;"))
 (is (= (transpile "foo/bar") "foo.bar;"))
 (is (= (transpile "foo.bar/baz") "foo_bar.baz;"))
+(is (= (transpile "js/window") "window;"))
 
 ;; =>
 ;; keywords

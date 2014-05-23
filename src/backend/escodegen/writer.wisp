@@ -97,10 +97,11 @@
 
 (defn translate-identifier
   [form]
-  (str (if (namespace form)
-         (str (translate-identifier-word (namespace form)) ".")
-         "")
-       (join \. (map translate-identifier-word (split (name form) \.)))))
+  (let [ns (namespace form)]
+    (str (if (and ns (not (= ns "js")))
+           (str (translate-identifier-word (namespace form)) ".")
+           "")
+         (join \. (map translate-identifier-word (split (name form) \.))))))
 
 (defn error-arg-count
   [callee n]
