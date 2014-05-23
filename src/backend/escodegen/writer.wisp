@@ -54,7 +54,7 @@
   red=            redEqual
   create-server   createServer"
   [form]
-  (def id (name form))
+  (def ^:private id (name form))
   (set! id (cond (identical? id  "*") "multiply"
                  (identical? id "/") "divide"
                  (identical? id "+") "sum"
@@ -69,6 +69,8 @@
 
   ;; **macros** ->  __macros__
   (set! id (join "_" (split id "*")))
+  ;; foo.bar -> foo_bar
+  (set! id (join "_" (split id ".")))
   ;; list->vector ->  listToVector
   (set! id (if (identical? (subs id 0 2) "->")
              (subs (join "-to-" (split id "->")) 1)
@@ -95,7 +97,11 @@
 
 (defn translate-identifier
   [form]
-  (join \. (map translate-identifier-word (split (name form) \.))))
+  (let [ns (namespace form)]
+    (str (if (and ns (not (= ns "js")))
+           (str (translate-identifier-word (namespace form)) ".")
+           "")
+         (join \. (map translate-identifier-word (split (name form) \.))))))
 
 (defn error-arg-count
   [callee n]
@@ -179,7 +185,9 @@
 (defn write-constant
   [form]
   (cond (nil? form) (write-nil form)
-        (keyword? form) (write-literal (name form))
+        (keyword? form) (write-literal (if (namespace form)
+                                         (str (namespace form) "/" (name form))
+                                         (name form)))
         (number? form) (write-number (.valueOf form))
         (string? form) (write-string form)
         :else (write-literal form)))
@@ -212,16 +220,18 @@
 
 (defn write-binding-var
   [form]
-  (let [id (name (:id form))]
-    ;; If identifiers binding shadows other binding rename it according
-    ;; to shadowing depth. This allows bindings initializer safely
-    ;; access binding before shadowing it.
-    (conj (->identifier (if (:shadow form)
-                          (str (translate-identifier id)
-                               **unique-char**
-                               (:depth form))
-                          id))
-          (write-location (:id form)))))
+  ;; If identifiers binding shadows other binding rename it according
+  ;; to shadowing depth. This allows bindings initializer safely
+  ;; access binding before shadowing it.
+  (let [base-id (:id form)
+        resolved-id (if (:shadow form)
+                      (symbol nil
+                              (str (translate-identifier base-id)
+                                   **unique-char**
+                                   (:depth form)))
+             base-id)]
+    (conj (->identifier resolved-id)
+          (write-location base-id))))
 
 (defn write-var
   "handler for {:op :var} type forms. Such forms may
@@ -239,7 +249,7 @@
     (conj (write-binding-var (:binding node))
           (write-location (:form node)))
     (conj (write-location (:form node))
-          (->identifier (name (:form node))))))
+          (->identifier (:form node)))))
 (install-writer! :var write-var)
 (install-writer! :param write-var)
 
