@@ -51,6 +51,17 @@
 (is (= (transpile "->string") "toString;"))
 (is (= (transpile "%a") "$a;"))
 (is (= (transpile "what.man?.->you.**.=") "what.isMan.toYou.__.isEqual;"))
+(is (= (transpile "foo/bar") "foo.bar;"))
+(is (= (transpile "foo.bar/baz") "foo_bar.baz;"))
+(is (= (transpile "js/window") "window;"))
+
+;; =>
+;; keywords
+
+(is (= (transpile ":foo") "'foo';"))
+(is (= (transpile ":foo/bar") "'foo/bar';"))
+(is (= (transpile ":foo.bar/baz") "'foo.bar/baz';"))
+
 
 ;; =>
 ;; re-pattern
