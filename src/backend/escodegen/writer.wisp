@@ -1111,16 +1111,22 @@
         constructor (conj type-init 'this)
         method-init (map (fn [field] `(def ~field (aget this '~field)))
                          fields)
+        with-init (fn [method]
+                    (let [params (first method)
+                          body (rest method)]
+                      `(~params ~@method-init ~@body)))
+
         make-method (fn [protocol form]
                       (let [method-name (first form)
-                            params (second form)
-                            body (rest (rest form))
+                            body (if (list? (second form))
+                                   (map with-init (rest form))
+                                   (with-init (rest form)))
                             field-name (if (= (name protocol) "Object")
                                          `(quote ~method-name)
                                          `(.-name (aget ~protocol '~method-name)))]
 
                         `(set! (aget (.-prototype ~id) ~field-name)
-                               (fn ~params ~@method-init ~@body))))
+                               (fn ~@body))))
         satisfy (fn [protocol]
                   `(set! (aget (.-prototype ~id)
                                (.-wisp_core$IProtocol$id ~protocol))
