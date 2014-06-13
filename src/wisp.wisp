@@ -78,7 +78,7 @@
                              "run an interactive wisp REPL (same as wisp with no params)")
                     (.option "--print <format>"
                              "use custom print output `expansion`,`forms`, `ast`, `js-ast` or (default) `code`"
-                             str
+                             (fn [x _] (str x))
                              "code")
                     (.option "--no-map"
                              "disable source map generation")
