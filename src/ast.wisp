@@ -117,6 +117,22 @@
   [form]
   (and (list? form) (= (first form) 'unquote)))
 
+(defn unquote
+  "Returns unquoted form"
+  [form]
+  (cond (not (quote? form))
+        form
+
+        (or (string? (second form))
+            (number? (second form))
+            (boolean? (second form))
+            (nil? (second form))
+            (re-pattern? (second form)))
+        (second form)
+
+        :else
+        (throw (Error. "Unable to unquote quoted non primitve" ))))
+
 (defn ^boolean unquote-splicing?
   "Returns true if it's unquote-splicing form: ~@foo"
   [form]
@@ -188,3 +204,25 @@
                                                   (vec x))) ")")
           (re-pattern? x) (str "#\"" (join "\\/" (split (.-source x) "/")) "\"")
           :else (str x))))
+
+
+(defn quoted-string?
+  [form]
+  (and (quote? form)
+       (string? (second form))))
+
+(defn quoted-number?
+  [form]
+  (and (quote? form)
+       (number? (second form))))
+
+(defn quoted-boolean?
+  [form]
+  (and (quote? form)
+       (boolean? (second form))))
+
+(defn quoted-nil?
+  [form]
+  [form]
+  (and (quote? form)
+       (nil? (second form))))
