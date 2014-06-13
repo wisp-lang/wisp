@@ -82,6 +82,10 @@
                              "code")
                     (.option "--no-map"
                              "disable source map generation")
+                    (.option "--source-uri <uri>"
+                             "uri input will be associated with in source maps")
+                    (.option "--output-uri <uri>"
+                             "uri output will be associated with in source maps")
                     (.parse params))]
     (conj {:no-map (not (:map options))}
           options)))
