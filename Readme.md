@@ -1,6 +1,7 @@
 # WISP
 
 [![Build Status](https://secure.travis-ci.org/Gozala/wisp.png)](http://travis-ci.org/Gozala/wisp)
+[![Gitter chat](https://badges.gitter.im/Gozala/wisp.png)](https://gitter.im/Gozala/wisp)
 
 _wisp_ is a [homoiconic][homoiconicity] JavaScript dialect with [Clojure][]
 syntax, [s-expressions][] and [macros][]. Unlike [ClojureScript][], _wisp_
