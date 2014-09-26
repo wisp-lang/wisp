@@ -262,11 +262,11 @@
   [delim reader recursive?]
   (loop [forms []]
     (let [_ (read-past whitespace? reader)
-          ch (read-char reader)]
+          ch (peek-char reader)]
       (if (not ch) (reader-error reader :EOF))
       (if (identical? delim ch)
-        forms
-        (let [form (read-form reader ch)]
+        (and (discard-char reader) forms)
+        (let [form (read-form reader)]
           (recur (if (identical? form reader)
                    forms
                    (conj forms form))))))))
@@ -502,8 +502,22 @@
   (read reader true nil true)
   reader)
 
+(defn discard-char
+  "Discard next char"
+  [reader _]
+  (read-char reader)
+  reader)
+
+(defn discard
+  [reader _]
+  reader)
+
 (defn macros [c]
   (cond
+   (identical? c " ") discard
+   (identical? c "\t") discard
+   (identical? c "\r") discard
+   (identical? c "\n") discard
    (identical? c "\"") read-string
    (identical? c \\) read-character
    (identical? c \:) read-keyword
@@ -535,8 +549,9 @@
    :else nil))
 
 (defn read-form
-  [reader ch]
-  (let [start {:line (:line reader)
+  [reader]
+  (let [ch (read-char reader)
+        start {:line (:line reader)
                :column (:column reader)}
         read-macro (macros ch)
         form (cond read-macro (read-macro reader ch)
@@ -562,15 +577,14 @@
   Otherwise returns sentinel."
   [reader eof-is-error sentinel is-recursive]
   (loop []
-    (let [ch (read-char reader)
+    (let [ch (peek-char reader)
           form (cond
                 (nil? ch) (if eof-is-error (reader-error reader :EOF) sentinel)
-                (whitespace? ch) reader
-                (comment-prefix? ch) (read (read-comment reader ch)
+                (comment-prefix? ch) (read (read-comment (discard-char reader) ch)
                                            eof-is-error
                                            sentinel
                                            is-recursive)
-                :else (read-form reader ch))]
+                :else (read-form reader))]
       (if (identical? form reader)
         (recur)
         form))))
