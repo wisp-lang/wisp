@@ -14,12 +14,12 @@
 (defn push-back-reader
   "Creates a StringPushbackReader from a given string"
   [source uri]
-  {:lines (split source "\n") :buffer ""
+  {:lines (split source "\n")
    :uri uri
    :column -1 :line 0})
 
-(defn peek-char
-  "Returns next char from the Reader without reading it.
+(defn first-char
+  "Returns first char from the Reader without reading it.
   nil if the end of stream has being reached."
   [reader]
   (let [line (aget (:lines reader)
@@ -28,6 +28,37 @@
     (if (nil? line)
       nil
       (or (aget line column) "\n"))))
+
+(defn drop-char
+  "Returns new reader without first character"
+  [reader]
+  (let [line-position (:line reader)
+        column-position (:column reader)
+
+        lines (:lines reader)
+        line (aget lines line-position)
+        next-column-position (inc column-position)
+        next-line-position (inc line-position)]
+    (if line
+      (if (> (count line) next-column-position)
+        {:lines lines
+         :line line-position
+         :column next-column-position
+         :uri (:uri reader)}
+
+        (if (> (count lines) next-line-position)
+          {:lines lines
+           :line next-line-position
+           :column 0
+           :uri (:uri reader)})))))
+(def peek-char first-char)
+
+(defn second-char
+  "Returns second char from the reader without reading.
+  Returns nil if stream contains less than two more chars."
+  [reader]
+  (let [rest-chars (drop-char reader)]
+    (and rest-chars (first-char rest-chars))))
 
 (defn read-char
   "Returns the next char from the Reader, nil if the end
@@ -84,11 +115,11 @@
 
 (defn ^boolean number-literal?
   "Checks whether the reader is at the start of a number literal"
-  [reader initch]
-  (or (numeric? initch)
-      (and (or (identical? \+ initch)
-               (identical? \- initch))
-           (numeric? (peek-char reader)))))
+  [reader ch]
+  (or (numeric? ch)
+      (and (or (identical? \+ ch)
+               (identical? \- ch))
+           (numeric? (first-char reader)))))
 
 
 
@@ -550,13 +581,22 @@
 
 (defn read-form
   [reader]
-  (let [ch (read-char reader)
+  (let [ch (peek-char reader)
+        ;; Clue:
+        ;; Moving this line down breaks escodegen as
+        ;; -1 column ends up encoded.
+        body (discard-char reader)
         start {:line (:line reader)
                :column (:column reader)}
         read-macro (macros ch)
-        form (cond read-macro (read-macro reader ch)
-                   (number-literal? reader ch) (read-number reader ch)
-                   :else (read-symbol reader ch))
+        form (cond read-macro
+                   (read-macro body ch)
+
+                   (number-literal? reader ch)
+                   (read-number body ch)
+
+                   :else
+                   (read-symbol body ch))
         end {:line (:line reader)
              :column (inc (:column reader))}
         location {:uri (:uri reader)
