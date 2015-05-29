@@ -74,10 +74,10 @@
    See also replace-first."
   [string match replacement]
   (cond (string? match)
-        (replace string (RegExp. pattern-escape match) "g" replacement)
+        (.replace string (RegExp. (pattern-escape match) "g") replacement)
 
         (re-pattern? match)
-        (.replace s (RegExp. (.-source match) "g") replacement)
+        (.replace string (RegExp. (.-source match) "g") replacement)
 
         :else
         (throw (str "Invalid match arg: " match))))
