@@ -1,6 +1,6 @@
 (ns wisp.test.string
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.string :refer [join split]]
+            [wisp.src.string :refer [join split replace]]
             [wisp.src.sequence :refer [list]]
             [wisp.src.runtime :refer [str =]]))
 
@@ -41,3 +41,22 @@
 
 (is (= ["Some" "words" "to" "split"]
        (split "Some words to split" " ")))
+
+; replace tests
+; basic test
+(is (= "wtring" (replace "string" "s" "w")))
+; testing 'g' flag for replace
+(is (= "hewwo" (replace "hello" "l" "w")))
+; basic regex
+(is (= "tenten" (replace "10ten" #"[0-9]+" "ten")))
+; g flag on basic regex
+(is (= "tententen" (replace "19ten10" #"[0-9]+" "ten")))
+
+
+
+
+
+
+
+
+
