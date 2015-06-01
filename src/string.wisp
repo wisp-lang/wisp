@@ -26,11 +26,6 @@
   [string]
   (.toUpperCase string))
 
-(defn upper-case
-  "Converts string to all upper-case."
-  [string]
-  (.toUpperCase string))
-
 (defn lower-case
   "Converts string to all lower-case."
   [string]
