@@ -676,7 +676,7 @@ approach and supports only one essential way of importing modules:
             [wisp.backend.javascript.writer :as writer]
             [wisp.sequence
              :refer [first rest]
-             :rename {first car rest cadr}]))
+             :rename {first car rest cdr}]))
 ```
 
 Let's go through the above example to get a complete picture regarding
