@@ -46,7 +46,7 @@
 ; basic test
 (is (= "wtring" (replace "string" "s" "w")))
 ; testing 'g' flag for replace
-(is (= "hewwo" (replace "string" "l" "w")))
+(is (= "hewwo" (replace "hello" "l" "w")))
 ; basic regex
 (is (= "tenten" (replace "10ten" #"[0-9]+" "ten")))
 ; g flag on basic regex
