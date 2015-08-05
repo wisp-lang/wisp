@@ -1,6 +1,6 @@
 (ns wisp.string
   (:require [wisp.runtime :refer [str subs re-matches nil? string? re-pattern?]]
-            [wisp.sequence :refer [vec empty?]]))
+            [wisp.sequence :refer [vec count empty?]]))
 
 (defn split
   "Splits string on a regular expression.  Optional argument limit is
@@ -37,8 +37,8 @@
   [string]
   (if (< (count string) 2)
       (upper-case string)
-      (str (upper-case (subs s 0 1))
-           (lower-case (subs s 1)))))
+      (str (upper-case (subs string 0 1))
+           (lower-case (subs string 1)))))
 
 (def ^:private ESCAPE_PATTERN
   (RegExp. "([-()\\[\\]{}+?*.$\\^|,:#<!\\\\])" "g"))
