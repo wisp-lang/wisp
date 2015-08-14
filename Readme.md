@@ -260,7 +260,7 @@ Variable definitions also happen through special forms:
 
 In _wisp_ variables can be set to new values via the `set!` special form.
 
-Note that in functional programing binding changes are a bad practice (avoiding these will improve the quality and testability of your code), but there are always cases where this is required for JavaScript interoperability:
+Note that in functional programming binding changes are a bad practice (avoiding these will improve the quality and testability of your code), but there are always cases where this is required for JavaScript interoperability:
 
 ```clojure
 (set! a 1) ; => a = 1
