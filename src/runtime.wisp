@@ -178,9 +178,9 @@
   (identical? x true))
 
 (defn ^boolean false?
-  "Returns true if x is true"
+  "Returns true if x is false"
   [x]
-  (identical? x true))
+  (identical? x false))
 
 (defn re-find
   "Returns the first regex match, if any, of s to re, using
