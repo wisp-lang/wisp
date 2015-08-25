@@ -180,7 +180,7 @@
 (defn ^boolean false?
   "Returns true if x is true"
   [x]
-  (identical? x true))
+  (identical? x false))
 
 (defn re-find
   "Returns the first regex match, if any, of s to re, using

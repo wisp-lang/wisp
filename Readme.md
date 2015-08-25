@@ -260,7 +260,7 @@ Variable definitions also happen through special forms:
 
 In _wisp_ variables can be set to new values via the `set!` special form.
 
-Note that in functional programing binding changes are a bad practice (avoiding these will improve the quality and testability of your code), but there are always cases where this is required for JavaScript interoperability:
+Note that in functional programming binding changes are a bad practice (avoiding these will improve the quality and testability of your code), but there are always cases where this is required for JavaScript interoperability:
 
 ```clojure
 (set! a 1) ; => a = 1
@@ -713,7 +713,7 @@ not recognized by _wisp_ and will therefore be ignored.
 
 ### Types and Protocols
 
-In wisp protocols can be defined same as in Clojure(Script),
+In wisp protocols can be defined much in the same fashion as one would do in Clojure(Script),
 via [defprotocol](http://clojuredocs.org/clojure_core/clojure.core/defprotocol):
 
 ```clojure
@@ -743,7 +743,7 @@ extended to implement specific protocol using
   (-rest [array] (.slice array 1)))
 ```
 
-Once type / class implemnets some protocol, it's functions can be used
+Once type / class implements some protocol, it's functions can be used
 on the instances of that type / class.
 
 ```clojure
