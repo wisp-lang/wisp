@@ -260,7 +260,7 @@ Variable definitions also happen through special forms:
 
 In _wisp_ variables can be set to new values via the `set!` special form.
 
-Note that in functional programing binding changes are a bad practice (avoiding these will improve the quality and testability of your code), but there are always cases where this is required for JavaScript interoperability:
+Note that in functional programming binding changes are a bad practice (avoiding these will improve the quality and testability of your code), but there are always cases where this is required for JavaScript interoperability:
 
 ```clojure
 (set! a 1) ; => a = 1
@@ -279,7 +279,7 @@ As usual, the first expression following `if` is a condition - if it evaluates t
   "Number")
 ```
 
-The third ("else") expression is optional, and if missing and the conditional evaluates to `true` the result will be `nil`.
+The third ("else") expression is optional, and if missing while the conditional evaluates to `true`, the result will just be `nil`..
 
 ```clojure
 (if (monday? today) "How was your weekend")
@@ -287,7 +287,7 @@ The third ("else") expression is optional, and if missing and the conditional ev
 
 #### Combining expressions
 
-In _wisp_ everything is an expression, but sometimes one might want to combine multiple expressions into one, usually for the purpose of evaluating expressions that have side-effects. That's where `do` comes in:
+In _wisp_ everything is an expression, but sometimes one might want to combine multiple expressions into a single one, usually for the purpose of evaluating expressions that have side-effects. This is where `do` comes in to play:
 
 ```clojure
 (do
@@ -743,8 +743,8 @@ extended to implement specific protocol using
   (-rest [array] (.slice array 1)))
 ```
 
-Once type / class implemnets some protocol, it's functions can be used
-on the instances of that type / class.
+Once a certain type or class implements a protocol, its functions can be used
+on any of the instances derived from these classes / types.
 
 ```clojure
 (count [])        ;; => 0
@@ -753,15 +753,15 @@ on the instances of that type / class.
 (-rest [1 2 3])   ;; => [2 3]
 ```
 
-In wisp value can be checked to satisfy given protocol same as in
-Clojure(Script) via [satisfies?](http://clojuredocs.org/clojure_core/clojure.core/satisfies_q):
+In wisp values can be checked to satisfy a given protocol, much in the same fahion as
+Clojure(Script) does, via [satisfies?](http://clojuredocs.org/clojure_core/clojure.core/satisfies_q):
 
 ```clojure
 (satisfies? ICounted [1 2])
 (satisfies? ISeq [])
 ```
 
-New types (that translate to JS classes) can be defined same as in
+New types (that translate to JS classes) can be defined the same way as in
 Clojure(Script) via [deftype](http://clojuredocs.org/clojure_core/clojure.core/deftype)
 form:
 
@@ -785,9 +785,9 @@ define methods who's names will be kept as is, which can be used
 to define interface to be used from JS side (like `toString`
 method above).
 
-In wisp multiple types can be extended to implement a specific
+In wisp, multiple types can be extended to implement a specific
 protocol using [extend-protocol](http://clojuredocs.org/clojure_core/clojure.core/extend-protocol)
-form same as in Clojure(Script) too.
+form - again, the same form as in Clojure(Script) has been kept.
 
 [homoiconicity]:http://en.wikipedia.org/wiki/Homoiconicity
 [clojure]:http://clojure.org/

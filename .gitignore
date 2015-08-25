@@ -1,3 +1,5 @@
 *.js
 interactivate
 src/drafts/*
+node_modules/
+

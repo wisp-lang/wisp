@@ -243,7 +243,7 @@
   "Return a seq of all but the last item in coll, in linear time"
   [sequence]
   (let [items (cond (nil? sequence) nil
-                    (string? sequence) (subs sequence 0 (dec (count sequence)))
+                    (string? sequence) (.substr sequence 0 (dec (count sequence)))
                     (vector? sequence) (.slice sequence 0 (dec (count sequence)))
                     (list? sequence) (apply list (butlast (vec sequence)))
                     (lazy-seq? sequence) (butlast (lazy-seq-value sequence))

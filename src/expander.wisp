@@ -264,6 +264,11 @@
           (cons 'cond (rest (rest clauses))))))
 (install-macro! :cond expand-cond)
 
+(defn expand-comment
+  "Ignores body, yields nil"
+  [& body])
+(install-macro! :comment expand-comment)
+
 (defn expand-defn
   "Same as (def name (fn [params* ] exprs*)) or
   (def name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
