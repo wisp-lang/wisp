@@ -13,7 +13,7 @@
 (defprotocol INope
   (nope? [self]))
 
-(is (thrown? (nope? 1) #"method")
+(is (thrown? (nope? 1) #"of undefined")
     "protocol isn't implemented")
 
 

@@ -2,15 +2,15 @@
   (:require [wisp.runtime :refer [str]]
             [wisp.sequence :refer [rest]]
             [wisp.reader :refer [read* read-from-string]]
-            [wisp.compiler :refer [compile*]]))
+            [wisp.compiler :refer [compile]]))
 
 (defn evaluate
-  [code url] (eval (compile* (read* code url))))
+  [code url] (eval (aget (compile code {:source-uri url}) "code")))
 
 ;; Running code does not provide access to this scope.
 (defn run
   [code url]
-  ((Function (compile* (read* code url)))))
+  ((Function (aget (compile code {:source-uri url}) "code"))))
 
 ;; If we're not in a browser environment, we're finished with the public API.
 ;; return unless window?
