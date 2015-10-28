@@ -49,7 +49,8 @@
   **macros**      __macros__
   list->vector    listToVector
   set!            set
-  foo_bar         foo_bar
+  foo.bar         foo_bar
+  foo/bar         foo.bar
   number?         isNumber
   red=            redEqual
   create-server   createServer"
@@ -71,6 +72,8 @@
   (set! id (join "_" (split id "*")))
   ;; foo.bar -> foo_bar
   (set! id (join "_" (split id ".")))
+  ;; foo/bar -> foo.bar
+  (set! id (join "." (split id "/")))
   ;; list->vector ->  listToVector
   (set! id (if (identical? (subs id 0 2) "->")
              (subs (join "-to-" (split id "->")) 1)
