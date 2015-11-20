@@ -254,7 +254,10 @@
   (if (not condition) truthy, alternative))
 (install-macro! :if-not if-not)
 
-
+(defn expand-comment
+  "Ignores body, yields nil"
+  [& body])
+(install-macro! :comment expand-comment)
 
 (defn expand-cond
   "Takes a set of test/expr pairs. It evaluates each test one at a
