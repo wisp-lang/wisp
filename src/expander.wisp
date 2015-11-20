@@ -249,6 +249,12 @@
   `(not (= ~@body)))
 (install-macro! :not= not-equal)
 
+(defn if-not [condition truthy alternative]
+  "Complements the `if` exclusive conditional branch."
+  (if (not condition) truthy, alternative))
+(install-macro! :if-not if-not)
+
+
 
 (defn expand-cond
   "Takes a set of test/expr pairs. It evaluates each test one at a
