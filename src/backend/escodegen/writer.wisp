@@ -65,6 +65,7 @@
                  (identical? id ">=") "not-less-than"
                  (identical? id ">") "greater-than"
                  (identical? id "<") "less-than"
+                 (identical? id "->") "thread-first"
                  :else id))
 
   ;; **macros** ->  __macros__

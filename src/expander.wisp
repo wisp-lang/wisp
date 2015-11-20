@@ -259,6 +259,17 @@
   [& body])
 (install-macro! :comment expand-comment)
 
+(defn expand-thread-first
+  "Thread first macro"
+  [& operations]
+  (reduce
+   (fn [form operation]
+     (cons (first operation)
+           (cons form (rest operation))))
+   (first operations)
+   (rest operations)))
+(install-macro! :-> expand-thread-first)
+
 (defn expand-cond
   "Takes a set of test/expr pairs. It evaluates each test one at a
   time.  If a test returns logical true, cond evaluates and returns
