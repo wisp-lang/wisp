@@ -125,4 +125,4 @@
 (defn reverse
   "Returns s with its characters reversed."
   [string]
-  (join "" (.reverse (split string ""))))
+  (join "" (.reverse (.split string #""))))
