@@ -1,5 +1,9 @@
 # WISP
 
+## Project is abandoned
+
+Project maintainer [@gozala](https://github.com/Gozala/wisp) is no longer able to spend time on this project. ClojureScript managed to overcome JVM dependency, so there is almost no reason to choose wisp over it. Never the less if you feel motivated to carry on the effort and step up as a maintainer contact [@gozala](https://github.com/Gozala/wisp).
+
 [![Build Status](https://secure.travis-ci.org/Gozala/wisp.png)](http://travis-ci.org/Gozala/wisp)
 [![NPM version](https://badge.fury.io/js/wisp.svg)](http://badge.fury.io/js/wisp)
 [![Dependency Status](https://david-dm.org/gozala/wisp.svg)](https://david-dm.org/gozala/wisp)
