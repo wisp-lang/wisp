@@ -289,6 +289,19 @@ The third ("else") expression is optional, and if missing and the conditional ev
 (if (monday? today) "How was your weekend")
 ```
 
+The form `cond` is also available:
+
+```clojure
+(cond
+  (monday? today)  "How was your weekend"
+  (friday? today)  "Enjoy your weekend"
+  (weekend? today) "Huzzah weekend"
+  true "Some other day")
+```
+
+Each term is evaluated in sequence until one is true. If none are true, the form
+evaluates to `undefined`.
+
 #### Combining expressions
 
 In _wisp_ everything is an expression, but sometimes one might want to combine multiple expressions into one, usually for the purpose of evaluating expressions that have side-effects. That's where `do` comes in:
