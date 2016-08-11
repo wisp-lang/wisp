@@ -304,11 +304,11 @@ The form `cond` is also available:
   (monday? today)  "How was your weekend"
   (friday? today)  "Enjoy your weekend"
   (weekend? today) "Huzzah weekend"
-  true "Some other day")
+  :else "Some other day")
 ```
 
-Each term is evaluated in sequence until one is true. If none are true, the form
-evaluates to `undefined`.
+Each term is evaluated in sequence until it evaluates to true. If none are true,
+the form evaluates to `undefined`.
 
 #### Combining expressions
 
