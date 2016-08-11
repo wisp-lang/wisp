@@ -238,9 +238,9 @@ _wisp_ comes with special forms for common arithmetic:
 (<= a b c)           ; => a <= b && b <= c
 ```
 
-#### Logical operations
+#### Logical and bitwise operations
 
-...and special forms for logical operations:
+...and special forms for logical and bitwise operations:
 
 ```clojure
 (and a b)            ; => a && b
@@ -250,6 +250,14 @@ _wisp_ comes with special forms for common arithmetic:
      (and c d))      ; (a || b) && (c && d)
 ```
 
+```clojure
+(bit-and a b)                  ; => a & b
+(bit-or a b)                   ; => a | b
+(bit-xor a b)                  ; => a ^ b
+(bit-shift-left a 2)           ; => a << 2
+(bit-shift-right b 3)          ; => b >> 3
+(bit-shift-right-zero-fil a 1) ; => a >>> 1
+```
 
 #### Definitions
 
