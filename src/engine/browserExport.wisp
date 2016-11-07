@@ -7,7 +7,9 @@
             [wisp.string :as string]
             [wisp.expander :as expander]
             [wisp.analyzer :as analyzer]
-            [wisp.backend.javascript.writer :as writer]
+            [wisp.backend.javascript.writer :as jswriter]
+            [wisp.backend.escodegen.generator :as esgen]
+            [wisp.backend.escodegen.writer :as eswriter]
             [wisp.ast :as ast]
             ))
 
@@ -20,6 +22,10 @@
                       :string string
                       :expander expander
                       :analyzer analyzer
-                      :backend {:javascript {:writer writer}}
+                      :backend {
+                                :javascript {:writer jswriter}
+                                :escodegen {
+                                            :escodegen esgen
+                                            :writer eswriter}}
                       :ast ast
                       })
