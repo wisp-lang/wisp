@@ -25,7 +25,7 @@
                       :backend {
                                 :javascript {:writer jswriter}
                                 :escodegen {
-                                            :escodegen esgen
+                                            :generator esgen
                                             :writer eswriter}}
                       :ast ast
                       })
