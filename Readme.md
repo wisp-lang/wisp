@@ -1,3 +1,15 @@
+# THIS IS A FORK OF WISP
+
+## This fork is maintained by TEAM CTHULHU, [here](https://github.com/TEAM-CTHULHU/wisp)
+
+The original project is by @gozala, [here](https://github.com/Gozala/wisp).
+
+We have added a few things, like a friendly brower export so other projects can
+use this in their own REPLs. Also, we have a [Google Plus
+community](https://plus.google.com/communities/111791993160629007032).
+
+# THE ORIGINAL CONTENTS FOLLOWS...
+
 # WISP
 
 ## Project is abandoned
