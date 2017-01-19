@@ -1,4 +1,6 @@
-*.js
+/*.js
+backend
+engine
 interactivate
 src/drafts/*
 node_modules
