@@ -2,9 +2,9 @@ A little Clojure-like LISP in JavaScript.
 
 <!-- interactive demo -->
 
-1. Read about the [language essentials & documentation](https://github.com/chr15m/wisp/doc/language-essentials.md).
+1. Read about the [language essentials & documentation](https://github.com/chr15m/wisp/blob/master/doc/language-essentials.md).
 
-2. Drop [wisp.min.js](https://github.com/chr15m/wisp/raw/gh-pages/dist/wisp.min.js) into your browser:
+2. Drop [wisp.min.js](https://github.com/chr15m/wisp/raw/gh-pages/dist/wisp.min.js) into your HTML code:
 
 ```html
 <script src="wisp.min.js"></script>
@@ -23,12 +23,12 @@ A little Clojure-like LISP in JavaScript.
 
 4. Compile wisp code to native JS just like CoffeeScript:
 
-	`cat my-script.wisp | node_modules/.bin/wisp > my-script.js`
+	`node_modules/.bin/wisp < my-script.wisp > my-script.js`
 
 5. Fire up a REPL to explore the language:
 
 	`./node_modules/.bin/wisp`
 
-[More info](https://github.com/chr15m/wisp/blob/master/doc/more-info.wisp).
+[More info](https://github.com/chr15m/wisp/blob/master/doc/more-info.md).
 
 This is a fork of [wisp by @Gozala](https://github.com/Gozala/wisp).

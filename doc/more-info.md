@@ -2,9 +2,9 @@ Wisp is a homoiconic JavaScript dialect with Clojure syntax, s-expressions and m
 
 This is a fork of [the original language by @Gozala](https://github.com/Gozala/wisp).
 
-You can find the [original readme here](https://github.com/chr15m/wisp/doc/original-readme.md).
+You can find the [original readme here](./readme-original.md).
 
-[Language essentials & documentation](https://github.com/chr15m/wisp/doc/language-essentials.md).
+[Language essentials & documentation](./language-essentials.md).
 
 *Why wouldn't I just use ClojureScript?*
 
