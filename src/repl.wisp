@@ -2,7 +2,7 @@
   (:require [repl :as repl]
             [vm :as vm]
             [wisp.runtime :refer [subs =]]
-            [wisp.sequence :refer [count list conj cons vec]]
+            [wisp.sequence :refer [count list conj cons vec last]]
             [wisp.compiler :refer [compile read-forms analyze-forms generate]]
             [wisp.ast :refer [pr-str]]
             [base64-encode :as btoa]))
@@ -42,7 +42,10 @@
     (fn evaluate [code context file callback]
       (if (not (identical? input code))
         (do
-          (set! input (subs code 1 (- (count code) 1)))
+          (set! input
+            (if (not (identical? (last code) "\n"))
+              (subs code 0 (- (count code) 1))
+              code))
           (set! output (evaluate-code input file context))
           (callback (:error output) (:value output)))
         (callback (:error output))))))
