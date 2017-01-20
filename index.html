@@ -1,129 +1,66 @@
 <!doctype html>
 <html>
 <head>
-  <title>Wisp demo</title>
-  <meta name="viewport" content="width=device-width">
-  <meta charset="utf-8">
-  <link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/alegreya" type="text/css"/>
-  <link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/fantasque-sans-mono" type="text/css"/>
-  <style>
-    body {
-      width: 800px;
-      max-width: 95%;
-      background-color: #F1E6D4;
-      color: #444;
-      margin-left: auto;
-      margin-right: auto;
-      font-size: 1.5em;
-    }
-
-    h1, h2 {
-      font-family: 'AlegreyaRegular';
-      font-weight: normal;
-      font-style: normal;
-    }
-
-    h2 {
-      border-bottom: 1px dashed #444;
-    }
-
-    p {
-      font-family: 'AlegreyaRegular';
-      font-weight: normal;
-      font-style: normal; 
-    }
-
-    pre, code {
-      font-family: 'FantasqueSansMonoRegular';
-      font-weight: normal;
-      font-style: normal;
-    }
-
-    pre, textarea {
-      padding: 0.5em;
-      border: 2px solid #E3CDAE;
-      border-radius: 3px;
-      background-color: #FFFFFF;
-      font-size: 20px;
-    }
-
-    textarea {
-      width: 100%;
-    }
-
-    textarea, input, button {
-      font-family: 'FantasqueSansMonoRegular';
-      font-weight: normal;
-      font-style: normal;
-    }
-
-    button {
-      min-width: 10em;
-      padding: 0.25em;
-      font-size: 1.1em;
-      position: relative;
-      top: -2em;
-      margin-top: -2em;
-      margin: 0px;
-    }
-    
-    .container {
-      display: inline-block;
-      width: 100%;
-      text-align: right;
-    }
-
-    a {
-      color: #6E4429;
-      font-weight: bold;
-    }
-
-    a:hover {
-      color: #4D2E19;
-    }
-  </style>
+<title>Wisp demo</title>
+<meta name="viewport" content="width=device-width">
+<meta charset="utf-8">
+<link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/alegreya" type="text/css"/>
+<link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/fantasque-sans-mono" type="text/css"/>
+<link rel="stylesheet" media="screen" href="wisp.css" type="text/css"/>
 </head>
 <body>
-  <h1>Wisp.</h1>
-  <p header>A small Clojure-like LISP in JavaScript.</p>
+<h1>Wisp.</h1>
 
-  <textarea id="user-code" rows=5>(alert "Hello, I'm wisp!")
+<p>A little Clojure-like LISP in JavaScript.</p>
+<textarea id="user-code" rows=5>(alert "Hello, I'm wisp!")
 
 (console.log "Result:" (+ 1 1))
 
 ; edit me. :)</textarea>
-  <p class="container"><button id="run">Run.</button></p>
 
-  <p>1. Read about the <a href='https://github.com/Gozala/wisp#language-essentials'>language essentials & documentation</a>.</p>
+<p class="container"><button id="run">Run.</button></p>
 
-  <p>2. Drop it into your browser:</a>
-  <pre><code>&lt;script src="<a href='dist/wisp.min.js'>dist/wisp.min.js</a>"&gt;&lt;/script&gt;
+<script type="application/wisp">
+  (.addEventListener (.getElementById document "run")
+    "click"
+    (fn [ev]
+        (eval (.-code (compile (.-value (.getElementById document "user-code"))))))
+    false)
+</script>
+<ol>
+<li>
+<p>Read about the <a href="https://github.com/chr15m/wisp/doc/language-essentials.md">language essentials &amp; documentation</a>.</p>
+</li>
+<li>
+<p>Drop <a href="https://github.com/chr15m/wisp/raw/gh-pages/dist/wisp.min.js">wisp.min.js</a> into your browser:</p>
+</li>
+</ol>
+<pre><code class="language-html">&lt;script src=&quot;wisp.min.js&quot;&gt;&lt;/script&gt;
 
-&lt;script type="application/wisp"&gt;
-  (console.log "This is code running from a script tag.")
+&lt;script type=&quot;application/wisp&quot;&gt;
+(alert &quot;Hello world!&quot;)
 &lt;/script&gt;
 
-&lt;script type="application/wisp" src="my-script.wisp"&gt;&lt;/script&gt;</code></pre>
+&lt;!-- Load from a file: --&gt;
+&lt;script type=&quot;application/wisp&quot; src=&quot;my-script.wisp&quot;&gt;&lt;/script&gt;
+</code></pre>
+<ol start="3">
+<li>
+<p>Or install the binary with npm:</p>
+<p><code>npm install wisp</code></p>
+</li>
+<li>
+<p>Compile wisp code to native JS just like CoffeeScript:</p>
+<p><code>cat my-script.wisp | node_modules/.bin/wisp &gt; my-script.js</code></p>
+</li>
+<li>
+<p>Fire up a REPL to explore the language:</p>
+<p><code>./node_modules/.bin/wisp</code></p>
+</li>
+</ol>
+<p><a href="https://github.com/chr15m/wisp/blob/master/doc/more-info.wisp">More info</a>.</p>
+<p>This is a fork of <a href="https://github.com/Gozala/wisp">wisp by @Gozala</a>.</p>
 
-  <p>3. Compile wisp to native JS just like CoffeeScript:</p>
-  <pre><code>npm install wisp
-cat my-script.wisp | node_modules/.bin/wisp &gt; my-script.js
-</pre></code>
-
-  <p>You can also start a repl to explore by running the <code>wisp</code> command after installing.</p>
-
-  <h2>About</h2>
-  <p>Wisp is a homoiconic JavaScript dialect with Clojure syntax, s-expressions and macros.</p>
-  <p>wisp also does its best to compile down to JavaScript you would have written by hand - think of wisp as markdown for JavaScript programming, but with the added subtlety of LISP S-expressions, homoiconicity and powerful macros that make it the easiest way to write JavaScript.</p>
-
-  <script type="application/wisp">
-    (console.log "This is code running from a script tag.")
-    (.addEventListener (.getElementById document "run")
-      "click"
-      (fn [ev]
-          (eval (.-code (compile (.-value (.getElementById document "user-code"))))))
-      false)
-  </script>
-  <script src="dist/wisp.min.js"></script>
+<script src="dist/wisp.min.js"></script>
 </body>
 </html>

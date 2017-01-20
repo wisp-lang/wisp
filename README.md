@@ -7,14 +7,14 @@ A little Clojure-like LISP in JavaScript.
 2. Drop [wisp.min.js](https://github.com/chr15m/wisp/raw/gh-pages/dist/wisp.min.js) into your browser:
 
 ```html
-	<script src="wisp.min.js"></script>
-	
-	<script type="application/wisp">
-	  (alert "Hello world!")
-	</script>
-	
-	<!-- Load from a file: -->
-	<script type="application/wisp" src="my-script.wisp"></script>
+<script src="wisp.min.js"></script>
+
+<script type="application/wisp">
+  (alert "Hello world!")
+</script>
+
+<!-- Load from a file: -->
+<script type="application/wisp" src="my-script.wisp"></script>
 ```
 
 3. Or install the binary with npm:

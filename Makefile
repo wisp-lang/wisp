@@ -99,3 +99,5 @@ dist/wisp.js: src/engine/runner.wisp
 dist/wisp.min.js: dist/wisp.js
 	$(MINIFY) dist/wisp.js > dist/wisp.min.js
 
+index.html: template.html README.md
+	./bin/generate-site > index.html

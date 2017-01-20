@@ -1,0 +1,16 @@
+<textarea id="user-code" rows=5>(alert "Hello, I'm wisp!")
+
+(console.log "Result:" (+ 1 1))
+
+; edit me. :)</textarea>
+
+<p class="container"><button id="run">Run.</button></p>
+
+<script type="application/wisp">
+  (.addEventListener (.getElementById document "run")
+    "click"
+    (fn [ev]
+        (eval (.-code (compile (.-value (.getElementById document "user-code"))))))
+    false)
+</script>
+

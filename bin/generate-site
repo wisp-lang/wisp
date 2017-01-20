@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+function replacer {
+  while read line
+  do
+    if [ "${line}*" = "${1}*" ]
+    then
+      echo "${2}"
+    else
+      echo ${line}
+    fi
+  done
+}
+
+interact=`cat interact.html`
+content=`./node_modules/.bin/commonmark README.md | replacer '<!-- interactive demo -->' "${interact}"`
+cat template.html | replacer '<!-- content -->' "${content}"
