@@ -155,7 +155,7 @@
         expander (macro op)]
     (cond expander (expand expander form env)
           ;; Calling a keyword compiles to getting value from given
-          ;; object associted with that key:
+          ;; object associated with that key:
           ;; '(:foo bar) => '(get bar :foo)
           (keyword? op) (desugar keyword-invoke form)
           ;; '(.-field object) => (aget object 'field)
@@ -202,14 +202,14 @@
                                  (cons '.concat
                                        (sequence-expand (apply concat
                                                                (seq form)))))
-        ;; If a vector form expand all sub-forms and concatinate
-        ;; them togather:
+        ;; If a vector form expand all sub-forms and concatenate
+        ;; them together:
         ;;
         ;; [~a b ~@c] -> (.concat [a] [(quote b)] c)
         (vector? form) (cons '.concat (sequence-expand form))
 
         ;; If a list form expand all the sub-forms and apply
-        ;; concationation to a list constructor:
+        ;; concatenation to a list constructor:
         ;;
         ;; (~a b ~@c) -> (apply list (.concat [a] [(quote b)] c))
         (list? form) (if (empty? form)
@@ -249,6 +249,26 @@
   `(not (= ~@body)))
 (install-macro! :not= not-equal)
 
+(defn if-not [condition truthy alternative]
+  "Complements the `if` exclusive conditional branch."
+  (if (not condition) truthy, alternative))
+(install-macro! :if-not if-not)
+
+(defn expand-comment
+  "Ignores body, yields nil"
+  [& body])
+(install-macro! :comment expand-comment)
+
+(defn expand-thread-first
+  "Thread first macro"
+  [& operations]
+  (reduce
+   (fn [form operation]
+     (cons (first operation)
+           (cons form (rest operation))))
+   (first operations)
+   (rest operations)))
+(install-macro! :-> expand-thread-first)
 
 (defn expand-cond
   "Takes a set of test/expr pairs. It evaluates each test one at a
