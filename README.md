@@ -31,4 +31,4 @@ A little Clojure-like LISP in JavaScript.
 
 [More info](https://github.com/chr15m/wisp/blob/master/doc/more-info.md).
 
-This is a fork of [wisp by @Gozala](https://github.com/Gozala/wisp).
+Wisp is currently in maintenance mode. We're merging PRs but not actively writing new code.
