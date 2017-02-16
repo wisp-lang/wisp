@@ -20,7 +20,7 @@ endif
 core: runtime sequence string ast reader compiler writer analyzer expander escodegen
 escodegen: escodegen-writer escodegen-generator
 node: core wisp node-engine repl
-browser: core browser-engine
+browser: core browser-engine dist/wisp.min.js
 all: node browser
 test: test1
 
@@ -79,17 +79,11 @@ node-engine: ./engine/node.js
 
 browser-engine: ./engine/browser.js
 
-browser-embed: core browser-engine bundle-browser-engine
-
-bundle-browser-engine: $(BROWSERIFY)
-	$(BROWSERIFY) --debug \
-                  --exports require \
-                  --entry ./engine/browser.js > ./browser-embed.js
-
-dist/wisp.js: src/engine/runner.wisp $(WISP) $(BROWSERIFY)
-	mkdir -p dist
-	$(WISP) < src/engine/runner.wisp > runner.js
-	$(BROWSERIFY) --debug --exports require --entry ./runner.js > dist/wisp.js
+dist/wisp.js: engine/browser.js $(WISP) $(BROWSERIFY) core
+	@mkdir -p dist
+	$(BROWSERIFY) --debug --exports require --entry engine/browser.js > dist/wisp.js
 
 dist/wisp.min.js: dist/wisp.js $(MINIFY)
+	@mkdir -p dist
 	$(MINIFY) dist/wisp.js > dist/wisp.min.js
+
