@@ -34,9 +34,9 @@
 (defn ^String capitalize
   "Converts first character of the string to upper-case, all other
   characters to lower-case."
-  [string]
-  (if (< (count string) 2)
-      (upper-case string)
+  [s]
+  (if (< (count s) 2)
+      (upper-case s)
       (str (upper-case (subs s 0 1))
            (lower-case (subs s 1)))))
 
@@ -125,4 +125,4 @@
 (defn reverse
   "Returns s with its characters reversed."
   [string]
-  (join "" (.reverse (split string ""))))
+  (join "" (.reverse (.split string #""))))

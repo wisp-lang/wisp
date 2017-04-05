@@ -1,4 +1,5 @@
 BROWSERIFY = node ./node_modules/browserify/bin/cmd.js
+MINIFY = node ./node_modules/.bin/minify
 WIPS_CURRENT = node ./bin/wisp.js
 FLAGS =
 
@@ -14,7 +15,7 @@ endif
 
 core: runtime sequence string ast reader compiler writer analyzer expander escodegen
 node: core wisp node-engine repl
-browser: core browser-engine
+browser: core browser-engine dist/wisp.min.js
 all: node browser
 test: test1
 
@@ -24,6 +25,7 @@ test1:
 clean:
 	rm -rf engine
 	rm -rf backend
+	rm -rf dist
 	touch null.js
 	rm *.js
 
@@ -97,3 +99,11 @@ bundle-browser-export: core browser-engine browser-export
 	$(BROWSERIFY) --debug \
 								  -s Wisp \
                   --entry ./engine/browserExport.js > ./browser-export.js
+
+dist/wisp.js: src/engine/runner.wisp
+	mkdir -p dist
+	$(WISP) < src/engine/runner.wisp > runner.js
+	$(BROWSERIFY) --debug --exports require --entry ./runner.js > dist/wisp.js
+
+dist/wisp.min.js: dist/wisp.js
+	$(MINIFY) dist/wisp.js > dist/wisp.min.js
