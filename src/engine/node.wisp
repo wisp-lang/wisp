@@ -15,4 +15,5 @@
 ;; Register `.wisp` file extension so that
 ;; modules can be simply required.
 (set! (get require.extensions ".wisp")
-      #(._compile %1 (compile-path %2)))
+      (fn [src path]
+        (._compile src (compile-path path) path)))
