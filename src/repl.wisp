@@ -1,7 +1,7 @@
 (ns wisp.repl
   (:require [repl :as repl]
             [vm :as vm]
-            [wisp.runtime :refer [subs =]]
+            [wisp.runtime :refer [subs = keys]]
             [wisp.sequence :refer [count list conj cons vec last]]
             [wisp.compiler :refer [compile read-forms analyze-forms generate]]
             [wisp.ast :refer [pr-str]]
@@ -60,5 +60,11 @@
                          :useGlobal false
                          :eval evaluate})
         context (.-context session)]
+    ; hoist wisp builtins into the repl
+    (.map ["runtime" "sequence" "string"]
+          (fn [n]
+            (let [f (require (str "./src/" n ".wisp"))]
+              (.map (keys f)
+                    (fn [k] (set! (get context k) (get f k)))))))
     (set! context.exports {})
     session))

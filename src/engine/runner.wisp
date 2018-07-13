@@ -1,6 +1,10 @@
 (ns runner.main
   (:require [wisp.compiler :refer [compile]]))
 
+(def _wisp_runtime (require "./runtime.js"))
+(def _wisp_sequence (require "./sequence.js"))
+(def _wisp_string (require "./string.js"))
+
 (defn fetch-source [src callback]
   (let [xhr (new XMLHttpRequest)]
     ;(.addEventListener xhr "timeout" (fn [ev] (console.log "Timeout loading" src)) false)
@@ -29,6 +33,12 @@
                   (run-wisp-code code url))))
 
 (defn __main__ [ev]
+  ; hoist wisp builtins into the global window context
+  (.map [_wisp_runtime _wisp_sequence _wisp_string]
+        (fn [f]
+          (.map (.keys Object f)
+                (fn [k]
+                  (set! (get window k) (get f k))))))
   ;(console.log "running __main__")
   ; find all the script tags on the page
   (let [scripts (document.getElementsByTagName "script")]
