@@ -76,6 +76,10 @@
   (set! id (if (identical? (subs id 0 2) "->")
              (subs (join "-to-" (split id "->")) 1)
              (join "-to-" (split id "->"))))
+  ;; list<-vector ->  listFromVector
+  (set! id (if (identical? (subs id 0 2) "<-")
+             (subs (join "-from-" (split id "<-")) 1)
+             (join "-from-" (split id "<-"))))
   ;; set! ->  set
   (set! id (join (split id "!")))
   (set! id (join "$" (split id "%")))

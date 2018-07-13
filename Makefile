@@ -85,11 +85,20 @@ browser-engine:
 	mkdir -p ./engine/
 	cat ./src/engine/browser.wisp | $(WISP) --source-uri wisp/engine/browser.wisp --no-map > ./engine/browser.js
 
+browser-export:
+	mkdir -p ./engine/
+	cat ./src/engine/browserExport.wisp | $(WISP) --source-uri wisp/engine/browserExports.wisp --no-map > ./engine/browserExport.js
+
 browser-embed: core browser-engine bundle-browser-engine
 bundle-browser-engine:
 	$(BROWSERIFY) --debug \
                   --exports require \
                   --entry ./engine/browser.js > ./browser-embed.js
+
+bundle-browser-export: core browser-engine browser-export
+	$(BROWSERIFY) --debug \
+								  -s Wisp \
+                  --entry ./engine/browserExport.js > ./browser-export.js
 
 dist/wisp.js: src/engine/runner.wisp
 	mkdir -p dist
@@ -98,4 +107,3 @@ dist/wisp.js: src/engine/runner.wisp
 
 dist/wisp.min.js: dist/wisp.js
 	$(MINIFY) dist/wisp.js > dist/wisp.min.js
-
