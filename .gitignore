@@ -2,3 +2,6 @@
 interactivate
 src/drafts/*
 node_modules
+.*.swp
+workspace
+npm-debug.log

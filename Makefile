@@ -1,7 +1,11 @@
-BROWSERIFY = node ./node_modules/browserify/bin/cmd.js
-MINIFY = node ./node_modules/.bin/minify
+BROWSERIFY = ./node_modules/browserify/bin/cmd.js
+MINIFY = ./node_modules/.bin/minify
 WIPS_CURRENT = node ./bin/wisp.js
 FLAGS =
+INSTALL_MESSAGE = "You need to run 'npm install' to install build dependencies."
+BUILD_DEPS = $(BROWSERIFY) $(MINIFY) ./node_modules/wisp/bin/wisp.js
+# set make's source file search path
+vpath % src
 
 ifdef verbose
 	FLAGS = --verbose
@@ -14,88 +18,72 @@ else
 endif
 
 core: runtime sequence string ast reader compiler writer analyzer expander escodegen
+escodegen: escodegen-writer escodegen-generator
 node: core wisp node-engine repl
 browser: core browser-engine dist/wisp.min.js
 all: node browser
 test: test1
 
-test1:
+test1: core node
 	$(WIPS_CURRENT) ./test/test.wisp $(FLAGS)
+
+$(BUILD_DEPS):
+	@echo $(INSTALL_MESSAGE)
+	@exit 1
 
 clean:
 	rm -rf engine
 	rm -rf backend
 	rm -rf dist
-	touch null.js
-	rm *.js
+	rm -f *.js
 
-repl:
-	cat ./src/repl.wisp | $(WISP) --source-uri wisp/repl.wisp --no-map > ./repl.js
+%.js: %.wisp $(WISP)
+	@mkdir -p $(dir $@)
+	$(WISP) --source-uri wisp/$(subst .js,.wisp,$@) < $< > $@
 
-reader:
-	cat ./src/reader.wisp | $(WISP) --source-uri wisp/reader.wisp --no-map > ./reader.js
+### core ###
 
-compiler:
-	cat ./src/compiler.wisp | $(WISP) --source-uri wisp/compiler.wisp --no-map > ./compiler.js
+repl: repl.js
 
-writer:
-	mkdir -p ./backend/javascript/
-	cat ./src/backend/javascript/writer.wisp | $(WISP) --source-uri wisp/backend/javascript/writer.wisp --no-map > ./backend/javascript/writer.js
+reader: reader.js
 
-escodegen: escodegen-writer escodegen-generator
+compiler: compiler.js
 
-escodegen-writer:
-	mkdir -p ./backend/escodegen/
-	cat ./src/backend/escodegen/writer.wisp | $(WISP) --source-uri wisp/backend/escodegen/writer.wisp --no-map > ./backend/escodegen/writer.js
+runtime: runtime.js
 
-escodegen-compiler:
-	mkdir -p ./backend/escodegen/
-	cat ./src/backend/escodegen/compiler.wisp | $(WISP) --source-uri wisp/backend/escodegen/compiler.wisp --no-map > ./backend/escodegen/compiler.js
+sequence: sequence.js
 
-escodegen-generator:
-	mkdir -p ./backend/escodegen/
-	cat ./src/backend/escodegen/generator.wisp | $(WISP) --source-uri wisp/backend/escodegen/generator.wisp --no-map > ./backend/escodegen/generator.js
+string: string.js
 
-runtime:
-	cat ./src/runtime.wisp | $(WISP) --source-uri wisp/runtime.wisp --no-map > ./runtime.js
+ast: ast.js
 
-sequence:
-	cat ./src/sequence.wisp | $(WISP) --source-uri wisp/sequence.wisp --no-map > ./sequence.js
+analyzer: analyzer.js
 
-string:
-	cat ./src/string.wisp | $(WISP) --source-uri wisp/string.wisp --no-map > ./string.js
+expander: expander.js
 
-ast:
-	cat ./src/ast.wisp | $(WISP) --source-uri wisp/ast.wisp --no-map > ./ast.js
+wisp: wisp.js
 
-analyzer:
-	cat ./src/analyzer.wisp | $(WISP) --source-uri wisp/analyzer.wisp --no-map > ./analyzer.js
+writer: backend/javascript/writer.js
 
-expander:
-	cat ./src/expander.wisp | $(WISP) --source-uri wisp/expander.wisp --no-map > ./expander.js
+### escodegen backend ###
 
-wisp:
-	cat ./src/wisp.wisp | $(WISP) --source-uri wisp/wisp.wisp --no-map > ./wisp.js
+escodegen-writer: backend/escodegen/writer.js
 
-node-engine:
-	mkdir -p ./engine/
-	cat ./src/engine/node.wisp | $(WISP) --source-uri wisp/engine/node.wisp --no-map > ./engine/node.js
+escodegen-compiler: backend/escodegen/compiler.js
 
-browser-engine:
-	mkdir -p ./engine/
-	cat ./src/engine/browser.wisp | $(WISP) --source-uri wisp/engine/browser.wisp --no-map > ./engine/browser.js
+escodegen-generator: backend/escodegen/generator.js
 
-browser-embed: core browser-engine bundle-browser-engine
-bundle-browser-engine:
-	$(BROWSERIFY) --debug \
-                  --exports require \
-                  --entry ./engine/browser.js > ./browser-embed.js
+### platform engine bundles ###
 
-dist/wisp.js: src/engine/runner.wisp
-	mkdir -p dist
-	$(WISP) < src/engine/runner.wisp > runner.js
-	$(BROWSERIFY) --debug --exports require --entry ./runner.js > dist/wisp.js
+node-engine: ./engine/node.js
 
-dist/wisp.min.js: dist/wisp.js
+browser-engine: ./engine/browser.js
+
+dist/wisp.js: engine/browser.js $(WISP) $(BROWSERIFY) core
+	@mkdir -p dist
+	$(BROWSERIFY) --debug --exports require --entry engine/browser.js > dist/wisp.js
+
+dist/wisp.min.js: dist/wisp.js $(MINIFY)
+	@mkdir -p dist
 	$(MINIFY) dist/wisp.js > dist/wisp.min.js
 

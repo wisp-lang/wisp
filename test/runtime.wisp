@@ -1,7 +1,8 @@
 (ns wisp.test.runtime
   (:require [wisp.test.util :refer [is thrown?]]
             [wisp.src.runtime :refer [dictionary? vector? subs str
-                                      and or = == > >= < <= + - / *]]
+                                      and or = == > >= < <= + - / *
+                                      nan?]]
             [wisp.src.sequence :refer [list concat vec]]
             [wisp.src.ast :refer [symbol]]))
 
@@ -124,7 +125,6 @@
 (is (= false (apply or [nil nil nil nil nil nil nil nil nil false])))
 (is (= 17 (apply or [nil nil nil nil nil nil nil nil nil nil nil nil nil 17 18])))
 
-
 (is (apply = []))
 (is (apply = [1 1]))
 (is (not (apply = [1 2])))
@@ -169,3 +169,11 @@
               {:x 1 :y [2 [3 {:z 4}]]}
               {:x 1 :y [2 [3 {:z 4}]]}
               {:x 1 :y [2 [3 {:z 4}]]}]))
+
+(is (= true (apply nan? [])))
+(is (= true (apply nan? [nil])))
+(is (= true (apply nan? ["hi"])))
+(is (= false (apply nan? [false])))
+(is (= false (apply nan? [true])))
+(is (= false (apply nan? [1])))
+(is (= false (apply nan? ["2"])))
