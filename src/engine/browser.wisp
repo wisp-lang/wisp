@@ -1,9 +1,9 @@
 (ns runner.main
   (:require [wisp.compiler :refer [compile]]))
 
-(def _wisp_runtime (require "./runtime.js"))
-(def _wisp_sequence (require "./sequence.js"))
-(def _wisp_string (require "./string.js"))
+(def _wisp_runtime (require "../runtime.js"))
+(def _wisp_sequence (require "../sequence.js"))
+(def _wisp_string (require "../string.js"))
 
 (defn fetch-source [src callback]
   (let [xhr (new XMLHttpRequest)]
