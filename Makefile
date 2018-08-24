@@ -24,7 +24,7 @@ browser: core browser-engine dist/wisp.min.js
 all: node browser
 test: test1
 
-test1:
+test1: core node
 	$(WIPS_CURRENT) ./test/test.wisp $(FLAGS)
 
 $(BUILD_DEPS):
