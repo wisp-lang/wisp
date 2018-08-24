@@ -46,8 +46,8 @@
     "wisp": "./bin/wisp.js"
   },
   "scripts": {
-    "prepublish": "make all",
-    "test": "make all && make test"
+    "prepare": "make all",
+    "test": "make test"
   },
   "dependencies": {
     "base64-encode": "~1.0.1",
