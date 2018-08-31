@@ -1,67 +1,64 @@
-(ns wisp.engine.browser
-  (:require [wisp.runtime :refer [str]]
-            [wisp.sequence :refer [rest]]
-            [wisp.reader :refer [read* read-from-string]]
-            [wisp.compiler :refer [compile*]]))
+(ns runner.main
+  (:require [wisp.compiler :refer [compile]]))
 
-(defn evaluate
-  [code url] (eval (compile* (read* code url))))
+(def _wisp_runtime (require "../runtime.js"))
+(def _wisp_sequence (require "../sequence.js"))
+(def _wisp_string (require "../string.js"))
 
-;; Running code does not provide access to this scope.
-(defn run
-  [code url]
-  ((Function (compile* (read* code url)))))
+(defn fetch-source [src callback]
+  (let [xhr (new XMLHttpRequest)]
+    ;(.addEventListener xhr "timeout" (fn [ev] (console.log "Timeout loading" src)) false)
+    (.open xhr "GET" src true)
+    (.addEventListener xhr "load"
+                       (fn [ev]
+                         (if (and (>= xhr.status 200) (< xhr.status 300))
+                           (callback xhr.responseText)
+                           (console.error xhr.statusText))) false)
+    ;(set! (.-timeout xhr) 30)
+    (if xhr.overrideMimeType
+      (xhr.overrideMimeType "text/plain"))
+    (xhr.setRequestHeader "If-Modified-Since" "Fri, 01 Jan 1960 00:00:00 GMT")
+    (.send xhr null)))
 
-;; If we're not in a browser environment, we're finished with the public API.
-;; return unless window?
-;;
-;; Load a remote script from the current domain via XHR.
-(defn load
-  [url callback]
-  (def request
-    (if window.XMLHttpRequest
-      (XMLHttpRequest.)
-      (ActiveXObject. "Microsoft.XMLHTTP")))
+(defn run-wisp-code [code url]
+  (let [result (compile code {:source-uri (or url "inline")})
+        error (:error result)]
+    (if error
+      (console.error error)
+      ((Function (eval (:code result)))))))
 
-  (.open request :GET url true)
+(defn fetch-and-run-wisp-code [url]
+  (fetch-source url
+                (fn [code]
+                  (run-wisp-code code url))))
 
-  (if request.override-mime-type
-    (.override-mime-type request "application/wisp"))
+(defn __main__ [ev]
+  ; hoist wisp builtins into the global window context
+  (.map [_wisp_runtime _wisp_sequence _wisp_string]
+        (fn [f]
+          (.map (.keys Object f)
+                (fn [k]
+                  (set! (get window k) (get f k))))))
+  ;(console.log "running __main__")
+  ; find all the script tags on the page
+  (let [scripts (document.getElementsByTagName "script")]
+    (loop [x 0]
+      ; loop through every script tag
+      (if (< x scripts.length)
+        (let [script (get scripts x)
+              source (.-src script)
+              content (.-text script)
+              content-type (.-type script)]
+          ;(console.log "src:" (.-src script))
+          ;(console.log "type:" (.-type script))
+          ;(console.log "content:" (.-text script))
+          ; if the script tag has application/wisp as the type then run it
+          (if (== content-type "application/wisp")
+            (do
+              (if source
+                (fetch-and-run-wisp-code source))
+              (if content
+                (run-wisp-code content source))))
+          (recur (+ x 1)))))))
 
-  (set! request.onreadystatechange
-        (fn []
-          (if (identical? request.ready-state 4)
-            (if (or (identical? request.status 0)
-                    (identical? request.status 200))
-              (callback (run request.response-text url))
-              (callback "Could not load")))))
-
-  (.send request null))
-
-;; Activate LispyScript in the browser by having it compile and evaluate
-;; all script tags with a content-type of `application/wisp`.
-;; This happens on page load.
-(defn run-scripts
-  "Compiles and exectues all scripts that have type application/wisp type"
-  []
-  (def scripts
-    (Array.prototype.filter.call
-     (document.get-elements-by-tag-name :script)
-     (fn [script] (identical? script.type "application/wisp"))))
-
-  (defn next []
-    (if scripts.length
-      (let [script (.shift scripts)]
-        (if script.src
-          (load script.src next)
-          (next (run script.innerHTML))))))
-
-  (next))
-
-;; Listen for window load, both in browsers and in IE.
-(if (or (identical? document.ready-state :complete)
-        (identical? document.ready-state :interactive))
-  (run-scripts)
-  (if window.add-event-listener
-    (.add-event-listener window :DOMContentLoaded run-scripts false)
-    (.attach-event window :onload run-scripts)))
+(.addEventListener window "load" __main__ false)

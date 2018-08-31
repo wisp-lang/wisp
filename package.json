@@ -1,9 +1,12 @@
 {
   "name": "wisp",
   "id": "wisp",
-  "version": "0.10.0",
+  "version": "0.11.1",
   "description": "Homoiconic JS with clojure syntax, s-expressions & macros",
   "author": "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)",
+  "maintainers": [
+    "Chris McCormick <chris@mccormick.cx>"
+  ],
   "homepage": "https://github.com/Gozala/wisp",
   "keywords": [
     "compiler",
@@ -33,7 +36,7 @@
   ],
   "devDependencies": {
     "browserify": "2.35.2",
-    "wisp": "0.9.0-beta2"
+    "wisp": "0.11.0"
   },
   "engines": {
     "node": ">=0.4.0"
@@ -43,14 +46,14 @@
     "wisp": "./bin/wisp.js"
   },
   "scripts": {
-    "prepublish": "make all",
-    "test": "make all && make test"
+    "prepare": "make all",
+    "test": "make test"
   },
   "dependencies": {
     "base64-encode": "~1.0.1",
     "commander": ">=2.2.0",
     "commonmark": "^0.27.0",
     "escodegen": "git://github.com/Constellation/escodegen.git#41fbbe5058849b5e082542c5cfce76c2d67792e6",
-    "minify": "^2.0.13"
+    "minify": "2.0.13"
   }
 }

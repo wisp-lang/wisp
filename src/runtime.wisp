@@ -549,3 +549,4 @@
 
 (def max Math.max)
 (def min Math.min)
+(def nan? isNaN)

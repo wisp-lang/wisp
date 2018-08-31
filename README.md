@@ -2,9 +2,9 @@ A little Clojure-like LISP in JavaScript.
 
 <!-- interactive demo -->
 
-1. Read about the [language essentials & documentation](https://github.com/chr15m/wisp/blob/master/doc/language-essentials.md).
+1. Read about the [language essentials & documentation](./doc/language-essentials.md).
 
-2. Drop [wisp.min.js](https://github.com/chr15m/wisp/raw/gh-pages/dist/wisp.min.js) into your HTML code:
+2. Drop [wisp.min.js](https://github.com/Gozala/wisp/raw/gh-pages/dist/wisp.min.js) into your HTML code:
 
 ```html
 <script src="wisp.min.js"></script>
@@ -29,6 +29,6 @@ A little Clojure-like LISP in JavaScript.
 
 	`./node_modules/.bin/wisp`
 
-[More info](https://github.com/chr15m/wisp/blob/master/doc/more-info.md).
+[More info](./doc/more-info.md).
 
 Wisp is currently in maintenance mode. We're merging PRs but not actively writing new code.

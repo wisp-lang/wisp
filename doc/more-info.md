@@ -10,8 +10,9 @@ For 99% of use-cases you probably should just use ClojureScript.
 
 However, here are some niches that wisp might fill:
 
- * Including it in a project can be as simple as a single `<script>` tag.
  * Compiles down to readable JavaScript.
- * Closer interop with native JavaScript - doesn't need a `js/` prefix, uses JS types.
+ * No complicated stack or setup - contributors only need a browser.
+ * Including it in a project can be as simple as a single `<script>` tag.
+ * Close interop with native JavaScript - no `js/` prefix, uses JS types.
 
 For more info you can find the [old readme here](./readme-original.md).
