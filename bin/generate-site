@@ -12,6 +12,7 @@ function replacer {
   done
 }
 
+url="https:\/\/github.com\/Gozala\/wisp\/blob\/master\/"
 interact=`cat interact.html`
-content=`./node_modules/.bin/commonmark README.md | replacer '<!-- interactive demo -->' "${interact}"`
+content=`cat README.md | cat README.md | sed "s/(.\//(${url}/g" | ./node_modules/.bin/commonmark | replacer '<!-- interactive demo -->' "${interact}"`
 cat template.html | replacer '<!-- content -->' "${content}"
