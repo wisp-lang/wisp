@@ -251,7 +251,7 @@
 
 (defn if-not [condition truthy alternative]
   "Complements the `if` exclusive conditional branch."
-  (if (not condition) truthy, alternative))
+  `(if (not ~condition) ~truthy ~alternative))
 (install-macro! :if-not if-not)
 
 (defn expand-comment
