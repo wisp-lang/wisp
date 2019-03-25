@@ -481,9 +481,9 @@
 (defn lambda-params [body]
   (let [names (sort (vals (lambda-params-hash body)))
         variadic (= (first names) (symbol "%&"))
-        n (if (and variadic (identical? (count names) 1))
-              0
-              (parseInt (rest (name (last names)))))
+        n (cond (and variadic (identical? (count names) 1)) 0
+                (identical? (count names) 0)                0
+                :else                                       (parseInt (rest (name (last names)))))
         params (loop [names []
                       i 1]
                 (if (<= i n)

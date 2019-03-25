@@ -79,7 +79,7 @@ node-engine: ./engine/node.js
 
 browser-engine: ./engine/browser.js
 
-dist/wisp.js: engine/browser.js $(WISP) $(BROWSERIFY) browserify.js core
+dist/wisp.js: engine/browser.js $(WISP) $(BROWSERIFY) browserify.wisp core
 	@mkdir -p dist
 	$(WISP) browserify.wisp > dist/wisp.js
 
