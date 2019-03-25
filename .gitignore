@@ -5,3 +5,5 @@ node_modules
 .*.swp
 workspace
 npm-debug.log
+/dist/
+package-lock.json
