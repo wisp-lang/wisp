@@ -7,7 +7,8 @@
                                    empty? map vec every? concat
                                    first second third rest last
                                    butlast interleave cons count
-                                   some assoc reduce filter seq?]]
+                                   some assoc reduce filter seq?
+                                   lazy-seq]]
             [wisp.runtime :refer [nil? dictionary? vector? keys
                                   vals string? number? boolean?
                                   date? re-pattern? even? = max
@@ -323,3 +324,14 @@
         id (with-meta name metadata)]
     `(defn ~id ~@body)))
 (install-macro :defn- expand-private-defn)
+
+
+(defn expand-lazy-seq
+  "Takes a body of expressions that returns an ISeq or nil, and yields
+  a Seqable object that will invoke the body only the first time seq
+  is called, and will cache the result and return it on all subsequent
+  seq calls. See also - realized?"
+  {:added "1.0"}
+  [& body]
+  `(.call lazy-seq nil false (fn [] ~@body)))
+(install-macro :lazy-seq expand-lazy-seq)
