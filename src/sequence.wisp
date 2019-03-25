@@ -386,7 +386,7 @@
   [sequence]
   (cond (nil? sequence) []
         (vector? sequence) sequence
-        (list? sequence) (list->vector sequence)
+        (or (list? sequence) (lazy-seq? sequence)) (list->vector sequence)
         :else (vec (seq sequence))))
 
 (defn sort
