@@ -267,7 +267,8 @@
      (cons (first operation)
            (cons form (rest operation))))
    (first operations)
-   (rest operations)))
+   (map #(if (list? %) % `(~%))
+        (rest operations))))
 (install-macro! :-> expand-thread-first)
 
 (defn expand-cond
