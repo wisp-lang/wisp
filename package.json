@@ -50,9 +50,9 @@
     "test": "make test"
   },
   "dependencies": {
-    "base64-encode": "~2.0.1",
+    "base64-encode": "~1.0.1",
     "commander": ">=2.2.0",
-    "escodegen": "git://github.com/Constellation/escodegen.git#41fbbe5058849b5e082542c5cfce76c2d67792e6",
-    "minify": "~4.1.1"
+    "escodegen": "1.11.1",
+    "minify": "4.1.1"
   }
 }
