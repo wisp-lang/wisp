@@ -103,6 +103,9 @@
 (is (= (read-string "#(apply sum %&)")
            '(fn [& %&] (apply sum %&))))
 
+(is (= (read-string "#(list 1 2 3)")
+           '(fn [] (list 1 2 3))))
+
 (is (= (read-string "(map #(inc %) [1 2 3])")
        '(map (fn [%1] (inc %1)) [1 2 3])))
 

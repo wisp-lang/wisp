@@ -57,15 +57,6 @@
   [value]
   (and value (identical? LazySeq.type value.type)))
 
-(defmacro lazy-seq
-  "Takes a body of expressions that returns an ISeq or nil, and yields
-  a Seqable object that will invoke the body only the first time seq
-  is called, and will cache the result and return it on all subsequent
-  seq calls. See also - realized?"
-  {:added "1.0"}
-  [& body]
-  `(.call lazy-seq nil false (fn [] ~@body)))
-
 (defn list?
   "Returns true if list"
   [value]
@@ -395,7 +386,7 @@
   [sequence]
   (cond (nil? sequence) []
         (vector? sequence) sequence
-        (list? sequence) (list->vector sequence)
+        (or (list? sequence) (lazy-seq? sequence)) (list->vector sequence)
         :else (vec (seq sequence))))
 
 (defn sort

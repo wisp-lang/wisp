@@ -4,7 +4,7 @@
                                        count first second third rest last
                                        butlast take drop repeat concat reverse
                                        sort map filter reduce assoc every?
-                                       some partition interleave nth]]
+                                       some partition interleave nth lazy-seq]]
             [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
 
 
@@ -211,6 +211,7 @@
 (is (= [] (vec '())))
 (is (= [] (vec nil)))
 (is (= [\f \o \o] (vec "foo")))
+(is (= [\f \o \o] (vec (lazy-seq "foo"))))
 (is (= [[:a 1] [:b 2]] (vec {:a 1 :b 2})))
 
 

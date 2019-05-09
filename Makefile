@@ -79,9 +79,9 @@ node-engine: ./engine/node.js
 
 browser-engine: ./engine/browser.js
 
-dist/wisp.js: engine/browser.js $(WISP) $(BROWSERIFY) core
+dist/wisp.js: engine/browser.js $(WISP) $(BROWSERIFY) browserify.wisp core
 	@mkdir -p dist
-	$(BROWSERIFY) --debug --exports require --entry engine/browser.js > dist/wisp.js
+	$(WISP) browserify.wisp > dist/wisp.js
 
 dist/wisp.min.js: dist/wisp.js $(MINIFY)
 	@mkdir -p dist
