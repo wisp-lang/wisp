@@ -77,7 +77,8 @@
         :keys []
         :values []}))
 
-(is (= {:op :dictionary
+(is (= (analyze {} {:foo 'bar})
+       {:op :dictionary
         :keys [{:op :constant
                 :env {}
                 :form "foo"}]
@@ -87,8 +88,7 @@
                   :info nil}]
         :hash? true
         :env {}
-        :form {:foo 'bar}}
-       (analyze {} {:foo 'bar})))
+        :form {:foo 'bar}}))
 
 (is (= (analyze {} ())
        {:op :constant

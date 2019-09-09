@@ -121,47 +121,47 @@
        '(hello you)))
 
 
-(is (= 1 (read-string "1")))
-(is (= 2 (read-string "#_nope 2")))
-(is (= -1 (read-string "-1")))
-(is (= -1.5 (read-string "-1.5")))
-(is (= [3 4] (read-string "[3 4]")))
-(is (= "foo" (read-string "\"foo\"")))
-(is (= ':hello (read-string ":hello")))
-(is (= 'goodbye (read-string "goodbye")))
-(is (= '#{1 2 3} (read-string "#{1 2 3}")))
-(is (= '(7 8 9) (read-string "(7 8 9)")))
-(is (= '(deref foo) (read-string "@foo")))
-(is (= '(quote bar) (read-string "'bar")))
+(is (= (read-string "1") 1))
+(is (= (read-string "#_nope 2") 2))
+(is (= (read-string "-1") -1))
+(is (= (read-string "-1.5") -1.5))
+(is (= (read-string "[3 4]") [3 4]))
+(is (= (read-string "\"foo\"") "foo"))
+(is (= (read-string ":hello") ':hello))
+(is (= (read-string "goodbye") 'goodbye))
+(is (= (read-string "#{1 2 3}") '#{1 2 3}))
+(is (= (read-string "(7 8 9)") '(7 8 9)))
+(is (= (read-string "@foo") '(deref foo)))
+(is (= (read-string "'bar") '(quote bar)))
 
 ;; TODO: Implement `namespace` fn and proper namespace support ?
 ;;(assert (= 'foo/bar (read-string "foo/bar")))
 ;;(assert (= ':foo/bar (read-string ":foo/bar")))
-(is (= \a (read-string "\\a")))
-(is (= 'String
-       (:tag (meta (read-string "^String {:a 1}")))))
+(is (= (read-string "\\a") \a))
+(is (= (:tag (meta (read-string "^String {:a 1}")))
+       'String))
 ;; TODO: In quoted sets both keys and values should remain quoted
 ;; (assert (= [:a 'b '#{c {:d [:e :f :g]}}]
 ;;            (read-string "[:a b #{c {:d [:e :f :g]}}]")))
-(is (= nil (read-string "nil")))
-(is (= true (read-string "true")))
-(is (= false (read-string "false")))
-(is (= "string" (read-string "\"string\"")))
-(is (= "escape chars \t \r \n \\ \" \b \f"
-       (read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\"")))
+(is (= (read-string "nil") nil))
+(is (= (read-string "true") true))
+(is (= (read-string "false") false))
+(is (= (read-string "\"string\"") "string"))
+(is (= (read-string "\"escape chars \\t \\r \\n \\\\ \\\" \\b \\f\"")
+       "escape chars \t \r \n \\ \" \b \f"))
 
 
 ;; queue literals
-(is (= '(PersistentQueue. [])
-       (read-string "#queue []")))
-(is (= '(PersistentQueue. [1])
-       (read-string "#queue [1]")))
-(is (= '(PersistentQueue. [1 2])
-       (read-string "#queue [1 2]")))
+(is (= (read-string "#queue []")
+       '(PersistentQueue. [])))
+(is (= (read-string "#queue [1]")
+       '(PersistentQueue. [1])))
+(is (= (read-string "#queue [1 2]")
+       '(PersistentQueue. [1 2])))
 
 ;; uuid literals
-(is (= '(UUID. "550e8400-e29b-41d4-a716-446655440000")
-       (read-string "#uuid \"550e8400-e29b-41d4-a716-446655440000\"")))
+(is (= (read-string "#uuid \"550e8400-e29b-41d4-a716-446655440000\"")
+       '(UUID. "550e8400-e29b-41d4-a716-446655440000")))
 
 (let [assets
       ["اختبار" ; arabic
@@ -194,9 +194,8 @@
        {:привет :ru "你好" :cn}
        ]]
   (reduce (fn [unicode]
-            (let [input (pr-str unicode)
-                  read (read-string input)]
-              (is (= unicode read)
+            (let [input (pr-str unicode)]
+              (is (= (read-string input) unicode)
                   (str "Failed to read-string \"" unicode "\" from: " input))))
           nil
           assets))
@@ -211,11 +210,11 @@
   (reduce
    (fn [_ unicode-error]
      (is
-      (= :threw
-         (try
+      (= (try
            (read-string unicode-error)
            :failed-to-throw
-           (catch e :threw)))
+           (catch e :threw))
+         :threw)
       (str "Failed to throw reader error for: " unicode-error)))
    nil
    unicode-errors))
