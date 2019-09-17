@@ -380,7 +380,7 @@
   "Creates a new vector containing the contents of sequence"
   [sequence]
   (cond (nil? sequence) []
-        (vector? sequence) sequence
+        (vector? sequence) (Array.from sequence)
         (or (list? sequence) (lazy-seq? sequence)) (list->vector sequence)
         :else (vec (seq sequence))))
 
@@ -392,7 +392,7 @@
         items (if (and (not has-comparator) (nil? items)) f items)
         compare (if has-comparator (fn [a b] (if (f a b) 0 1)))]
     (cond (nil? items) '()
-          (vector? items) (.sort items compare)
+          (vector? items) (.sort (vec items) compare)
           (list? items) (apply list (.sort (vec items) compare))
           (dictionary? items) (.sort (seq items) compare)
           :else (sort f (seq items)))))
