@@ -345,12 +345,13 @@
 (is (not (every? even? '(2 4 5))))
 
 
-(is (= (some even? []) false))
-(is (= (some even? ()) false))
-(is (= (some even? [1 3 5 7]) false))
-(is (= (some even? '(1 3 5 7)) false))
-(is (some even? [1 2 3]))
-(is (some even? '(1 2 3)))
+(is (= (some even? []) nil))
+(is (= (some even? ()) nil))
+(is (= (some even? [1 3 5 7]) nil))
+(is (= (some even? '(1 3 5 7)) nil))
+(is (= (some even? [1 2 3]) true))
+(is (= (some even? '(1 2 3)) true))
+(is (= (some dec [1 43]) 42))
 
 
 
