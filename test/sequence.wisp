@@ -166,8 +166,7 @@
              {:age 25 :nationality "Chinese"})
        {:nationality "Chinese", :age 25
         :firstname "John", :lastname "Doe"}))
-;; TODO fix this test
-;; (is (= (conj {1 2, 3 4} [5 6]) {5 6, 1 2, 3 4}))
+(is (= (conj {1 2, 3 4} [5 6]) {5 6, 1 2, 3 4}))
 
 (is (not (empty? (cons 1 nil)))
     "cons onto nil is list of that item")

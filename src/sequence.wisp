@@ -316,6 +316,11 @@
   [sequence items]
   (reduce (fn [result item] (cons item result)) sequence items))
 
+(defn- ensure-dictionary [x]
+  (if (not (vector? x))
+    x
+    (dictionary (first x) (second x))))
+
 (defn conj
   [sequence & items]
   (cond (vector? sequence) (.concat sequence items)
@@ -323,7 +328,7 @@
         (nil? sequence) (apply list (reverse items))
         (or (list? sequence)
             (lazy-seq?)) (conj-list sequence items)
-        (dictionary? sequence) (merge sequence (apply merge items))
+        (dictionary? sequence) (merge sequence (apply merge (mapv ensure-dictionary items)))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
 
 (defn assoc
