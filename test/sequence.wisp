@@ -1,11 +1,11 @@
 (ns wisp.test.sequence
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.sequence :refer [cons conj list list? seq vec empty?
-                                       count first second third rest last
-                                       butlast take drop repeat concat reverse
+            [wisp.src.sequence :refer [cons conj list list? seq vec empty? count
+                                       first second third rest last butlast take
+                                       take-while drop repeat concat reverse
                                        sort map filter reduce assoc every?
                                        some partition interleave nth lazy-seq]]
-            [wisp.src.runtime :refer [str inc dec even? odd? vals =]]))
+            [wisp.src.runtime :refer [str inc dec even? odd? number? vals =]]))
 
 
 
@@ -269,6 +269,9 @@
 (is (= (take 3 [1 2 3 4]) [1 2 3]))
 (is (= (take 2 {:a 1 :b 2 :c 3}) [[:a 1] [:b 2]]))
 
+
+(is (= (take-while #(< % 3) [1 2 3 4 5]) [1 2]))
+(is (= (take-while number? [1 2 3 4 5]) [1 2 3 4 5]))
 
 
 (is (= (drop 1 nil) '()))

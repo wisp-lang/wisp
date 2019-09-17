@@ -254,28 +254,12 @@
 
 (defn- take-vector-while
   [predicate vector]
-  (loop [result []
-         tail vector
-         head (first vector)]
-    (if (and (not (empty? tail))
-             (predicate head))
-      (recur (conj result head)
-             (rest tail)
-             (first tail))
-      result)))
-
-(defn- take-list-while
-  [predicate items]
-  (loop [result []
-         tail items
-         head (first items)]
-    (if (and (not (empty? tail))
-             (predicate? head))
-      (recur (conj result head)
-             (rest tail)
-             (first tail))
-      (apply list result))))
-
+  (loop [vector vector, result []]
+    (let [head (first vector), tail (rest vector)]
+      (if (and (not (empty? vector))
+               (predicate head))
+        (recur tail (conj result head))
+        result))))
 
 (defn take-while
   [predicate sequence]
