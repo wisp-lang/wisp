@@ -1,6 +1,7 @@
 (ns wisp.sequence
   (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
-                                  key-values str dec inc merge dictionary =]]))
+                                  key-values str dec inc merge dictionary
+                                  iterable? =]]))
 
 ;; Implementation of list
 
@@ -361,11 +362,17 @@
         (or (vector? sequence) (list? sequence) (lazy-seq? sequence)) sequence
         (string? sequence) (.call Array.prototype.slice sequence)
         (dictionary? sequence) (key-values sequence)
+        (iterable? sequence) (iterator->lseq ((get sequence Symbol.iterator)))
         :default (throw (TypeError (str "Can not seq " sequence)))))
 
 (defn seq? [sequence]
   (or (list? sequence)
       (lazy-seq? sequence)))
+
+(defn- iterator->lseq [iterator]
+  (let [x (.next iterator)]
+    (if (not (.-done x))
+      (lazy-seq (cons (.-value x) (iterator->lseq iterator))))))
 
 (defn- list->vector [source]
   (loop [result []

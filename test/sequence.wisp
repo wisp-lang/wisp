@@ -212,6 +212,9 @@
 (is (= (vec "foo") [\f \o \o]))
 (is (= (vec (lazy-seq "foo")) [\f \o \o]))
 (is (= (vec {:a 1 :b 2}) [[:a 1] [:b 2]]))
+(is (= (vec (Set. [42])) [42]))
+(is (= (vec (Map. [[42 ':a]])) [[42 ':a]]))
+(is (= (vec (.keys (Map. [[42 ':a]])) [42])))
 
 
 (is (= (map inc nil) '()))

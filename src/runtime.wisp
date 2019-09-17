@@ -152,6 +152,11 @@
     Array.isArray
     (fn [x] (identical? (.call to-string x) "[object Array]"))))
 
+(defn ^boolean iterable?
+  "Returns true if x is or can produce a JS iterator"
+  [x]
+  (fn? (get x Symbol.iterator)))
+
 (defn ^boolean date?
   "Returns true if x is a date"
   [x]
