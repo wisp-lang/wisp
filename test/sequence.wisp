@@ -2,8 +2,8 @@
   (:require [wisp.test.util :refer [is thrown?]]
             [wisp.src.sequence :refer [cons conj list list? seq vec empty? count
                                        first second third rest last butlast take
-                                       take-while drop repeat concat reverse
-                                       sort map filter reduce assoc every?
+                                       take-while drop repeat concat mapcat reverse
+                                       sort map mapv filter reduce assoc every?
                                        some partition interleave nth lazy-seq]]
             [wisp.src.runtime :refer [str inc dec even? odd? number? vals =]]))
 
@@ -224,6 +224,10 @@
 (is (= (map (fn [pair] (apply str pair)) {:a 1 :b 2})
        [(str :a 1) (str :b 2)]))
 
+(is (= (mapv inc nil) []))
+(is (= (mapv inc '()) []))
+(is (= (mapv inc '(1 2 3)) [2 3 4]))
+
 
 
 (is (= (filter even? nil) '()))
@@ -297,6 +301,8 @@
        (list :a :b 1 [2 3] 4)))
 (is (= (concat [1] [2] '(3 4) [5 6 7] {:a 9 :b 10})
        (list 1 2 3 4 5 6 7 [:a 9] [:b 10])))
+
+(is (= (mapcat (fn [x] [x x]) [1 2 3]) '(1 1 2 2 3 3)))
 
 
 

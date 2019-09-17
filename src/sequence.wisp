@@ -121,6 +121,9 @@
       (reverse result)
       (recur (cons (f (first items)) result) (rest items)))))
 
+(defn mapv [f sequence]
+  (vec (map f sequence)))
+
 (defn filter
   "Returns a sequence of the items in coll for which (f? item) returns true.
   f? must be free of side-effects."
@@ -344,6 +347,9 @@
           (seq sequence)))
       '()
       sequences)))
+
+(defn mapcat [f sequence]
+  (apply concat (map f sequence)))
 
 (defn seq [sequence]
   (cond (nil? sequence) nil
