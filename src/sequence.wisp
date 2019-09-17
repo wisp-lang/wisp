@@ -1,6 +1,6 @@
 (ns wisp.sequence
   (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
-                                  key-values str dec inc merge dictionary]]))
+                                  key-values str dec inc merge dictionary =]]))
 
 ;; Implementation of list
 
@@ -384,13 +384,19 @@
         (or (list? sequence) (lazy-seq? sequence)) (list->vector sequence)
         :else (vec (seq sequence))))
 
+(def ^{:private true}
+  sort-comparator
+  (if (= [1 2 3] (.sort [2 1 3] (fn [a b] (if (< a b) 0 1))))
+    #(fn [a b] (if (% b a)  1 0))       ; quicksort (Chrome, Node), mergesort (Firefox)
+    #(fn [a b] (if (% a b) -1 0))))     ; timsort (Chrome 70+, Node 11+)
+
 (defn sort
   "Returns a sorted sequence of the items in coll.
   If no comparator is supplied, uses compare."
   [f items]
   (let [has-comparator (fn? f)
         items (if (and (not has-comparator) (nil? items)) f items)
-        compare (if has-comparator (fn [a b] (if (f a b) 0 1)))]
+        compare (if has-comparator (sort-comparator f))]
     (cond (nil? items) '()
           (vector? items) (.sort (vec items) compare)
           (list? items) (apply list (.sort (vec items) compare))

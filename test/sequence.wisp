@@ -315,6 +315,10 @@
 
 (is (= (sort (fn [a b] (> (last a) (last b))) {:b 1 :c 3 :a  2})
        [[:c 3] [:a 2] [:b 1]]))
+(is (= (sort (fn [a b] (> (last a) (last b))) [:ab :ba :cb])
+       [:ab :cb :ba]))
+(is (= (sort (fn [a b] (< (last a) (last b))) [:ab :ba :cb])
+       [:ba :ab :cb]))
 
 (is (= (sort '(3 1 2 4)) '(1 2 3 4)))
 (is (= (sort (fn [a b] (> a b)) '(3 1 2 4)) '(4 3 2 1)))
