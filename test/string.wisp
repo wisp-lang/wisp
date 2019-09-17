@@ -36,8 +36,13 @@
        ["q" "w" "e" "r" "t" "y" "u" "i" "o" "p"]))
 
 (is (= (split "q1w2e3r4t5y6u7i8o9p0" #"\d+" 5)
-       ; TODO: In clojure => ["q" "w" "e" "r" "t5y6u7i8o9p0"]
-       ["q" "w" "e" "r" "t"]))
+       ["q" "w" "e" "r" "t5y6u7i8o9p0"]))
+(is (= (split "q1w2e3r4t5y6u7i8o9p" #"\d+" 20)
+       ["q" "w" "e" "r" "t" "y" "u" "i" "o" "p"]))
+(is (= (split "q1w2e3r4t5y6u7i8o9p0" #"\d+" 20)
+       ["q" "w" "e" "r" "t" "y" "u" "i" "o" "p" ""]))
+(is (= (split "qwertyuiop" #"" 20)
+       ["" "q" "w" "e" "r" "t" "y" "u" "i" "o" "p" ""]))
 
 (is (= (split "Some words to split" " ")
        ["Some" "words" "to" "split"]))
