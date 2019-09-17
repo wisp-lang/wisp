@@ -232,9 +232,8 @@
   (- x 1))
 
 (defn str
-  "With no args, returns the empty string. With one arg x, returns
-  x.toString().  (str nil) returns the empty string. With more than
-  one arg, returns the concatenation of the str values of the args."
+  "With no args, returns the empty string. With one arg x, returns x.toString().
+  With more than one arg, returns the concatenation of the str values of the args."
   []
   (.apply String.prototype.concat "" arguments))
 
@@ -385,7 +384,7 @@
           true)))))
 
 (defn ^boolean >=
-  "Returns non-nil if nums are in monotonically decreasing order,
+  "Returns non-nil if nums are in monotonically non-increasing order,
   otherwise false."
   ([x] true)
   ([x y] (>= x y))
@@ -404,7 +403,7 @@
 
 
 (defn ^boolean <
-  "Returns non-nil if nums are in monotonically decreasing order,
+  "Returns non-nil if nums are in monotonically increasing order,
   otherwise false."
   ([x] true)
   ([x y] (< x y))
@@ -423,7 +422,7 @@
 
 
 (defn ^boolean <=
-  "Returns non-nil if nums are in monotonically decreasing order,
+  "Returns non-nil if nums are in monotonically non-decreasing order,
   otherwise false."
   ([x] true)
   ([x y] (<= x y))
