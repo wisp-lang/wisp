@@ -46,8 +46,8 @@
 (is (symbol? (symbol "")))
 (is (symbol? (symbol "foo" "bar")))
 
-(is (= "foo" (name (symbol "foo"))))
-(is (= "/" (name (symbol "/"))))
+(is (= (name (symbol "foo")) "foo"))
+(is (= (name (symbol "/")) "/"))
 ; TODO: fix
-; (assert (= "" (name (symbol ""))))
-(is (= "bar" (name (symbol "foo" "bar"))))
+; (is (= (name (symbol "")) ""))
+(is (= (name (symbol "foo" "bar")) "bar"))
