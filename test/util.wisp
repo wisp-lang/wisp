@@ -45,9 +45,7 @@
                      "expected: "
                      (pr-str '~form) "\n"
                      "  actual: "
-                     (pr-str (list '~op
-                                   (try ~actual (catch error (list 'throw (list 'Error (.-message error)))))
-                                   (try '~expected (catch error error))))))
+                     (pr-str (try ~actual (catch error (list 'throw (list 'Error (.-message error))))))))
          false)))))
 
 (defmacro thrown?

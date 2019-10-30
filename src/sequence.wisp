@@ -1,6 +1,7 @@
 (ns wisp.sequence
   (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
-                                  key-values str dec inc merge dictionary]]))
+                                  key-values str dec inc merge dictionary
+                                  iterable? =]]))
 
 ;; Implementation of list
 
@@ -120,6 +121,9 @@
     (if (empty? items)
       (reverse result)
       (recur (cons (f (first items)) result) (rest items)))))
+
+(defn mapv [f sequence]
+  (vec (map f sequence)))
 
 (defn filter
   "Returns a sequence of the items in coll for which (f? item) returns true.
@@ -254,28 +258,12 @@
 
 (defn- take-vector-while
   [predicate vector]
-  (loop [result []
-         tail vector
-         head (first vector)]
-    (if (and (not (empty? tail))
-             (predicate head))
-      (recur (conj result head)
-             (rest tail)
-             (first tail))
-      result)))
-
-(defn- take-list-while
-  [predicate items]
-  (loop [result []
-         tail items
-         head (first items)]
-    (if (and (not (empty? tail))
-             (predicate? head))
-      (recur (conj result head)
-             (rest tail)
-             (first tail))
-      (apply list result))))
-
+  (loop [vector vector, result []]
+    (let [head (first vector), tail (rest vector)]
+      (if (and (not (empty? vector))
+               (predicate head))
+        (recur tail (conj result head))
+        result))))
 
 (defn take-while
   [predicate sequence]
@@ -329,6 +317,11 @@
   [sequence items]
   (reduce (fn [result item] (cons item result)) sequence items))
 
+(defn- ensure-dictionary [x]
+  (if (not (vector? x))
+    x
+    (dictionary (first x) (second x))))
+
 (defn conj
   [sequence & items]
   (cond (vector? sequence) (.concat sequence items)
@@ -336,7 +329,7 @@
         (nil? sequence) (apply list (reverse items))
         (or (list? sequence)
             (lazy-seq?)) (conj-list sequence items)
-        (dictionary? sequence) (merge sequence (apply merge items))
+        (dictionary? sequence) (merge sequence (apply merge (mapv ensure-dictionary items)))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
 
 (defn assoc
@@ -361,16 +354,25 @@
       '()
       sequences)))
 
+(defn mapcat [f sequence]
+  (apply concat (map f sequence)))
+
 (defn seq [sequence]
   (cond (nil? sequence) nil
         (or (vector? sequence) (list? sequence) (lazy-seq? sequence)) sequence
         (string? sequence) (.call Array.prototype.slice sequence)
         (dictionary? sequence) (key-values sequence)
+        (iterable? sequence) (iterator->lseq ((get sequence Symbol.iterator)))
         :default (throw (TypeError (str "Can not seq " sequence)))))
 
 (defn seq? [sequence]
   (or (list? sequence)
       (lazy-seq? sequence)))
+
+(defn- iterator->lseq [iterator]
+  (let [x (.next iterator)]
+    (if (not (.-done x))
+      (lazy-seq (cons (.-value x) (iterator->lseq iterator))))))
 
 (defn- list->vector [source]
   (loop [result []
@@ -385,9 +387,15 @@
   "Creates a new vector containing the contents of sequence"
   [sequence]
   (cond (nil? sequence) []
-        (vector? sequence) sequence
+        (vector? sequence) (Array.from sequence)
         (or (list? sequence) (lazy-seq? sequence)) (list->vector sequence)
         :else (vec (seq sequence))))
+
+(def ^{:private true}
+  sort-comparator
+  (if (= [1 2 3] (.sort [2 1 3] (fn [a b] (if (< a b) 0 1))))
+    #(fn [a b] (if (% b a)  1 0))       ; quicksort (Chrome, Node), mergesort (Firefox)
+    #(fn [a b] (if (% a b) -1 0))))     ; timsort (Chrome 70+, Node 11+)
 
 (defn sort
   "Returns a sorted sequence of the items in coll.
@@ -395,9 +403,9 @@
   [f items]
   (let [has-comparator (fn? f)
         items (if (and (not has-comparator) (nil? items)) f items)
-        compare (if has-comparator (fn [a b] (if (f a b) 0 1)))]
+        compare (if has-comparator (sort-comparator f))]
     (cond (nil? items) '()
-          (vector? items) (.sort items compare)
+          (vector? items) (.sort (vec items) compare)
           (list? items) (apply list (.sort (vec items) compare))
           (dictionary? items) (.sort (seq items) compare)
           :else (sort f (seq items)))))
@@ -423,13 +431,11 @@
   "Returns the first logical true value of (pred x) for any x in coll,
   else nil.  One common idiom is to use a set as pred, for example
   this will return :fred if :fred is in the sequence, otherwise nil:
-  (some even? [1 3]) => false
-  (some even? [1 2 3 4] => true"
-  [predicate sequence]
-  (loop [items sequence]
-    (cond (empty? items) false
-          (predicate (first items)) true
-          :else (recur (rest items)))))
+  (some #{:fred} coll)      ; Clojure sets aren't implemented"
+  [pred coll]
+  (loop [items (seq coll)]
+    (if (not (empty? items))
+      (or (pred (first items)) (recur (rest items))))))
 
 
 (defn partition
