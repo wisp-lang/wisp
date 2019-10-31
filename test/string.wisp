@@ -47,6 +47,16 @@
 (is (= (split "Some words to split" " ")
        ["Some" "words" "to" "split"]))
 
+;; corner cases (borne from Java VM implementation): Wisp vs Clojure output
+(is (= (split ""     #"-")    [""]))             ; [""]
+(is (= (split "-"    #"-")    ["" ""]))          ; []
+(is (= (split "--+-" #"-")    ["" "" "+" ""]))   ; ["" "" "+"]
+(is (= (split "----" #"-"  0) ["" "" "" "" ""])) ; []
+(is (= (split "----" #"-"  3) ["" "" "--"]))     ; ["" "" "--"]
+(is (= (split "----" #"-"  9) ["" "" "" "" ""])) ; ["" "" "" "" ""]
+(is (= (split "----" #"-" -1) ["" "" "" "" ""])) ; ["" "" "" "" ""]
+
+
 ; replace tests
 ; basic test
 (is (= (replace "string" "s" "w") "wtring"))
