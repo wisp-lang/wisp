@@ -355,7 +355,7 @@
       sequences)))
 
 (defn mapcat [f sequence]
-  (apply concat (map f sequence)))
+  (apply concat (mapv f sequence)))
 
 (defn seq [sequence]
   (cond (nil? sequence) nil

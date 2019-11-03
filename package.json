@@ -36,7 +36,7 @@
   ],
   "devDependencies": {
     "browserify": "2.35.2",
-    "wisp": "0.11.1"
+    "wisp": "0.11.2"
   },
   "engines": {
     "node": ">=0.4.0"
