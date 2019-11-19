@@ -333,6 +333,8 @@
 (is (= (repeat 0 7)  []))
 (is (= (repeat -1 7) []))
 (is (= (repeat 1 7)  [7]))
+(is (= (repeat 2)    [nil nil]))
+(is (= (repeat)      []))
 
 
 (is (= (assoc {} :a :b) {:a :b}))

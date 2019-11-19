@@ -1,6 +1,6 @@
 (ns wisp.sequence
   (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
-                                  key-values str dec inc merge dictionary
+                                  key-values str int dec inc merge dictionary
                                   iterable? =]]))
 
 ;; Implementation of list
@@ -416,7 +416,7 @@
   items. Not compatible with clojure as it's not a lazy
   and only finite repeats are supported"
   [n x]
-  (loop [n n
+  (loop [n      (int n)
          result []]
     (if (<= n 0)
       result

@@ -246,11 +246,9 @@
 (defn int
   "Coerce to int by stripping decimal places."
   [x]
-  (if (number? x)
-    (if (>= x 0)
-      (.floor Math x)
-      (.floor Math x))
-    (.charCodeAt x 0)))
+  (cond (number? x) (.floor Math x)
+        (string? x) (.charCodeAt x 0)   ; not like in Clojure
+        :else       0))                 ; like in Clojure
 
 (defn subs
   "Returns the substring of s beginning at start inclusive, and ending
