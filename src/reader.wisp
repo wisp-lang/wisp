@@ -608,10 +608,18 @@
     (reader-error
      nil "Queue literal expects a vector for its elements.")))
 
+(defn ^:private read-date
+  [date]
+  (if (string? date)
+    `(Date. ~date)
+    (reader-error
+     nil "Date literal expects a string as its representation.")))
+
 
 (def **tag-table**
-  (dictionary :uuid read-uuid
-              :queue read-queue))
+  (dictionary :uuid  read-uuid
+              :queue read-queue
+              :inst  read-date))
 
 (defn maybe-read-tagged-type
   [reader initch]
