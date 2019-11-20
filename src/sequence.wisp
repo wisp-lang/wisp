@@ -171,9 +171,10 @@
 (defn count
   "Returns number of elements in list"
   [sequence]
-  (if (nil? sequence)
-    0
-    (.-length (seq sequence))))
+  (let [it (seq sequence)]
+    (cond (nil? it)      0
+          (lazy-seq? it) (inc (count (rest it)))
+          :else          (.-length it))))
 
 (defn empty?
   "Returns true if list is empty"

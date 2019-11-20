@@ -14,6 +14,7 @@
 (is (empty? nil) "nil is empty")
 (is (empty? {}) "{} is empty")
 (is (empty? '()) "'() is empty")
+(is (empty? (Set.)) "(Set.) is empty")
 
 
 (is (= (count "") 0) "count 0 in \"\"")
@@ -25,6 +26,9 @@
 (is (= (count {:hello :world}) 1) "count 1 in {:hello :world}")
 (is (= (count '()) 0) "count 0 in '()")
 (is (= (count '(1 2)) 2) "count 2 in '(1 2)")
+(is (= (count (Set.)) 0) "count 0 in (Set.)")
+(is (= (count (Set. [:foo :bar])) 2) "count 0 in (Set. [:foo :bar])")
+(is (= (count (Map. [[:hello :world]])) 1) "count 1 in (Map. [[:hello :world]])")
 
 
 (is (= (first nil) nil))
