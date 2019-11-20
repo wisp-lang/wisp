@@ -207,7 +207,8 @@
     "reverse reverses order of items")
 (is (= (reverse [4 3 2 1]) [1 2 3 4]))
 (is (= (reverse nil) '()))
-(is (= (reverse {:a 1, :b 2}) [[:b 2] [:a 1]]))
+(is (= (reverse {:a 1, :b 2}) (list [:b 2] [:a 1])))
+(is (= (reverse (Set. [1 2])) '(2 1)))
 
 
 
@@ -339,7 +340,7 @@
        [10 5 2]))
 
 (is (= (sort (fn [a b] (> (last a) (last b))) {:b 1 :c 3 :a  2})
-       [[:c 3] [:a 2] [:b 1]]))
+       (list [:c 3] [:a 2] [:b 1])))
 (is (= (sort (fn [a b] (> (last a) (last b))) [:ab :ba :cb])
        [:ab :cb :ba]))
 (is (= (sort (fn [a b] (< (last a) (last b))) [:ab :ba :cb])
@@ -349,6 +350,7 @@
 (is (= (sort (fn [a b] (> a b)) '(3 1 2 4)) '(4 3 2 1)))
 (is (= (sort '("hello" "my" "dear" "frient"))
        '("dear" "frient" "hello" "my")))
+(is (= (sort (Set. [3 1 2 4])) '(1 2 3 4)))
 
 (is (= (repeat 4 7)  [7 7 7 7]))
 (is (= (repeat 0 7)  []))

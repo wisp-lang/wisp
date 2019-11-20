@@ -98,10 +98,9 @@
 (defn reverse
   "Reverse order of items in the sequence"
   [sequence]
-  (cond (list? sequence) (reverse-list sequence)
-        (vector? sequence) (.reverse (vec sequence))
-        (nil? sequence) '()
-        :else (reverse (seq sequence))))
+  (if (vector? sequence)
+      (.reverse (vec sequence))
+      (into nil sequence)))
 
 (defn map
   "Returns a sequence consisting of the result of applying `f` to the
@@ -407,13 +406,12 @@
   If no comparator is supplied, uses compare."
   [f items]
   (let [has-comparator (fn? f)
-        items (if (and (not has-comparator) (nil? items)) f items)
-        compare (if has-comparator (sort-comparator f))]
-    (cond (nil? items) '()
-          (vector? items) (.sort (vec items) compare)
-          (list? items) (apply list (.sort (vec items) compare))
-          (dictionary? items) (.sort (seq items) compare)
-          :else (sort f (seq items)))))
+        items          (if (and (not has-comparator) (nil? items)) f items)
+        compare        (if has-comparator (sort-comparator f))
+        result         (.sort (vec items) compare)]
+    (cond (nil? items)    '()
+          (vector? items) result
+          :else           (apply list result))))
 
 
 (defn repeat
