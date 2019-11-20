@@ -77,15 +77,6 @@
   [head tail]
   (new List head tail))
 
-(defn- reverse-list
-  [sequence]
-  (loop [items []
-           source sequence]
-      (if (empty? source)
-        (apply list items)
-        (recur (.concat [(first source)] items)
-               (rest source)))))
-
 (defn ^boolean sequential?
   "Returns true if coll satisfies ISequential"
   [x] (or (list? x)
@@ -311,6 +302,13 @@
           (nil? sequence) '()
           (lazy-seq? sequence) (drop n (lazy-seq-value sequence))
           :else (drop n (seq sequence)))))
+
+(defn drop-while
+  [predicate sequence]
+  (loop [items (seq sequence)]
+    (if (or (empty? items) (not (predicate (first items))))
+      items
+      (recur (rest items)))))
 
 
 (defn- conj-list

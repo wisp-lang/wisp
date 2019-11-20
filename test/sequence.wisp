@@ -2,8 +2,8 @@
   (:require [wisp.test.util :refer [is thrown?]]
             [wisp.src.sequence :refer [cons conj into list list? seq vec empty? count
                                        first second third rest last butlast take
-                                       take-while drop repeat concat mapcat reverse
-                                       sort map mapv filter reduce assoc every?
+                                       take-while drop drop-while repeat concat mapcat
+                                       reverse sort map mapv filter reduce assoc every?
                                        some partition interleave nth lazy-seq]]
             [wisp.src.runtime :refer [str inc dec even? odd? number? vals =]]))
 
@@ -300,6 +300,7 @@
 
 (is (= (take-while #(< % 3) [1 2 3 4 5]) [1 2]))
 (is (= (take-while number? [1 2 3 4 5]) [1 2 3 4 5]))
+(is (= (take-while even? [1 2 3 4 5]) []))
 
 
 (is (= (drop 1 nil) '()))
@@ -311,6 +312,11 @@
 (is (= (drop 0 [1 2 3 4]) [1 2 3 4]))
 (is (= (drop 2 '(1 2 3 4)) '(3 4)))
 (is (= (drop 1 [1 2 3 4]) [2 3 4]))
+
+
+(is (= (drop-while #(< % 3) [1 2 3 4 5]) [3 4 5]))
+(is (= (drop-while number? [1 2 3 4 5]) []))
+(is (= (drop-while even? [1 2 3 4 5]) [1 2 3 4 5]))
 
 
 
