@@ -333,6 +333,10 @@
         (dictionary? sequence) (merge sequence (apply merge (mapv ensure-dictionary items)))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
 
+(defn into
+  [to from]
+  (apply conj to (vec from)))
+
 (defn assoc
   [source & key-values]
   ;(assert (even? (count key-values)) "Wrong number of arguments")

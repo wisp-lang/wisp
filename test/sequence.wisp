@@ -1,6 +1,6 @@
 (ns wisp.test.sequence
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.sequence :refer [cons conj list list? seq vec empty? count
+            [wisp.src.sequence :refer [cons conj into list list? seq vec empty? count
                                        first second third rest last butlast take
                                        take-while drop repeat concat mapcat reverse
                                        sort map mapv filter reduce assoc every?
@@ -27,7 +27,7 @@
 (is (= (count '()) 0) "count 0 in '()")
 (is (= (count '(1 2)) 2) "count 2 in '(1 2)")
 (is (= (count (Set.)) 0) "count 0 in (Set.)")
-(is (= (count (Set. [:foo :bar])) 2) "count 0 in (Set. [:foo :bar])")
+(is (= (count (Set. [:foo :bar])) 2) "count 2 in (Set. [:foo :bar])")
 (is (= (count (Map. [[:hello :world]])) 1) "count 1 in (Map. [[:hello :world]])")
 
 
@@ -171,6 +171,23 @@
        {:nationality "Chinese", :age 25
         :firstname "John", :lastname "Doe"}))
 (is (= (conj {1 2, 3 4} [5 6]) {5 6, 1 2, 3 4}))
+
+(is (= (into nil nil) '()))
+(is (= (into nil '(1)) '(1)))
+(is (= (into nil [1 2]) '(2 1)))
+(is (= (into '() [1]) '(1)))
+(is (= (into '() [1 2]) '(2 1)))
+(is (= (into '(1 2 3) [4]) '(4 1 2 3)))
+(is (= (into [] '(1)) [1]))
+(is (= (into [] [1 2]) [1 2]))
+(is (= (into ["a" "b" "c"] "def") ["a" "b" "c" "d" "e" "f"]))
+(is (= (into [1 2] '(3 4)) [1 2 3 4]))
+(is (= (into [[1 2] [3 4]] '([5 6])) [[1 2] [3 4] [5 6]]))
+(is (= (into {:firstname "John" :lastname "Doe"}
+             {:age 25 :nationality "Chinese"})
+       {:nationality "Chinese", :age 25
+        :firstname "John", :lastname "Doe"}))
+(is (= (into {1 2, 3 4} [[5 6]]) {5 6, 1 2, 3 4}))
 
 (is (not (empty? (cons 1 nil)))
     "cons onto nil is list of that item")
