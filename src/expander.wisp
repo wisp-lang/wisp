@@ -2,7 +2,7 @@
   "wisp syntax and macro expander module"
   (:require [wisp.ast :refer [meta with-meta symbol? keyword?
                               quote? symbol namespace name
-                              unquote? unquote-splicing?]]
+                              unquote? unquote-splicing? gensym]]
             [wisp.sequence :refer [list? list conj partition seq
                                    empty? map vec every? concat
                                    first second third rest last
@@ -310,7 +310,10 @@
         id (with-meta name (conj (or (meta name) {}) metadata))
 
         fn (with-meta `(fn ~id ~@body) (meta &form))]
-    `(def ~id ~fn)))
+    (if doc
+      (let [FN (gensym)]
+        `(def ~id (let [~FN ~fn] (set! ~(str FN ".wispDocument") ~doc) ~FN)))
+      `(def ~id ~fn))))
 (install-macro! :defn (with-meta expand-defn {:implicit [:&form]}))
 
 
