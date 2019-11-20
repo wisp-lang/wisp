@@ -99,7 +99,7 @@
   "Reverse order of items in the sequence"
   [sequence]
   (cond (list? sequence) (reverse-list sequence)
-        (vector? sequence) (.reverse sequence)
+        (vector? sequence) (.reverse (vec sequence))
         (nil? sequence) '()
         :else (reverse (seq sequence))))
 
