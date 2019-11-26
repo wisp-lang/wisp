@@ -122,6 +122,14 @@
   (let [result (apply mapv f sequences)]
     (if (native? (first sequences)) result (apply list result))))
 
+(defn map-indexed
+  "Returns a sequence consisting of the result of applying `f` to 0 and
+  the first items, followed by applying f to 1 and the second items,
+  until one of sequences is exhausted."
+  [f & sequences]
+  (let [sequence (first sequences),  n (count sequence),  indices (range n)]
+    (apply map f (if (native? sequence) indices (apply list indices)) sequences)))
+
 (defn filter
   "Returns a sequence of the items in coll for which (f? item) returns true.
   f? must be free of side-effects."
@@ -139,9 +147,12 @@
     (if (empty? items)
       (reverse result)
       (recur (if (f? (first items))
-              (cons (first items) result)
-              result)
-              (rest items)))))
+               (cons (first items) result)
+               result)
+             (rest items)))))
+
+(defn filterv [f? sequence]
+  (vec (filter f? sequence)))
 
 (defn reduce
   [f & params]
