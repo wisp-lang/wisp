@@ -1,7 +1,7 @@
 (ns wisp.expander
   "wisp syntax and macro expander module"
   (:require [wisp.ast :refer [meta with-meta symbol? keyword?
-                              quote? symbol namespace name
+                              quote? symbol namespace name gensym
                               unquote? unquote-splicing?]]
             [wisp.sequence :refer [list? list conj partition seq
                                    empty? map vec every? concat
@@ -264,13 +264,23 @@
   "Thread first macro"
   [& operations]
   (reduce
-   (fn [form operation]
-     (cons (first operation)
-           (cons form (rest operation))))
-   (first operations)
-   (map #(if (list? %) % `(~%))
-        (rest operations))))
+    (fn [form operation]
+      (cons (first operation)
+            (cons form (rest operation))))
+    (first operations)
+    (map #(if (list? %) % `(~%))
+         (rest operations))))
 (install-macro! :-> expand-thread-first)
+
+(defn expand-thread-last
+  "Thread last macro"
+  [& operations]
+  (reduce
+    (fn [form operation] (concat operation [form]))
+    (first operations)
+    (map #(if (list? %) % `(~%))
+         (rest operations))))
+(install-macro! :->> expand-thread-last)
 
 (defn expand-cond
   "Takes a set of test/expr pairs. It evaluates each test one at a
@@ -335,3 +345,35 @@
   [& body]
   `(.call lazy-seq nil false (fn [] ~@body)))
 (install-macro :lazy-seq expand-lazy-seq)
+
+
+(defn expand-when
+  "Evaluates test. If logical true, evaluates body in an implicit do."
+  [test & body]
+  `(if ~test (do ~@body)))
+(install-macro :when expand-when)
+
+(defn expand-when-not
+  "Evaluates test. If logical false, evaluates body in an implicit do."
+  [test & body]
+  `(when (not ~test) ~@body))
+(install-macro :when-not expand-when-not)
+
+
+(defn expand-if-let
+  "bindings => binding-form test
+  body => [then else]
+  If test is true, evaluates then with binding-form bound to the value of
+  test, if not, yields else."
+  [bindings then else*]
+  (let [name (first bindings), test (second bindings), sym (gensym)]
+    `(let [~sym ~test]
+       (if ~sym (let [~name ~sym] ~then) ~else*))))
+(install-macro :if-let expand-if-let)
+
+(defn expand-when-let
+  "bindings => binding-form test
+  When test is true, evaluates body with binding-form bound to the value of test."
+  [bindings & body]
+  `(if-let ~bindings (do ~@body)))
+(install-macro :when-let expand-when-let)
