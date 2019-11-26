@@ -137,6 +137,7 @@
   (cond (vector? sequence) (.filter sequence f?)
         (list? sequence) (filter-list f? sequence)
         (nil? sequence) '()
+        (lazy-seq? sequence) (filter-list f? sequence)
         :else (filter f? (seq sequence))))
 
 (defn- filter-list
@@ -157,37 +158,26 @@
 (defn reduce
   [f & params]
   (let [has-initial (>= (count params) 2)
-        initial (if has-initial (first params))
-        sequence (if has-initial (second params) (first params))]
-    (cond (nil? sequence) initial
-          (vector? sequence) (if has-initial
-                              (.reduce sequence f initial)
-                              (.reduce sequence f))
-          (list? sequence) (if has-initial
-                            (reduce-list f initial sequence)
-                            (reduce-list f (first sequence) (rest sequence)))
-          :else (reduce f initial (seq sequence)))))
-
-(defn- reduce-list
-  [f initial sequence]
-  (loop [result initial
-         items sequence]
-    (if (empty? items)
-      result
-      (recur (f result (first items)) (rest items)))))
+        initial     (if has-initial (first params))
+        sequence    (if has-initial (second params) (first params))]
+    (if has-initial
+      (.reduce (vec sequence) f initial)
+      (.reduce (vec sequence) f))))
 
 (defn count
   "Returns number of elements in list"
   [sequence]
-  (let [it (seq sequence)]
-    (cond (nil? it)      0
-          (lazy-seq? it) (inc (count (rest it)))
-          :else          (.-length it))))
+  (if (and sequence (number? (.-length sequence)))
+    (.-length sequence)
+    (let [it (seq sequence)]
+      (cond (nil? it)      0
+            (lazy-seq? it) (inc (count (rest it)))
+            :else          (.-length it)))))
 
 (defn empty?
   "Returns true if list is empty"
   [sequence]
-  (identical? (count sequence) 0))
+  (and (not (lazy-seq? sequence)) (identical? (count sequence) 0)))
 
 (defn first
   "Return first item in a list"
@@ -265,22 +255,14 @@
         (lazy-seq? sequence) (take n (lazy-seq-value sequence))
         :else (take n (seq sequence))))
 
-(defn- take-vector-while
-  [predicate vector]
-  (loop [vector vector, result []]
-    (let [head (first vector), tail (rest vector)]
-      (if (and (not (empty? vector))
-               (predicate head))
-        (recur tail (conj result head))
-        result))))
-
 (defn take-while
   [predicate sequence]
-  (cond (nil? sequence) '()
-        (vector? sequence) (take-vector-while predicate sequence)
-        (list? sequence) (take-vector-while predicate sequence)
-        :else (take-while predicate
-                          (lazy-seq-value sequence))))
+  (loop [items sequence, result []]
+    (let [head (first items), tail (rest items)]
+      (if (and (not (empty? items))
+                    (predicate head))
+        (recur tail (conj result head))
+        (if (native? sequence) result (apply list result))))))
 
 
 (defn- take-from-vector
@@ -334,7 +316,7 @@
   (reduce (fn [result item] (cons item result)) sequence items))
 
 (defn- ensure-dictionary [x]
-  (if (not (vector? x))
+  (if-not (vector? x)
     x
     (dictionary (first x) (second x))))
 
@@ -391,7 +373,7 @@
 
 (defn- iterator->lseq [iterator]
   (let [x (.next iterator)]
-    (if (not (.-done x))
+    (if-not (.-done x)
       (lazy-seq (cons (.-value x) (iterator->lseq iterator))))))
 
 (defn- list->vector [source]
@@ -455,7 +437,7 @@
   (some #{:fred} coll)      ; Clojure sets aren't implemented"
   [pred coll]
   (loop [items (seq coll)]
-    (if (not (empty? items))
+    (if-not (empty? items)
       (or (pred (first items)) (recur (rest items))))))
 
 
