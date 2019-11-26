@@ -1,13 +1,20 @@
 (ns wisp.test.sequence
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.sequence :refer [cons conj into list list? seq vec vector range empty?
-                                       count first second third rest last butlast take
-                                       take-while drop drop-while repeat concat mapcat reverse
-                                       sort map mapv map-indexed filter filterv reduce assoc
-                                       every? some partition interleave nth lazy-seq]]
+            [wisp.src.sequence :refer [cons conj into disj list list? empty seq vec vector
+                                       range empty? count first second third rest last
+                                       butlast take take-while drop drop-while repeat concat
+                                       mapcat reverse sort map mapv map-indexed filter
+                                       filterv reduce assoc dissoc every? some partition
+                                       interleave nth lazy-seq identity-set identity-set?]]
             [wisp.src.runtime :refer [str inc dec even? odd? number? vals + =]]))
 
 
+(is (= (empty "foo") ""))
+(is (= (empty [1 2 3]) []))
+(is (= (empty '(1 2 3)) '()))
+(is (= (empty {:hello :world}) {}))
+(is (= (empty #{1 2 3}) #{}))
+(is (= (empty (Set. [1 2 3])) nil))
 
 (is (empty? "") "\"\" is empty")
 (is (empty? []) "[] is empty")
@@ -144,6 +151,36 @@
 
 
 
+(is (identity-set? #{}) "#{} is identity-set")
+(is (not (identity-set? 2)) "2 is not identity-set")
+(is (not (identity-set? {})) "{} is not identity-set")
+(is (not (identity-set? [])) "[] is not identity-set")
+(is (not (identity-set? (Set.))) "(Set.) is not identity-set")
+(is (= #{1 3 2} #{3 1 2}))
+(is (= #{1 3 2} (Set. [2 1 3])))
+(is (= (Set. [2 1 3]) #{1 3 2}))
+
+
+(is (not (empty? #{1 2 3 4}))
+    "non empty identity-set returns false on empty?")
+
+(is (= (count #{1 2 3 4}) 4)
+    "identity-set has expected length")
+
+(is (= (first (identity-set 1 2 3 4)) 1)
+    "first returns first item in identity-set")
+
+(is (= (vec (rest #{1 2 3 4})) [2 3 4])
+    "rest returns rest items")
+
+(is (identical? (str #{1 2 3 4}) "#{1 2 3 4}")
+    "stringification returns identity-set")
+
+(is (#{1 3 2} 2)       "identity-set duplicates as a membership function")
+(is (not (#{1 3 2} 4)) "identity-set duplicates as a membership function")
+
+
+
 (is (not (empty? (cons 1 '()))) "cons creates non-empty list")
 (is (not (empty? (cons 1 nil))) "cons onto nil is list of that item")
 (is (= (cons 1 nil) '(1)))
@@ -171,6 +208,8 @@
        {:nationality "Chinese", :age 25
         :firstname "John", :lastname "Doe"}))
 (is (= (conj {1 2, 3 4} [5 6]) {5 6, 1 2, 3 4}))
+(is (= (conj #{} 2 1) #{1 2}))
+(is (= (conj #{2 1} 4 3 1) #{1 2 3 4}))
 
 (is (= (into nil nil) '()))
 (is (= (into nil '(1)) '(1)))
@@ -188,6 +227,13 @@
        {:nationality "Chinese", :age 25
         :firstname "John", :lastname "Doe"}))
 (is (= (into {1 2, 3 4} [[5 6]]) {5 6, 1 2, 3 4}))
+(is (= (into #{} [2 1]) #{1 2}))
+(is (= (into #{2 1} [4 3 1]) #{1 2 3 4}))
+
+(is (= (disj #{1 2} 2 1) #{}))
+(is (= (disj #{1 2 3 4} 4 3) #{2 1}))
+(is (= (disj {:a :b, :c :d} :a) {:c :d}))
+(is (= (disj {:a :b, :c :d} :a :c) {}))
 
 (is (not (empty? (cons 1 nil)))
     "cons onto nil is list of that item")
@@ -264,6 +310,7 @@
 (is (= (map inc [1 2 3 4 5]) [2 3 4 5 6]))
 (is (= (map (fn [pair] (apply str pair)) {:a 1 :b 2})
        [(str :a 1) (str :b 2)]))
+(is (= (map inc #{1 2 3}) '(2 3 4)))
 (is (= (map + nil (range 4)) '()))
 (is (= (map + '() (range 4)) '()))
 (is (= (map + []  (range 4)) []))
@@ -273,13 +320,16 @@
 (is (= (map + "abcde" (range 4)) ["a0" "b1" "c2" "d3"]))
 (is (= (map + {:a :foo, :b :bar, :c :baz} (range 4))
        ["a,foo0" "b,bar1" "c,baz2"]))
+(is (= (map + #{\a \b \c} (range 4)) '("a0" "b1" "c2")))
 
 (is (= (mapv inc nil) []))
 (is (= (mapv inc '()) []))
 (is (= (mapv inc '(1 2 3)) [2 3 4]))
+(is (= (mapv inc #{1 2 3}) [2 3 4]))
 (is (= (mapv + nil (range 4)) []))
 (is (= (mapv + '() (range 4)) []))
 (is (= (mapv + '(\a \b \c) (range 4)) ["a0" "b1" "c2"]))
+(is (= (mapv + #{\a \b \c} (range 4)) ["a0" "b1" "c2"]))
 (is (= (mapv vector [1 2 3] [4 5 6] [7 8 9])
        [[1 4 7] [2 5 8] [3 6 9]]))
 (is (= (mapv vector [1 2 3] [4 5 6])
@@ -296,6 +346,7 @@
 (is (= (map-indexed + "abcde") ["0a" "1b" "2c" "3d" "4e"]))
 (is (= (map-indexed + {:a :foo, :b :bar, :c :baz})
        ["0a,foo" "1b,bar" "2c,baz"]))
+(is (= (map-indexed + #{\a \b \c}) '("0a" "1b" "2c")))
 
 
 
@@ -306,10 +357,12 @@
 (is (= (filter even? [1 2 3 4]) [2 4]))
 (is (= (filter even? '(1 2 3 4)) '(2 4)))
 (is (= (filter (fn [pair] (even? (second pair))) {:a 1 :b 2}) [[:b 2]]))
+(is (= (filter even? #{1 2 3 4}) '(2 4)))
 
 (is (= (filterv even? nil) []))
 (is (= (filterv even? '()) []))
 (is (= (filterv even? '(1 2 3 4)) [2 4]))
+(is (= (filterv even? #{1 2 3 4}) [2 4]))
 
 
 
@@ -418,6 +471,9 @@
 (is (= (assoc {} :a :b) {:a :b}))
 (is (= (assoc {:a :b} :c :d) {:a :b :c :d}))
 (is (= (assoc {:a :b} :a :c) {:a :c}))
+
+(is (= (dissoc {:a :b, :c :d} :a) {:c :d}))
+(is (= (dissoc {:a :b, :c :d} :a :c) {}))
 
 
 (is (every? even? [2 4 6 8]))

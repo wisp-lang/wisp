@@ -1,9 +1,24 @@
 (ns wisp.sequence
   (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
                                   key-values str int dec inc min merge dictionary
-                                  iterable? =]]))
+                                  iterable? = complement]]))
 
 ;; Implementation of list
+
+(defn- seq->string [lparen rparen]
+  (fn []
+    (loop [list this, result ""]
+      (if (empty? list)
+        (str lparen (.substr result 1) rparen)
+        (recur (rest list)
+               (str result
+                    " "
+                    (let [x (first list)]
+                      (cond (vector? x) (str "[" (.join x " ") "]")
+                            (nil?    x) "nil"
+                            (string? x) (.stringify JSON x)
+                            (number? x) (.stringify JSON x)
+                            :else       x))))))))
 
 (defn- List
   "List type"
@@ -17,25 +32,7 @@
 (set! List.type "wisp.list")
 (set! List.prototype.type List.type)
 (set! List.prototype.tail (Object.create List.prototype))
-(set! List.prototype.to-string
-      (fn []
-        (loop [result ""
-               list this]
-          (if (empty? list)
-            (str "(" (.substr result 1) ")")
-            (recur
-             (str result
-                  " "
-                  (if (vector? (first list))
-                    (str "[" (.join (first list) " ") "]")
-                    (if (nil? (first list))
-                      "nil"
-                      (if (string? (first list))
-                        (.stringify JSON (first list))
-                        (if (number? (first list))
-                          (.stringify JSON (first list))
-                          (first list))))))
-             (rest list))))))
+(set! List.prototype.to-string (seq->string "(" ")"))
 
 (defn- lazy-seq-value [lazy-seq]
   (if (not (.-realized lazy-seq))
@@ -54,9 +51,31 @@
   [realized body]
   (LazySeq. realized body))
 
+(defn- clone-proto-props! [from to]
+  (apply Object.assign to
+         (.map (Object.get-own-property-names from.__proto__)
+               #(let [x (aget from %)]
+                  (dictionary % (if (fn? x) (.bind x from) x))))))
+
+(defn identity-set [& items]
+  (let [js-set (Set. items)
+        f      (fn get [x y] (if (js-set.has x) x y))]
+    (clone-proto-props! js-set f)
+    (set! f.to-string (seq->string "#{" "}"))
+    (set! f.__proto__ js-set)
+    (Object.define-property f :length {:value f.size})
+    (aset f Symbol.iterator f.values)
+    (aset f :type identity-set.type)
+    f))
+(set! identity-set.type "wisp.identity-set")
+
 (defn lazy-seq?
   [value]
   (and value (identical? LazySeq.type value.type)))
+
+(defn identity-set?
+  [value]
+  (and value (identical? identity-set.type value.type)))
 
 (defn list?
   "Returns true if list"
@@ -83,6 +102,7 @@
           (vector? x)
           (lazy-seq? x)
           (dictionary? x)
+          (identity-set? x)
           (string? x)))
 
 (defn- ^boolean native? [sequence]
@@ -328,7 +348,16 @@
         (or (list? sequence)
             (lazy-seq?)) (conj-list sequence items)
         (dictionary? sequence) (merge sequence (apply merge (mapv ensure-dictionary items)))
+        (identity-set? sequence) (apply identity-set (into (vec sequence) items))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
+
+(defn disj
+  [coll & ks]
+  (let [predicate (complement (apply identity-set ks))]
+    (cond (empty? ks)          coll
+          (identity-set? coll) (apply identity-set (filterv predicate coll))
+          (dictionary? coll)   (into {} (filter #(predicate (first %)) coll))
+          :else                (throw (TypeError (str "Type can't be disjoined " coll))))))
 
 (defn into
   [to from]
@@ -341,6 +370,12 @@
   ;             (not (vector? source))
   ;             (object? source)) "Can only assoc on dictionaries")
   (conj source (apply dictionary key-values)))
+
+(defn dissoc
+  [coll & ks]
+  (if (dictionary? coll)
+    (apply disj coll ks)
+    (throw (TypeError (str "Can only dissoc on dictionaries")))))
 
 (defn concat
   "Returns list representing the concatenation of the elements in the
@@ -358,6 +393,15 @@
 
 (defn mapcat [f sequence]
   (apply concat (mapv f sequence)))
+
+(defn empty
+  "Produces empty sequence of the same type as argument."
+  [sequence]
+  (cond (list? sequence)         '()
+        (vector? sequence)       []
+        (string? sequence)       ""
+        (dictionary? sequence)   {}
+        (identity-set? sequence) (identity-set)))
 
 (defn seq [sequence]
   (cond (nil? sequence) nil
@@ -434,7 +478,7 @@
   "Returns the first logical true value of (pred x) for any x in coll,
   else nil.  One common idiom is to use a set as pred, for example
   this will return :fred if :fred is in the sequence, otherwise nil:
-  (some #{:fred} coll)      ; Clojure sets aren't implemented"
+  (some #{:fred} coll)"
   [pred coll]
   (loop [items (seq coll)]
     (if-not (empty? items)

@@ -274,6 +274,13 @@
        (identical? (Number x) (Number y))))
 
 
+(defn- ^boolean identity-set-equal?
+  [x y]
+  (and (instance? Set x)
+       (instance? Set y)
+       (identical? x.size y.size)
+       (.every (Array.from x) #(y.has %))))
+
 (defn- ^boolean dictionary-equal?
   [x y]
   (and (object? x)
@@ -321,6 +328,7 @@
                                                             (.toString y)))
                    (number? x) (and (number? y) (identical? (.valueOf x)
                                                             (.valueOf y)))
+                   (instance? Set x) (identity-set-equal? x y)
                    (fn? x) false
                    (boolean? x) false
                    (date? x) (date-equal? x y)
