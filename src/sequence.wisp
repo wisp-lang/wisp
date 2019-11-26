@@ -90,8 +90,18 @@
   "Reverse order of items in the sequence"
   [sequence]
   (if (vector? sequence)
-      (.reverse (vec sequence))
-      (into nil sequence)))
+    (.reverse (vec sequence))
+    (into nil sequence)))
+
+(defn range
+  "Returns a vector of nums from start (inclusive) to end
+  (exclusive), by step, where start defaults to 0 and step to 1."
+  ([end]            (range 0 end 1))
+  ([start end]      (range start end 1))
+  ([start end step] (if (< step 0)
+                      (.map (range (- start) (- end) (- step)) #(- %))
+                      (Array.from {:length (-> (+ end step) (- start 1) (/ step))}
+                                  (fn [_ i] (+ start (* i step)))))))
 
 (defn map
   "Returns a sequence consisting of the result of applying `f` to the
@@ -392,6 +402,8 @@
         (vector? sequence) (Array.from sequence)
         (or (list? sequence) (lazy-seq? sequence)) (list->vector sequence)
         :else (vec (seq sequence))))
+
+(defn vector [& sequence] sequence)
 
 (def ^{:private true}
   sort-comparator

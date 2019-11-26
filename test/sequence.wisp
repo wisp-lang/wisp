@@ -1,6 +1,6 @@
 (ns wisp.test.sequence
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.sequence :refer [cons conj into list list? seq vec empty? count
+            [wisp.src.sequence :refer [cons conj into list list? seq vec range empty? count
                                        first second third rest last butlast take
                                        take-while drop drop-while repeat concat mapcat
                                        reverse sort map mapv filter reduce assoc every?
@@ -237,6 +237,23 @@
 (is (= (vec (Set. [42])) [42]))
 (is (= (vec (Map. [[42 ':a]])) [[42 ':a]]))
 (is (= (vec (.keys (Map. [[42 ':a]])) [42])))
+
+
+(is (= (range 5)       [0 1 2 3 4]))
+(is (= (range 3  8)    [3 4 5 6 7]))
+(is (= (range 2 12  3) [2 5 8 11]))
+(is (= (range 2 11  3) [2 5 8]))
+(is (= (range 2 10  3) [2 5 8]))
+(is (= (range 2  9  3) [2 5 8]))
+(is (= (range 2  8  3) [2 5]))
+(is (= (range 9  2 -3) [9 6 3]))
+(is (= (range 9  3 -3) [9 6]))
+(is (= (range 9  4 -3) [9 6]))
+(is (= (range 9  5 -3) [9 6]))
+(is (= (range 9  6 -3) [9]))
+(is (= (range 9  6)    []))
+(is (= (range 9  6  3) []))
+(is (= (range 6  9 -3) []))
 
 
 (is (= (map inc nil) '()))
