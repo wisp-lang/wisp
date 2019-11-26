@@ -1,11 +1,11 @@
 (ns wisp.test.sequence
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.sequence :refer [cons conj into list list? seq vec range empty? count
-                                       first second third rest last butlast take
+            [wisp.src.sequence :refer [cons conj into list list? seq vec vector range empty?
+                                       count first second third rest last butlast take
                                        take-while drop drop-while repeat concat mapcat
                                        reverse sort map mapv filter reduce assoc every?
                                        some partition interleave nth lazy-seq]]
-            [wisp.src.runtime :refer [str inc dec even? odd? number? vals =]]))
+            [wisp.src.runtime :refer [str inc dec even? odd? number? vals + =]]))
 
 
 
@@ -264,10 +264,28 @@
 (is (= (map inc [1 2 3 4 5]) [2 3 4 5 6]))
 (is (= (map (fn [pair] (apply str pair)) {:a 1 :b 2})
        [(str :a 1) (str :b 2)]))
+(is (= (map + nil (range 4)) '()))
+(is (= (map + '() (range 4)) '()))
+(is (= (map + []  (range 4)) []))
+(is (= (map + {}  (range 4)) []))
+(is (= (map + '(\a \b \c) (range 4)) '("a0" "b1" "c2")))
+(is (= (map + [\a \b \c \d \e] (range 4)) ["a0" "b1" "c2" "d3"]))
+(is (= (map + "abcde" (range 4)) ["a0" "b1" "c2" "d3"]))
+(is (= (map + {:a :foo, :b :bar, :c :baz} (range 4))
+       ["a,foo0" "b,bar1" "c,baz2"]))
 
 (is (= (mapv inc nil) []))
 (is (= (mapv inc '()) []))
 (is (= (mapv inc '(1 2 3)) [2 3 4]))
+(is (= (mapv + nil (range 4)) []))
+(is (= (mapv + '() (range 4)) []))
+(is (= (mapv + '(\a \b \c) (range 4)) ["a0" "b1" "c2"]))
+(is (= (mapv vector [1 2 3] [4 5 6] [7 8 9])
+       [[1 4 7] [2 5 8] [3 6 9]]))
+(is (= (mapv vector [1 2 3] [4 5 6])
+       [[1 4] [2 5] [3 6]]))
+(is (= (mapv vector [1 2] [3 4] [5 6])
+       [[1 3 5] [2 4 6]]))
 
 
 

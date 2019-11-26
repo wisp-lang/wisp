@@ -1,6 +1,6 @@
 (ns wisp.sequence
   (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
-                                  key-values str int dec inc merge dictionary
+                                  key-values str int dec inc min merge dictionary
                                   iterable? =]]))
 
 ;; Implementation of list
@@ -85,6 +85,9 @@
           (dictionary? x)
           (string? x)))
 
+(defn- ^boolean native? [sequence]
+  (or (vector? sequence) (string? sequence) (dictionary? sequence)))
+
 
 (defn reverse
   "Reverse order of items in the sequence"
@@ -103,27 +106,21 @@
                       (Array.from {:length (-> (+ end step) (- start 1) (/ step))}
                                   (fn [_ i] (+ start (* i step)))))))
 
+(defn mapv
+  "Returns a vector consisting of the result of applying `f` to the
+  first items, followed by applying f to the second items, until one of
+  sequences is exhausted."
+  [f & sequences]
+  (let [vectors (.map sequences vec),  n (apply min (.map vectors count))]
+    (.map (range n) (fn [i] (apply f (.map vectors #(aget % i)))))))
+
 (defn map
   "Returns a sequence consisting of the result of applying `f` to the
-  first item, followed by applying f to the second items, until sequence is
-  exhausted."
-  [f sequence]
-  (cond (vector? sequence) (.map sequence #(f %))
-        (list? sequence) (map-list f sequence)
-        (nil? sequence) '()
-        :else (map f (seq sequence))))
-
-(defn- map-list
-  "Like map but optimized for lists"
-  [f sequence]
-  (loop [result '()
-         items sequence]
-    (if (empty? items)
-      (reverse result)
-      (recur (cons (f (first items)) result) (rest items)))))
-
-(defn mapv [f sequence]
-  (vec (map f sequence)))
+  first items, followed by applying f to the second items, until one of
+  sequences is exhausted."
+  [f & sequences]
+  (let [result (apply mapv f sequences)]
+    (if (native? (first sequences)) result (apply list result))))
 
 (defn filter
   "Returns a sequence of the items in coll for which (f? item) returns true.
