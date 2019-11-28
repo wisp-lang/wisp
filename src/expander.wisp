@@ -366,7 +366,7 @@
   If test is true, evaluates then with binding-form bound to the value of
   test, if not, yields else."
   [bindings then else*]
-  (let [name (first bindings), test (second bindings), sym (gensym)]
+  (let [name (first bindings), test (second bindings), sym (gensym (if (symbol? name) name))]
     `(let [~sym ~test]
        (if ~sym (let [~name ~sym] ~then) ~else*))))
 (install-macro :if-let expand-if-let)
