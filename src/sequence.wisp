@@ -1,5 +1,5 @@
 (ns wisp.sequence
-  (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
+  (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary? set?
                                   key-values str int dec inc min merge dictionary
                                   iterable? = complement]]))
 
@@ -68,6 +68,7 @@
     (aset f :type identity-set.type)
     f))
 (set! identity-set.type "wisp.identity-set")
+(def set identity-set)
 
 (defn lazy-seq?
   [value]
@@ -102,7 +103,7 @@
           (vector? x)
           (lazy-seq? x)
           (dictionary? x)
-          (identity-set? x)
+          (set? x)
           (string? x)))
 
 (defn- ^boolean native? [sequence]
@@ -154,7 +155,7 @@
   "Returns a sequence of the items in coll for which (f? item) returns true.
   f? must be free of side-effects."
   [f? sequence]
-  (cond (vector? sequence) (.filter sequence f?)
+  (cond (vector? sequence) (.filter sequence #(f? %))
         (list? sequence) (filter-list f? sequence)
         (nil? sequence) '()
         (lazy-seq? sequence) (filter-list f? sequence)
@@ -346,18 +347,18 @@
         (string? sequence) (str sequence (apply str items))
         (nil? sequence) (apply list (reverse items))
         (or (list? sequence)
-            (lazy-seq?)) (conj-list sequence items)
+            (lazy-seq? sequence)) (conj-list sequence items)
         (dictionary? sequence) (merge sequence (apply merge (mapv ensure-dictionary items)))
-        (identity-set? sequence) (apply identity-set (into (vec sequence) items))
+        (set? sequence) (apply identity-set (into (vec sequence) items))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
 
 (defn disj
   [coll & ks]
   (let [predicate (complement (apply identity-set ks))]
-    (cond (empty? ks)          coll
-          (identity-set? coll) (apply identity-set (filterv predicate coll))
-          (dictionary? coll)   (into {} (filter #(predicate (first %)) coll))
-          :else                (throw (TypeError (str "Type can't be disjoined " coll))))))
+    (cond (empty? ks)        coll
+          (set? coll)        (apply identity-set (filterv predicate coll))
+          (dictionary? coll) (into {} (filter #(predicate (first %)) coll))
+          :else              (throw (TypeError (str "Type can't be disjoined " coll))))))
 
 (defn into
   [to from]
@@ -397,11 +398,11 @@
 (defn empty
   "Produces empty sequence of the same type as argument."
   [sequence]
-  (cond (list? sequence)         '()
-        (vector? sequence)       []
-        (string? sequence)       ""
-        (dictionary? sequence)   {}
-        (identity-set? sequence) (identity-set)))
+  (cond (list? sequence)       '()
+        (vector? sequence)     []
+        (string? sequence)     ""
+        (dictionary? sequence) {}
+        (set? sequence)        #{}))
 
 (defn seq [sequence]
   (cond (nil? sequence) nil

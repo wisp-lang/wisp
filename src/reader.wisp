@@ -3,7 +3,7 @@
   as wisp data structures"
   (:require [wisp.sequence :refer [list list? count empty? first second third
                                    rest map vec cons conj rest concat last
-                                   butlast sort reduce identity-set]]
+                                   butlast sort reduce set]]
             [wisp.runtime :refer [odd? dictionary keys nil? inc dec vector? string?
                                   number? boolean? object? dictionary? re-pattern
                                   re-matches re-find str subs char vals =]]
@@ -325,7 +325,7 @@
 (defn read-set
   [reader _]
   (let [form (read-delimited-list "}" reader true)]
-    (with-meta (concat ['identity-set] form) (meta form))))
+    (with-meta (concat ['set] form) (meta form))))
 
 (defn read-number
   [reader initch]

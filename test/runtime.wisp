@@ -1,6 +1,6 @@
 (ns wisp.test.runtime
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.runtime :refer [dictionary? vector? iterable?
+            [wisp.src.runtime :refer [dictionary? vector? iterable? set?
                                       subs str and or = == > >= < <=
                                       + - / * nan?]]
             [wisp.src.sequence :refer [list concat vec]]
@@ -23,6 +23,11 @@
 (is (iterable? []) "[] is iterable")
 (is (iterable? (Set.)) "Set{} is iterable")
 (is (iterable? (.keys (Set.))) "(.keys Set{}) is iterable")
+
+(is (set? (Set.)) "Set{} is a set")
+(is (not (set? (Map.))) "Map{} is not a set")
+
+(is (= (Set. [1 2]) (Set. [2 1])))
 
 (is (= `(1 ~@'(2 3) 4 ~@'(5))
        '(1 2 3 4 5)))

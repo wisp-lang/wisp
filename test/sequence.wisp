@@ -5,8 +5,8 @@
                                        butlast take take-while drop drop-while repeat concat
                                        mapcat reverse sort map mapv map-indexed filter
                                        filterv reduce assoc dissoc every? some partition
-                                       interleave nth lazy-seq identity-set identity-set?]]
-            [wisp.src.runtime :refer [str inc dec even? odd? number? vals + =]]))
+                                       interleave nth lazy-seq set identity-set identity-set?]]
+            [wisp.src.runtime :refer [str inc dec even? odd? number? set? vals + =]]))
 
 
 (is (= (empty "foo") ""))
@@ -14,14 +14,17 @@
 (is (= (empty '(1 2 3)) '()))
 (is (= (empty {:hello :world}) {}))
 (is (= (empty #{1 2 3}) #{}))
-(is (= (empty (Set. [1 2 3])) nil))
+(is (= (empty (Set. [1 2 3])) #{}))
+(is (= (empty (Map. [[1 2]])) nil))
 
 (is (empty? "") "\"\" is empty")
 (is (empty? []) "[] is empty")
 (is (empty? nil) "nil is empty")
 (is (empty? {}) "{} is empty")
 (is (empty? '()) "'() is empty")
+(is (empty? #{}) "#{} is empty")
 (is (empty? (Set.)) "(Set.) is empty")
+(is (empty? (Map.)) "(Map.) is empty")
 
 
 (is (= (count "") 0) "count 0 in \"\"")
@@ -33,6 +36,8 @@
 (is (= (count {:hello :world}) 1) "count 1 in {:hello :world}")
 (is (= (count '()) 0) "count 0 in '()")
 (is (= (count '(1 2)) 2) "count 2 in '(1 2)")
+(is (= (count #{}) 0) "count 0 in #{}")
+(is (= (count #{:foo :bar}) 2) "count 2 in #{:foo :bar}")
 (is (= (count (Set.)) 0) "count 0 in (Set.)")
 (is (= (count (Set. [:foo :bar])) 2) "count 2 in (Set. [:foo :bar])")
 (is (= (count (Map. [[:hello :world]])) 1) "count 1 in (Map. [[:hello :world]])")
@@ -151,6 +156,7 @@
 
 
 
+(is (set? #{}) "#{} is a set")
 (is (identity-set? #{}) "#{} is identity-set")
 (is (not (identity-set? 2)) "2 is not identity-set")
 (is (not (identity-set? {})) "{} is not identity-set")
@@ -210,6 +216,7 @@
 (is (= (conj {1 2, 3 4} [5 6]) {5 6, 1 2, 3 4}))
 (is (= (conj #{} 2 1) #{1 2}))
 (is (= (conj #{2 1} 4 3 1) #{1 2 3 4}))
+(is (= (conj (Set. [2 1]) 4 3 1) #{1 2 3 4}))
 
 (is (= (into nil nil) '()))
 (is (= (into nil '(1)) '(1)))
@@ -229,9 +236,11 @@
 (is (= (into {1 2, 3 4} [[5 6]]) {5 6, 1 2, 3 4}))
 (is (= (into #{} [2 1]) #{1 2}))
 (is (= (into #{2 1} [4 3 1]) #{1 2 3 4}))
+(is (= (into (Set. [2 1]) [4 3 1]) #{1 2 3 4}))
 
 (is (= (disj #{1 2} 2 1) #{}))
 (is (= (disj #{1 2 3 4} 4 3) #{2 1}))
+(is (= (disj (Set. [1 2 3 4]) 4 3) #{2 1}))
 (is (= (disj {:a :b, :c :d} :a) {:c :d}))
 (is (= (disj {:a :b, :c :d} :a :c) {}))
 
@@ -358,6 +367,7 @@
 (is (= (filter even? '(1 2 3 4)) '(2 4)))
 (is (= (filter (fn [pair] (even? (second pair))) {:a 1 :b 2}) [[:b 2]]))
 (is (= (filter even? #{1 2 3 4}) '(2 4)))
+(is (= (filter #{3 2 5} [1 2 3 4]) [2 3]))
 
 (is (= (filterv even? nil) []))
 (is (= (filterv even? '()) []))

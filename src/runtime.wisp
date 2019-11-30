@@ -174,6 +174,11 @@
   [x]
   (identical? (.call to-string x) "[object RegExp]"))
 
+(defn ^boolean set?
+  "Returns true if x is a JS Set instance"
+  [x]
+  (instance? Set x))
+
 
 (defn ^boolean object?
   "Returns true if x is an object"
@@ -274,10 +279,10 @@
        (identical? (Number x) (Number y))))
 
 
-(defn- ^boolean identity-set-equal?
+(defn- ^boolean set-equal?
   [x y]
-  (and (instance? Set x)
-       (instance? Set y)
+  (and (set? x)
+       (set? y)
        (identical? x.size y.size)
        (.every (Array.from x) #(y.has %))))
 
@@ -328,7 +333,7 @@
                                                             (.toString y)))
                    (number? x) (and (number? y) (identical? (.valueOf x)
                                                             (.valueOf y)))
-                   (instance? Set x) (identity-set-equal? x y)
+                   (set? x) (set-equal? x y)
                    (fn? x) false
                    (boolean? x) false
                    (date? x) (date-equal? x y)
