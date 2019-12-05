@@ -6,8 +6,10 @@
                                        mapcat reverse sort map mapv map-indexed filter
                                        filterv reduce assoc dissoc every? some partition
                                        interleave nth lazy-seq set identity-set identity-set?
-                                       contains? union difference intersection subset? superset?]]
-            [wisp.src.runtime :refer [str inc dec even? odd? number? set? vals + =]]))
+                                       contains? union difference intersection subset? superset?
+                                       unfold iterate cycle infinite-range lazy-map lazy-filter
+                                       lazy-partition]]
+            [wisp.src.runtime :refer [str int inc dec even? odd? number? set? vals + =]]))
 
 
 (is (= (empty "foo") ""))
@@ -616,3 +618,38 @@
 (is (superset? [42] nil)          "superset? checks if all items from set2 are in set1")
 (is (superset? :of "foo")         "superset? works on equal sets")
 (is (not (superset? "baz" "bar")) "superset? works on different sets")
+
+
+(defn- binary* [n]    ; unfolder to binary form (reversed)
+  (if (> n 0) [(mod n 2) (int (/ n 2))]))
+(is (= (vec (unfold binary*  0)) []))
+(is (= (vec (unfold binary* 13)) [1 0 1 1]))      ; 1 + 4 + 8
+(is (= (vec (unfold binary* 42)) [0 1 0 1 0 1]))  ; 2 + 8 + 32
+
+(is (= (take 5 (iterate #(* % %) 2))
+       '(2 4 16 256 65536)))
+
+(is (= (take 10 (cycle [1 2 3]))
+       '(1 2 3 1 2 3 1 2 3 1)))
+
+(is (= (take 5 (infinite-range))
+       '(0 1 2 3 4)))
+(is (= (take 3 (infinite-range 2))
+       '(2 3 4)))
+(is (= (take 3 (infinite-range 2 -4))
+       '(2 -2 -6)))
+
+(is (= (take 5 (lazy-map inc (infinite-range)))
+       '(1 2 3 4 5)))
+
+(is (= (take 5 (lazy-filter odd? (infinite-range)))
+       '(1 3 5 7 9)))
+
+(is (= (take 3 (lazy-partition 2 (infinite-range)))
+       '((0 1) (2 3) (4 5))))
+(is (= (take 3 (lazy-partition 2 3 (infinite-range)))
+       '((0 1) (3 4) (6 7))))
+(is (= (take 3 (lazy-partition 2 3 (infinite-range 10) (range 7)))
+       '((0 1) (3 4) (6 10))))
+(is (= (take 3 (lazy-partition 2 3 (infinite-range 10) (range 6)))
+       '((0 1) (3 4))))

@@ -25,7 +25,9 @@
   [head tail]
   (set! this.head head)
   (set! this.tail (or tail (list)))
-  (set! this.length (inc (count this.tail)))
+  (set! this.length
+    (if (or (nil? this.tail) (number? (.-length this.tail)))
+      (inc (count this.tail))))
   this)
 
 (set! List.prototype.length 0)
@@ -382,18 +384,13 @@
   "Returns list representing the concatenation of the elements in the
   supplied lists."
   [& sequences]
-  (reverse
-    (reduce
-      (fn [result sequence]
-        (reduce
-          (fn [result item] (cons item result))
-          result
-          (seq sequence)))
-      '()
-      sequences)))
+  (reduce #(conj-list %1 (reverse %2))
+          (let [tail (last sequences)]
+            (if (lazy-seq? tail) tail (apply list (vec tail))))
+          (rest (reverse sequences))))
 
-(defn mapcat [f sequence]
-  (apply concat (mapv f sequence)))
+(defn mapcat [f & colls]
+  (apply concat (apply mapv f colls)))
 
 (defn empty
   "Produces empty sequence of the same type as argument."
@@ -569,3 +566,47 @@
   "Is set1 a superset of set2?"
   [set1 set2]
   (subset? set2 set1))
+
+
+(defn unfold
+  "Returns a lazy sequence; (f x) is expected to return either nil (signifying end of sequence)
+  or [y x1] (where y is next sequence item, and x1 is next value of x)"
+  [f x]
+  (if-let [next (f x)]
+    (lazy-seq (cons (first next) (unfold f (second next))))))
+
+(defn iterate
+  "Returns a lazy sequence of x, (f x), (f (f x)) etc. f must be free of side-effects"
+  [f x]
+  (lazy-seq (cons x (iterate f (f x)))))
+
+(defn cycle
+  "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
+  [coll]
+  (lazy-seq (concat coll (cycle coll))))
+
+(defn infinite-range
+  ([] (infinite-range 0))
+  ([n] (iterate inc n))
+  ([n step] (iterate #(+ % step) n)))
+
+(defn lazy-map [f & sequences]
+  (unfold #(if-not (some empty? %)
+             [(apply f (mapv first %)) (mapv rest %)])
+          sequences))
+
+(defn lazy-filter [f sequence]
+  (unfold #(loop [xs %]
+             (cond (empty? xs)    nil
+                   (f (first xs)) [(first xs) (rest xs)]
+                   :else          (recur (rest xs))))
+          (seq sequence)))
+
+(defn lazy-partition
+  ([n coll] (lazy-partition n n coll))
+  ([n step coll] (lazy-partition n step [] coll))
+  ([n step pad coll]
+    (unfold #(let [chunk (take n (concat (take n %) pad))]
+               (if (and (not (empty? %)) (identical? n (count chunk)))
+                 [chunk (drop step %)]))
+            coll)))
