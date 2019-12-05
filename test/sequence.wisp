@@ -5,7 +5,8 @@
                                        butlast take take-while drop drop-while repeat concat
                                        mapcat reverse sort map mapv map-indexed filter
                                        filterv reduce assoc dissoc every? some partition
-                                       interleave nth lazy-seq set identity-set identity-set?]]
+                                       interleave nth lazy-seq set identity-set identity-set?
+                                       contains? union difference intersection subset? superset?]]
             [wisp.src.runtime :refer [str inc dec even? odd? number? set? vals + =]]))
 
 
@@ -583,3 +584,35 @@
 (is (= (nth [1 2 3 4] 2) 3))
 (is (= (nth [1 2 3 4] 0) 1))
 (is (= (nth (seq {:foo 1 :bar 2}) 1) [:bar 2]))
+
+
+(is (contains? #{2 1 3} 3)           "contains? on sets checks for membership")
+(is (not (contains? #{2 1 3} 0))     "contains? on sets checks for membership")
+(is (contains? {:a 1, :b 2} :a)      "contains? on dictionaries checks for key existence")
+(is (not (contains? {:a 1, :b 2} 1)) "contains? on dictionaries checks for key existence")
+(is (contains? [:a :b :c] 1)         "contains? on vectors checks for index existence")
+(is (not (contains? [:a :b :c] :b))  "contains? on vectors checks for index existence")
+(is (contains? "foo" 2)              "contains? on strings checks for index existence")
+(is (not (contains? "foo" \f))       "contains? on strings checks for index existence")
+(is (not (contains? (list 1 2 3) 1)) "contains? on other types returns false")
+
+(is (= (union) #{}))
+(is (= (union [1 2 3]) #{1 2 3}))
+(is (= (union :foo [\b \a \r] "baz")
+       #{:a :b :f :o :r :z}))
+
+(is (= (difference [1 2 3]) #{1 2 3}))
+(is (= (difference [\b \a \r] "baz") #{:r}))
+(is (= (difference [\b \a \r] "baz" :answer) #{}))
+
+(is (= (intersection [1 2 3]) #{1 2 3}))
+(is (= (intersection [\b \a \r] "baz") #{:a :b}))
+(is (= (intersection [\b \a \r] "baz" :answer) #{:a}))
+
+(is (subset? nil [42])          "subset? checks if all items from set1 are in set2")
+(is (subset? :foo "of")         "subset? works on equal sets")
+(is (not (subset? "bar" "baz")) "subset? works on different sets")
+
+(is (superset? [42] nil)          "superset? checks if all items from set2 are in set1")
+(is (superset? :of "foo")         "superset? works on equal sets")
+(is (not (superset? "baz" "bar")) "superset? works on different sets")

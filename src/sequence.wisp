@@ -525,3 +525,47 @@
                                   not-found)
         (lazy-seq? sequence) (nth (lazy-seq-value sequence) index not-found)
         :else (throw (TypeError "Unsupported type"))))
+
+
+(defn contains?
+  "Returns true if key is present in the given collection, otherwise
+  returns false.  Note that for numerically indexed collections like
+  vectors and strings, this tests if the numeric key is within the
+  range of indexes. 'contains?' operates constant or logarithmic time;
+  it will not perform a linear search for a value.  See also 'some'."
+  [coll v]
+  (cond (set? coll)                                           (.has coll v)
+        (or (dictionary? coll) (vector? coll) (string? coll)) (.has-own-property coll v)
+        :else                                                 false))
+
+(defn union
+  "Return a set that is the union of the input sets"
+  [& sets]
+  (into #{} (apply concat sets)))
+
+(defn difference
+  "Return a set that is the first set without elements of the remaining sets"
+  [s1 & sets]
+  (into #{} (filter (complement (apply union sets))
+                    s1)))
+
+(defn intersection
+  "Return a set that is the intersection of the input sets"
+  [& sets]
+  (let [sets     (mapv #(into #{} %) sets)
+        in-each? (fn [x] (every? #(.has % x) sets))
+        min-size (apply min (mapv count sets))
+        smallest (.find sets #(= min-size (count %)))]
+    (into #{} (filter in-each? smallest))))
+
+(defn subset?
+  "Is set1 a subset of set2?"
+  [set1 set2]
+  (if (set? set2)
+    (every? #(.has set2 %) set1)
+    (subset? set1 (into #{} set2))))
+
+(defn superset?
+  "Is set1 a superset of set2?"
+  [set1 set2]
+  (subset? set2 set1))
