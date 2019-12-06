@@ -2,7 +2,7 @@
   (:require [wisp.test.util :refer [is thrown?]]
             [wisp.src.runtime :refer [dictionary? vector? iterable? set?
                                       subs str and or = == > >= < <=
-                                      + - / * nan?]]
+                                      + - / * quot mod rem rem* nan?]]
             [wisp.src.sequence :refer [list concat vec]]
             [wisp.src.ast :refer [symbol]]))
 
@@ -117,6 +117,38 @@
 (is (= (apply / [6 2]) 3))
 (is (= (apply / [10 2 3]) 5/3))
 (is (= (apply / [30 1 2 3 4 5 6]) 1/24))
+
+(is (= (apply quot [ 10  3])  3))
+(is (= (apply quot [-10  3]) -4))  ; difference from Clojure: int rounds down, not towards zero
+(is (= (apply quot [ 10 -3]) -4))
+(is (= (apply quot [-10 -3])  3))
+(is (= (apply quot [ 1024.8402 5.12])  200))
+(is (= (apply quot [-1024.8402 5.12]) -201))
+
+(defn- approx= [x delta & xs]
+  (.every xs #(> delta (Math.abs (- x %)))))
+
+(is (= (apply mod [ 10  3])  1))
+(is (= (apply mod [-10  3])  2))
+(is (= (apply mod [ 10 -3]) -2))
+(is (= (apply mod [-10 -3]) -1))
+(is (approx= (apply mod [ 1024.8402 5.12]) 1e-5 0.8402))
+(is (approx= (apply mod [-1024.8402 5.12]) 1e-5 4.2798))
+
+(is (= (apply rem  [ 10  3])  1))
+(is (= (apply rem  [-10  3]) -1))
+(is (= (apply rem  [ 10 -3])  1))
+(is (= (apply rem  [-10 -3]) -1))
+(is (= (apply rem* [ 10  3])  1))
+(is (= (apply rem* [-10  3]) -1))
+(is (= (apply rem* [ 10 -3])  1))
+(is (= (apply rem* [-10 -3]) -1))
+(is (approx= (apply rem  [ 1024.8402 5.12]) 1e-5  0.8402))
+(is (approx= (apply rem  [-1024.8402 5.12]) 1e-5 -0.8402))
+(is (approx= (apply rem* [ 1024.8402 5.12]) 1e-5  0.8402))
+(is (approx= (apply rem* [-1024.8402 5.12]) 1e-5 -0.8402))
+
+
 
 (is (= (apply and []) true))
 (is (= (apply and [1]) 1))

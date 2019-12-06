@@ -621,7 +621,7 @@
 
 
 (defn- binary* [n]    ; unfolder to binary form (reversed)
-  (if (> n 0) [(mod n 2) (int (/ n 2))]))
+  (if (> n 0) [(rem n 2) (int (/ n 2))]))
 (is (= (vec (unfold binary*  0)) []))
 (is (= (vec (unfold binary* 13)) [1 0 1 1]))      ; 1 + 4 + 8
 (is (= (vec (unfold binary* 42)) [0 1 0 1 0 1]))  ; 2 + 8 + 32

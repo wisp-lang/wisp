@@ -1325,16 +1325,16 @@
 
 ;; =>
 
-(is (thrown? (transpile "(mod)")
-             #"Wrong number of arguments \(0\) passed to: mod"))
+(is (thrown? (transpile "(rem)")
+             #"Wrong number of arguments \(0\) passed to: rem"))
 ;; =>
 
-(is (thrown? (transpile "(mod 1)")
-             #"Wrong number of arguments \(1\) passed to: mod"))
+(is (thrown? (transpile "(rem 1)")
+             #"Wrong number of arguments \(1\) passed to: rem"))
 
 ;; =>
 
-(is (= (transpile "(mod 1 2)")
+(is (= (transpile "(rem 1 2)")
        "1 % 2;"))
 ;; =>
 

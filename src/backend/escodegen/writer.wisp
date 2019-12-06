@@ -940,7 +940,7 @@
 (install-arithmetic-operator! :- :- #(>= % 1) 0)
 (install-arithmetic-operator! :* :* nil 1)
 (install-arithmetic-operator! (keyword \/) (keyword \/) #(>= % 1) 1)
-(install-arithmetic-operator! :mod (keyword \%) #(== % 2) 1)
+(install-arithmetic-operator! :rem (keyword \%) #(== % 2) 1)
 
 
 ;; Comparison operators

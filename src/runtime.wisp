@@ -8,17 +8,17 @@
 (defn complement
   "Takes a fn f and returns a fn that takes the same arguments as f,
   has the same effects, if any, and returns the opposite truth value."
-  [f] (fn 
+  [f] (fn
         ([] (not (f)))
         ([x] (not (f x)))
         ([x y] (not (f x y)))
         ([x y & zs] (not (apply f x y zs)))))
 
 (defn ^boolean odd? [n]
-  (identical? (mod n 2) 1))
+  (identical? (rem n 2) 1))
 
 (defn ^boolean even? [n]
-  (identical? (mod n 2) 0))
+  (identical? (rem n 2) 0))
 
 (defn ^boolean dictionary?
   "Returns true if dictionary"
@@ -521,6 +521,19 @@
               (inc index)
               count)
        value))))
+
+(defn ^boolean quot [num div] (int (/ num div)))
+(defn ^boolean mod [num div] (- num (* div (quot num div))))
+(defn ^boolean rem* [num div]
+  (let [m (apply mod [num div])]
+    (if (identical? (>= num 0) (>= div 0))
+      m
+      (- m div))))
+(def ^boolean rem
+  (if (let [rem #(identity nil)]    ; checking if rem is macro-shadowed
+        (nil? (rem 1 1)))
+    rem*
+    (fn [num div] (rem num div))))
 
 (defn ^boolean and
   ([] true)
