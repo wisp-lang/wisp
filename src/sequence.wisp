@@ -193,7 +193,6 @@
 (defn count
   "Returns number of elements in list"
   [sequence]
-  (if (lazy-seq? sequence) (first sequence))   ; forcing evaluation
   (if (and sequence (number? (.-length sequence)))
     (.-length sequence)
     (let [it (seq sequence)]
@@ -283,7 +282,7 @@
   (cond (nil? sequence) '()
         (vector? sequence) (take-from-vector n sequence)
         (list? sequence) (take-from-list n sequence)
-        (lazy-seq? sequence) (take n (lazy-seq-value sequence))
+        (lazy-seq? sequence) (if (> n 0) (take n (lazy-seq-value sequence)))
         :else (take n (seq sequence))))
 
 (defn take-while

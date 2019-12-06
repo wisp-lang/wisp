@@ -631,6 +631,8 @@
 
 (is (= (take 10 (cycle [1 2 3]))
        '(1 2 3 1 2 3 1 2 3 1)))
+(is (= (take 10 (cycle []))
+       '()))
 
 (is (= (take 5 (infinite-range))
        '(0 1 2 3 4)))
