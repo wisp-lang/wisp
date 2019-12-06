@@ -1,6 +1,6 @@
 BROWSERIFY = ./node_modules/browserify/bin/cmd.js
 MINIFY = ./node_modules/.bin/minify
-WIPS_CURRENT = node ./bin/wisp.js
+WISP_CURRENT = node ./bin/wisp.js
 FLAGS =
 INSTALL_MESSAGE = "You need to run 'npm install' to install build dependencies."
 BUILD_DEPS = $(BROWSERIFY) $(MINIFY) ./node_modules/wisp/bin/wisp.js
@@ -12,20 +12,21 @@ ifdef verbose
 endif
 
 ifdef current
-	WISP = $(WIPS_CURRENT)
+	WISP = $(WISP_CURRENT)
 else
 	WISP = ./node_modules/wisp/bin/wisp.js
 endif
 
-core: runtime sequence string ast reader compiler writer analyzer expander escodegen
+CORE = expander runtime sequence string ast reader compiler analyzer
+core: $(CORE) writer escodegen
 escodegen: escodegen-writer escodegen-generator
 node: core wisp node-engine repl
-browser: core browser-engine dist/wisp.min.js
-all: node browser
+browser: node core browser-engine dist/wisp.min.js
+all: browser
 test: test1
 
-test1: core node
-	$(WIPS_CURRENT) ./test/test.wisp $(FLAGS)
+test1: core node recompile
+	$(WISP_CURRENT) ./test/test.wisp $(FLAGS)
 
 $(BUILD_DEPS):
 	@echo $(INSTALL_MESSAGE)
@@ -40,6 +41,13 @@ clean:
 %.js: %.wisp $(WISP)
 	@mkdir -p $(dir $@)
 	$(WISP) --source-uri wisp/$(subst .js,.wisp,$@) < $< > $@
+
+RECOMPILE = backend/escodegen/writer backend/escodegen/generator backend/javascript/writer engine/node engine/browser $(CORE)
+recompile: node browser-engine
+	$(info Recompiling with current version: $(RECOMPILE))
+	@$(foreach file,$(RECOMPILE),\
+		$(WISP_CURRENT) --source-uri wisp/$(file).wisp < src/$(file).wisp > $(file).js~ && \
+		mv $(file).js~ $(file).js &&) echo "...done"
 
 ### core ###
 
@@ -69,8 +77,6 @@ writer: backend/javascript/writer.js
 
 escodegen-writer: backend/escodegen/writer.js
 
-escodegen-compiler: backend/escodegen/compiler.js
-
 escodegen-generator: backend/escodegen/generator.js
 
 ### platform engine bundles ###
@@ -79,11 +85,10 @@ node-engine: ./engine/node.js
 
 browser-engine: ./engine/browser.js
 
-dist/wisp.js: engine/browser.js $(WISP) $(BROWSERIFY) browserify.wisp core
+dist/wisp.js: engine/browser.js $(WISP) $(BROWSERIFY) browserify.wisp core recompile
 	@mkdir -p dist
-	$(WISP) browserify.wisp > dist/wisp.js
+	$(WISP_CURRENT) browserify.wisp > dist/wisp.js
 
 dist/wisp.min.js: dist/wisp.js $(MINIFY)
 	@mkdir -p dist
 	$(MINIFY) dist/wisp.js > dist/wisp.min.js
-

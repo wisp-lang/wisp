@@ -272,8 +272,7 @@
                     (list? sequence) (apply list (butlast (vec sequence)))
                     (lazy-seq? sequence) (butlast (lazy-seq-value sequence))
                     :else (butlast (seq sequence)))]
-    (if (not (or (nil? items) (empty? items)))
-        items)))
+    (if-not (empty? items) items)))
 
 (defn take
   "Returns a sequence of the first `n` items, or all items if
@@ -290,7 +289,7 @@
   (loop [items sequence, result []]
     (let [head (first items), tail (rest items)]
       (if (and (not (empty? items))
-                    (predicate head))
+               (predicate head))
         (recur tail (conj result head))
         (if (native? sequence) result (apply list result))))))
 
