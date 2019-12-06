@@ -8,7 +8,7 @@
                                        interleave nth lazy-seq set identity-set identity-set?
                                        contains? union difference intersection subset? superset?
                                        unfold iterate cycle infinite-range lazy-map lazy-filter
-                                       lazy-partition]]
+                                       lazy-partition run! dorun doall]]
             [wisp.src.runtime :refer [str int inc dec even? odd? number? set? vals + =]]))
 
 
@@ -655,3 +655,36 @@
        '((0 1) (3 4) (6 10))))
 (is (= (take 3 (lazy-partition 2 3 (infinite-range 10) (range 6)))
        '((0 1) (3 4))))
+
+
+(defn- *side-effects! [f]
+  (let [xs [],  side-effect! (fn [x] (.push! xs x) x),  res (f side-effect!)]
+    [xs (and res (take 2 res))]))       ; taking more would affect test results
+
+(is (= (*side-effects! #(take 0 (lazy-map % (range 3))))
+       [[] nil])
+    "take 0 won't evaluate the lazy sequence")
+
+(is (= (*side-effects! #(run! % (range 3)))
+       [[0 1 2] nil])
+    "run! implements the for-each operation")
+
+(is (= (*side-effects! #(dorun 3 (lazy-map % (infinite-range))))
+       [[0 1 2] nil])
+    "dorun forces evaluation of up to given number of elements and returns nil")
+(is (= (*side-effects! #(dorun (lazy-map % (range 3))))
+       [[0 1 2] nil])
+    "dorun works on finite collections")
+(is (= (*side-effects! #(dorun 5 (lazy-map % (range 3))))
+       [[0 1 2] nil])
+    "dorun works on finite collections")
+
+(is (= (*side-effects! #(doall 3 (lazy-map % (infinite-range))))
+       [[0 1 2] '(0 1)])
+    "doall forces evaluation of up to given number of elements and returns the coll")
+(is (= (*side-effects! #(doall (lazy-map % (range 3))))
+       [[0 1 2] '(0 1)])
+    "doall works on finite collections")
+(is (= (*side-effects! #(doall 5 (lazy-map % (range 3))))
+       [[0 1 2] '(0 1)])
+    "doall works on finite collections")

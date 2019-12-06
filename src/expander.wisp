@@ -377,3 +377,38 @@
   [bindings & body]
   `(if-let ~bindings (do ~@body)))
 (install-macro :when-let expand-when-let)
+
+
+(defn expand-while
+  "Repeatedly executes body while test expression is true. Presumes
+  some side-effect will cause test to become false/nil. Returns nil"
+  [test & body]
+  `(loop []
+     (when ~test ~@body (recur))))
+(install-macro :while expand-while)
+
+
+(defn expand-doto
+  "Evaluates x then calls all of the methods and functions with the
+  value of x supplied at the front of the given arguments.  The forms
+  are evaluated in order.  Returns x.
+  (doto (Map.) (.set :a 1) (.set :b 2))"
+  [x & forms]
+  (let [sym (gensym :doto)]
+    `(let [~sym ~x]
+       ~@(map #(concat [(first %) sym] (rest %)) forms)
+       ~sym)))
+(install-macro :doto expand-doto)
+
+(defn expand-dotimes
+  "bindings => name n
+  Repeatedly executes body (presumably for side-effects) with name
+  bound to integers from 0 through n-1."
+  [bindings & body]
+  (let [name (first bindings),  n (second bindings),  sym (gensym :dotimes)]
+    `(let [~sym ~n]
+       (loop [~name 0]
+         (when (< ~name ~sym)
+           ~@body
+           (recur (inc ~name)))))))
+(install-macro :dotimes expand-dotimes)
