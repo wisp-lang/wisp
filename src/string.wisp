@@ -35,7 +35,7 @@
   [string pattern limit]
   (if (not limit)
     (.split string pattern)
-    (clojure-split string pattern limit)))
+    (clojure-split string pattern (if (> limit 0) limit Infinity))))
 
 (defn split-lines
   "Splits s on \n or \r\n."

@@ -37,10 +37,13 @@
 (set! List.prototype.to-string (seq->string "(" ")"))
 
 (defn- lazy-seq-value [lazy-seq]
-  (if (not (.-realized lazy-seq))
-    (and (set! (.-realized lazy-seq) true)
-         (set! (.-x lazy-seq) (.x lazy-seq)))
-    (.-x lazy-seq)))
+  (if (.-realized lazy-seq)
+    (.-x lazy-seq)
+    (let [x (.x lazy-seq)]
+      (set! (.-realized lazy-seq) true)
+      (if (empty? x)
+        (set! (.-length lazy-seq) 0))
+      (set! (.-x lazy-seq) x))))
 
 (defn- LazySeq [realized x]
   (set! (.-realized this) (or realized false))
@@ -190,17 +193,22 @@
 (defn count
   "Returns number of elements in list"
   [sequence]
+  (if (lazy-seq? sequence) (first sequence))   ; forcing evaluation
   (if (and sequence (number? (.-length sequence)))
     (.-length sequence)
     (let [it (seq sequence)]
       (cond (nil? it)      0
-            (lazy-seq? it) (inc (count (rest it)))
+            (lazy-seq? it) (count (vec it))
             :else          (.-length it)))))
 
 (defn empty?
   "Returns true if list is empty"
   [sequence]
-  (and (not (lazy-seq? sequence)) (identical? (count sequence) 0)))
+  (let [it (seq sequence)]
+    (identical? 0 (if-not (lazy-seq? it)
+                    (count it)
+                    (do (first it)             ; forcing evaluation
+                        (.-length it))))))
 
 (defn first
   "Return first item in a list"
@@ -298,8 +306,8 @@
   [n sequence]
   (loop [taken '()
          items sequence
-         n n]
-    (if (or (identical? n 0) (empty? items))
+         n     (or (int n) 0)]
+    (if (or (<= n 0) (empty? items))
       (reverse taken)
       (recur (cons (first items) taken)
              (rest items)
@@ -414,9 +422,9 @@
       (lazy-seq? sequence)))
 
 (defn- iterator->lseq [iterator]
-  (let [x (.next iterator)]
-    (if-not (.-done x)
-      (lazy-seq (cons (.-value x) (iterator->lseq iterator))))))
+  (unfold #(let [x (.next %)]
+             (if-not (.-done x) [(.-value x) %]))
+          iterator))
 
 (defn- list->vector [source]
   (loop [result []
@@ -432,7 +440,10 @@
   [sequence]
   (cond (nil? sequence) []
         (vector? sequence) (Array.from sequence)
-        (or (list? sequence) (lazy-seq? sequence)) (list->vector sequence)
+        (list? sequence) (list->vector sequence)
+        (lazy-seq? sequence) (let [xs (list->vector sequence)]          ; optimizing count
+                               (set! (.-length sequence) (.-length xs))
+                               xs)
         :else (vec (seq sequence))))
 
 (defn vector [& sequence] sequence)
@@ -572,8 +583,8 @@
   "Returns a lazy sequence; (f x) is expected to return either nil (signifying end of sequence)
   or [y x1] (where y is next sequence item, and x1 is next value of x)"
   [f x]
-  (if-let [next (f x)]
-    (lazy-seq (cons (first next) (unfold f (second next))))))
+  (lazy-seq (if-let [next (f x)]
+              (cons (first next) (unfold f (second next))))))
 
 (defn iterate
   "Returns a lazy sequence of x, (f x), (f (f x)) etc. f must be free of side-effects"
@@ -583,7 +594,8 @@
 (defn cycle
   "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
   [coll]
-  (lazy-seq (concat coll (cycle coll))))
+  (lazy-seq (if-not (empty? coll)
+              (concat coll (cycle coll)))))
 
 (defn infinite-range
   ([] (infinite-range 0))
