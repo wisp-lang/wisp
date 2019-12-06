@@ -26,7 +26,7 @@
   (set! this.head head)
   (set! this.tail (or tail (list)))
   (set! this.length
-    (if (or (nil? this.tail) (number? (.-length this.tail)))
+    (if (or (nil? this.tail) (dictionary? this.tail) (number? (.-length this.tail)))
       (inc (count this.tail))))
   this)
 
