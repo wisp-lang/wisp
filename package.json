@@ -47,7 +47,9 @@
   },
   "scripts": {
     "prepare": "make all",
-    "test": "make test"
+    "test": "make test",
+    "build": "make browser",
+    "repl": "make recompile && node bin/wisp"
   },
   "dependencies": {
     "base64-encode": "~1.0.1",

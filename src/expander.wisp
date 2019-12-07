@@ -4,15 +4,15 @@
                               quote? symbol namespace name gensym
                               unquote? unquote-splicing?]]
             [wisp.sequence :refer [list? list conj partition seq
-                                   empty? map vec every? concat
+                                   empty? map vec set every? concat
                                    first second third rest last
                                    butlast interleave cons count
                                    some assoc reduce filter seq?
-                                   lazy-seq]]
+                                   lazy-seq range reverse dorun]]
             [wisp.runtime :refer [nil? dictionary? vector? keys
                                   vals string? number? boolean?
                                   date? re-pattern? even? = max
-                                  inc dec dictionary subs]]
+                                  inc dec dictionary merge subs]]
             [wisp.string :refer [split]]))
 
 
@@ -412,3 +412,60 @@
            ~@body
            (recur (inc ~name)))))))
 (install-macro :dotimes expand-dotimes)
+
+
+(defn- for-step [context loop & modifiers]
+  (let [iter  (:iter context),  coll (:coll context),  body (:body context),  subseq (:subseq context)
+        body* (if-not subseq body `(let [~subseq ~body]
+                                     (if (empty? ~subseq)
+                                       (recur (rest ~coll))
+                                       (lazy-concat ~subseq (~iter (rest ~coll))))))
+        next  (loop [mods (reverse modifiers), body body*]
+                (if (empty? mods)
+                  body
+                  (let [m (first mods),  item (first m),  arg (second m)]
+                    (recur (rest mods)
+                           (cond (= item ':let)   `(let ~arg ~body)
+                                 (= item ':while) `(if ~arg ~body)
+                                 (= item ':when)  `(if ~arg ~body (recur (rest ~coll))))))))]
+    (merge context
+           {:subseq (gensym :subseq)
+            :body   `((fn ~iter [~coll]
+                        (lazy-seq (loop [~coll ~coll]
+                                    (if-not (empty? ~coll)
+                                      (let [~(first loop) (first ~coll)] ~next)))))
+                      ~(second loop))})))
+
+(def ^:private for-modifiers #{':let ':while ':when})
+
+(defn- for-parts [seq-expr-pairs]
+  (let [n        (count seq-expr-pairs)
+        indices  (filter #(-> (aget seq-expr-pairs %) first for-modifiers not)
+                         (range n))
+        segments (partition 2 1 (conj indices n))]
+    (map #(.slice seq-expr-pairs (first %) (second %))
+         segments)))
+
+(defn expand-for
+  "List comprehension. Takes a vector of one or more
+   binding-form/collection-expr pairs, each followed by zero or more
+   modifiers, and yields a lazy sequence of evaluations of expr.
+   Collections are iterated in a nested fashion, rightmost fastest,
+   and nested coll-exprs can refer to bindings created in prior
+   binding-forms.  Supported modifiers are: :let [binding-form expr ...],
+   :while test, :when test.
+  (take 100 (for [x (infinite-range), y (infinite-range), :while (< y x)]  [x y]))"
+  [seq-exprs body-expr]
+  (let [iter  (gensym :iter), coll (gensym :coll), parts (for-parts (partition 2 seq-exprs))]
+    (:body (reduce #(apply for-step %1 %2)
+                   {:iter iter, :coll coll, :body `(cons ~body-expr (~iter (rest ~coll)))}
+                   (reverse parts)))))
+(install-macro :for expand-for)
+
+(defn expand-doseq
+  "Repeatedly executes body (presumably for side-effects) with
+  bindings and filtering as provided by 'for'. Does not retain
+  the head of the sequence. Returns nil."
+  [seq-exprs & body]
+  `(dorun (for ~seq-exprs (do ~@body nil))))
+(install-macro :doseq expand-doseq)

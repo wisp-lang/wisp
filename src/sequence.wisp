@@ -612,6 +612,14 @@
                    :else          (recur (rest xs))))
           (seq sequence)))
 
+(defn lazy-concat [& sequences]
+  (if-not (empty? sequences)
+    ((fn iter [xs]
+       (lazy-seq (if (empty? xs)
+                   (apply lazy-concat (rest sequences))
+                   (cons (first xs) (iter (rest xs))))))
+     (seq (first sequences)))))
+
 (defn lazy-partition
   ([n coll] (lazy-partition n n coll))
   ([n step coll] (lazy-partition n step [] coll))

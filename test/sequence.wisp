@@ -8,7 +8,7 @@
                                        interleave nth lazy-seq set identity-set identity-set?
                                        contains? union difference intersection subset? superset?
                                        unfold iterate cycle infinite-range lazy-map lazy-filter
-                                       lazy-partition run! dorun doall]]
+                                       lazy-concat lazy-partition run! dorun doall]]
             [wisp.src.runtime :refer [str int inc dec even? odd? number? set? vals + =]]))
 
 
@@ -647,6 +647,9 @@
 (is (= (take 5 (lazy-filter odd? (infinite-range)))
        '(1 3 5 7 9)))
 
+(is (= (take 10 (lazy-concat (range 5) "abc" (infinite-range -1 -1)))
+       '(0 1 2 3 4 \a \b \c -1 -2)))
+
 (is (= (take 3 (lazy-partition 2 (infinite-range)))
        '((0 1) (2 3) (4 5))))
 (is (= (take 3 (lazy-partition 2 3 (infinite-range)))
@@ -664,6 +667,19 @@
 (is (= (*side-effects! #(take 0 (lazy-map % (range 3))))
        [[] nil])
     "take 0 won't evaluate the lazy sequence")
+
+(is (= (*side-effects! #(take 1 (lazy-concat (lazy-map % (range 5))
+                                             (lazy-map % "abc")
+                                             (lazy-map % (infinite-range -1 -1)))))
+       [[0] '(0)]))
+(is (= (*side-effects! #(take 6 (lazy-concat (lazy-map % (range 5))
+                                             (lazy-map % "abc")
+                                             (lazy-map % (infinite-range -1 -1)))))
+       [[0 1 2 3 4 :a] '(0 1)]))
+(is (= (*side-effects! #(take 9 (lazy-concat (lazy-map % (range 5))
+                                             (lazy-map % "abc")
+                                             (lazy-map % (infinite-range -1 -1)))))
+       [[0 1 2 3 4 :a :b :c -1] '(0 1)]))
 
 (is (= (*side-effects! #(run! % (range 3)))
        [[0 1 2] nil])
