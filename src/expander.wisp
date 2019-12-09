@@ -1,19 +1,19 @@
 (ns wisp.expander
   "wisp syntax and macro expander module"
-  (:require [wisp.ast :refer [meta with-meta symbol? keyword?
+  (:require [wisp.ast :refer [meta with-meta symbol? keyword? keyword
                               quote? symbol namespace name gensym
                               unquote? unquote-splicing?]]
-            [wisp.sequence :refer [list? list conj partition seq
-                                   empty? map vec set every? concat
-                                   first second third rest last
-                                   butlast interleave cons count
-                                   some assoc reduce filter seq?
-                                   lazy-seq range reverse dorun]]
-            [wisp.runtime :refer [nil? dictionary? vector? keys
+            [wisp.sequence :refer [list? list conj partition seq repeatedly
+                                   empty? map mapv vec set every? concat
+                                   first second third rest last mapcat nth
+                                   butlast interleave cons count take dissoc
+                                   some assoc reduce filter seq? zipmap
+                                   lazy-seq range reverse dorun map-indexed]]
+            [wisp.runtime :refer [nil? dictionary? vector? keys get
                                   vals string? number? boolean?
                                   date? re-pattern? even? = max
                                   inc dec dictionary merge subs]]
-            [wisp.string :refer [split]]))
+            [wisp.string :refer [split join capitalize]]))
 
 
 (def **macros** {})
@@ -429,7 +429,7 @@
                                  (= item ':while) `(if ~arg ~body)
                                  (= item ':when)  `(if ~arg ~body (recur (rest ~coll))))))))]
     (merge context
-           {:subseq (gensym :subseq)
+           {:subseq (gensym :for-subseq)
             :body   `((fn ~iter [~coll]
                         (lazy-seq (loop [~coll ~coll]
                                     (if-not (empty? ~coll)
@@ -456,7 +456,7 @@
    :while test, :when test.
   (take 100 (for [x (infinite-range), y (infinite-range), :while (< y x)]  [x y]))"
   [seq-exprs body-expr]
-  (let [iter  (gensym :iter), coll (gensym :coll), parts (for-parts (partition 2 seq-exprs))]
+  (let [iter (gensym :for-iter), coll (gensym :for-coll), parts (for-parts (partition 2 seq-exprs))]
     (:body (reduce #(apply for-step %1 %2)
                    {:iter iter, :coll coll, :body `(cons ~body-expr (~iter (rest ~coll)))}
                    (reverse parts)))))
@@ -469,3 +469,126 @@
   [seq-exprs & body]
   `(dorun (for ~seq-exprs (do ~@body nil))))
 (install-macro :doseq expand-doseq)
+
+
+(defn- sym* [string]
+  (let [words (split (name string) #"-")]
+    (join (cons (first words) (map capitalize (rest words))))))
+(defn- bind-sym* [s b]
+  (assert (symbol? s) "Expected a symbol here!")
+  [s b])
+(defn- conj-syms* [get* result k v f quote]
+  (let [k-ns (namespace k), g #(f k-ns (name %))]
+    (vec (concat result (mapcat #(bind-sym* % (get* % (g %) quote))
+                                v)))))
+(defn- dict-get* [dict-name defaults]
+  (fn [binding key quote]
+    (let [s (name key)
+          k (keyword (namespace key) (if (symbol? key) (sym* s) s))]
+      `(get ~dict-name ~(if-not quote k `'~k) ~(and binding (aget defaults binding))))))
+
+(defn destructure-dict [binding from]
+  (let [dict-name  (or (aget binding ':as) (gensym :destructure-bind))
+        dict-bind  `(if (dictionary? ~dict-name) ~dict-name (apply dictionary (vec ~dict-name)))
+        get*       (dict-get* dict-name (get binding ':or {}))]
+    (loop [ks (keys (dissoc binding ':as ':or)), result [dict-name from, dict-name dict-bind]]
+      (if (empty? ks)
+        result
+        (let [k (first ks), v (get binding k), k* (and (keyword? k) (name k))]
+          (assert (or (symbol? k) (and k* (#{:keys :strs :syms} k*)))
+                  (str "Invalid destructure key " k))
+          (recur (rest ks) (cond (= k* :strs) (conj-syms* get* result k v keyword)
+                                 (= k* :syms) (conj-syms* get* result k v #(symbol %1 (sym* %2)))
+                                 (= k* :keys) (conj-syms* get* result k v keyword :quote)
+                                 (number? v)  (conj result k (get* k (symbol (str v))))
+                                 :else        (conj result k (get* k v)))))))))
+
+(defn destructure-seq [binding from]
+  (let [as       (.find-index binding #(= % ':as))
+        seq-name (if (< as 0) (gensym :destructure-bind) (nth binding (inc as)))
+        binding1 (if (< as 0) binding (take as binding))
+        more     (.find-index binding1 #(= % '&))
+        tail     (if (>= more 0) (nth binding1 (inc more)))
+        binding2 (if (< more 0) binding1 (take more binding))]
+    (assert (or (< as 0) (= as (- (count binding) 2)))
+            "invalid :as in seq-destructuring")
+    (assert (or (< more 0) (= more (- (count binding1) 2)))
+            "invalid & in seq-destructuring")
+    (loop [xs binding2, i 0, result [seq-name from]]
+      (let [x (first xs)]
+        (cond (empty? xs) (if-not tail result (conj result tail `(drop ~more ~seq-name)))
+              (= x '_)    (recur (rest xs) (inc i) result)
+              :else       (recur (rest xs) (inc i) (conj result x `(nth ~seq-name ~i))))))))
+
+(defn destructure [bindings]
+  (let [pairs (partition 2 bindings)]
+    (if (every? #(symbol? (first %)) pairs)
+      bindings
+      (destructure (vec (mapcat #(cond (vector?     (first %)) (apply destructure-seq %)
+                                       (dictionary? (first %)) (apply destructure-dict %)
+                                       (symbol?     (first %)) %
+                                       :else                   (throw "Invalid binding"))
+                                pairs))))))
+
+(defn- bind-names* [keys]
+  (zipmap keys (repeatedly (count keys) #(gensym :destructure-bind))))
+(defn- bind-indices* [names]
+  (filter #(not (symbol? (nth names %))) (range (count names))))
+
+(defn expand-let
+  "binding => binding-form init-expr
+
+  Evaluates the exprs in a lexical context in which the symbols in
+  the binding-forms are bound to their respective init-exprs or parts
+  therein."
+  [bindings & body]
+  `(let* ~(destructure bindings) ~@body))
+(install-macro :let expand-let)
+
+(defn expand-fn
+  "(fn name? [params*] exprs*)
+   (fn name? ([params*] exprs*) +)
+
+  params => positional-params* , or positional-params* & next-param
+  positional-param => binding-form
+  next-param => binding-form
+  name => symbol
+
+  Defines a function"
+  [& args]
+  (let [name (if (symbol? (first args)) (first args))
+        defs (if name (rest args) args)
+        mkfn #(if name `(fn* ~name ~@%) `(fn* ~@%))
+        def* (fn [args & body]
+               (let [indices (bind-indices* args), names (bind-names* indices)]
+                 (if (empty? names)
+                   (cons args body)
+                   `(~(vec (map-indexed #(get names %1 %2) args))
+                      (let ~(vec (mapcat (fn [i] [(aget args i) (aget names i)])
+                                         indices))
+                        ~@body)))))]
+    (if (vector? (first defs))
+      (mkfn (apply def* defs))
+      (mkfn (map #(apply def* (vec %)) defs)))))
+(install-macro :fn expand-fn)
+
+(defn expand-loop
+  "Evaluates the exprs in a lexical context in which the symbols in
+  the binding-forms are bound to their respective init-exprs or parts
+  therein. Acts as a recur target."
+  [bindings & body]
+  (let [pairs   (partition 2 bindings)
+        indices (bind-indices* (mapv first pairs))
+        names   (bind-names* indices)
+        get*    #(if-let [x (aget names %1)]
+                   [x (second %2) (first %2) x]
+                   %2)]
+    (if (empty? names)
+      `(loop* ~bindings ~@body)
+      `(let ~(vec (apply concat (map-indexed get* pairs)))
+         (loop* ~(vec (apply concat (map-indexed #(let [x (get names %1 (first %2))] [x x])
+                                                 pairs)))
+           (let ~(vec (mapcat (fn [i] [(first (aget pairs i)) (aget names i)])
+                              indices))
+             ~@body))))))
+(install-macro :loop expand-loop)

@@ -23,9 +23,8 @@ escodegen: escodegen-writer escodegen-generator
 node: core wisp node-engine repl
 browser: node core browser-engine dist/wisp.min.js
 all: browser
-test: test1
 
-test1: core node recompile
+test: core node recompile
 	$(WISP_CURRENT) ./test/test.wisp $(FLAGS)
 
 $(BUILD_DEPS):
@@ -44,8 +43,9 @@ clean:
 
 RECOMPILE = backend/escodegen/writer backend/escodegen/generator backend/javascript/writer engine/node engine/browser $(CORE)
 recompile: node browser-engine
-	$(info Recompiling with current version: $(RECOMPILE))
+	$(info Recompiling with current version:)
 	@$(foreach file,$(RECOMPILE),\
+		echo "	$(file)" && \
 		$(WISP_CURRENT) --source-uri wisp/$(file).wisp < src/$(file).wisp > $(file).js~ && \
 		mv $(file).js~ $(file).js &&) echo "...done"
 

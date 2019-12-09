@@ -20,6 +20,12 @@
 (defn ^boolean even? [n]
   (identical? (rem n 2) 0))
 
+(defn get [target key default*]
+  (cond (set? target) (if (.has target key) key default*)
+        :else         (if (and target (.has-own-property target key))
+                        (aget target key)
+                        default*)))
+
 (defn ^boolean dictionary?
   "Returns true if dictionary"
   [form]

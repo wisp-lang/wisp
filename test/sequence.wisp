@@ -1,9 +1,9 @@
 (ns wisp.test.sequence
   (:require [wisp.test.util :refer [is thrown?]]
             [wisp.src.sequence :refer [cons conj into disj list list? empty seq vec vector
-                                       range empty? count first second third rest last
-                                       butlast take take-while drop drop-while repeat concat
-                                       mapcat reverse sort map mapv map-indexed filter
+                                       range empty? count first second third rest last butlast
+                                       take take-while drop drop-while repeatedly repeat concat
+                                       mapcat reverse sort map mapv map-indexed filter zipmap
                                        filterv reduce assoc dissoc every? some partition
                                        interleave nth lazy-seq set identity-set identity-set?
                                        contains? union difference intersection subset? superset?
@@ -360,6 +360,7 @@
        ["0a,foo" "1b,bar" "2c,baz"]))
 (is (= (map-indexed + #{\a \b \c}) '("0a" "1b" "2c")))
 
+(is (= (zipmap "abcde" (range 3)) {:a 0, :b 1, :c 2}))
 
 
 (is (= (filter even? nil) '()))
@@ -472,6 +473,8 @@
 (is (= (sort '("hello" "my" "dear" "frient"))
        '("dear" "frient" "hello" "my")))
 (is (= (sort (Set. [3 1 2 4])) '(1 2 3 4)))
+
+(is (= (repeatedly 5 #(* 6 7)) [42 42 42 42 42]))
 
 (is (= (repeat 4 7)  [7 7 7 7]))
 (is (= (repeat 0 7)  []))
@@ -586,6 +589,7 @@
 (is (= (nth [1 2 3 4] 2) 3))
 (is (= (nth [1 2 3 4] 0) 1))
 (is (= (nth (seq {:foo 1 :bar 2}) 1) [:bar 2]))
+(is (= (nth (Map. [[1 2] [3 4]]) 1) [3 4]))
 
 
 (is (contains? #{2 1 3} 3)           "contains? on sets checks for membership")

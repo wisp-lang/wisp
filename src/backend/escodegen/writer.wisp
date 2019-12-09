@@ -846,9 +846,13 @@
 
 
 (defn get-macro
-  [target property]
-  `(aget (or ~target 0)
-         ~property))
+  ([target property]
+   `(aget (or ~target 0)
+          ~property))
+  ([target property default*]
+    (if (nil? default*)
+      `(get ~target ~property)
+      `(apply get ~[target property default*]))))
 (install-macro! :get get-macro)
 
 ;; Logical operators

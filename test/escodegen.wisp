@@ -330,14 +330,14 @@
 ;; functions
 
 
-(is (= (transpile "(fn [] (+ x y))")
+(is (= (transpile "(fn* [] (+ x y))")
 "(function () {
     return x + y;
 });"))
 
 ;; =>
 
-(is (= (transpile "(fn [x] (def y 7) (+ x y))")
+(is (= (transpile "(fn* [x] (def y 7) (+ x y))")
 "(function (x) {
     var y = 7;
     return x + y;
@@ -345,98 +345,98 @@
 
 ;; =>
 
-(is (= (transpile "(fn [])")
+(is (= (transpile "(fn* [])")
 "(function () {
     return void 0;
 });"))
 
 ;; =>
 
-(is (= (transpile "(fn ([]))")
+(is (= (transpile "(fn* ([]))")
 "(function () {
     return void 0;
 });"))
 
 ;; =>
 
-(is (= (transpile "(fn ([]))")
+(is (= (transpile "(fn* ([]))")
 "(function () {
     return void 0;
 });"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn a b)")
+(is (thrown? (transpile "(fn* a b)")
              #"parameter declaration \(b\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn a ())")
+(is (thrown? (transpile "(fn* a ())")
              #"parameter declaration \(\(\)\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn a (b))")
+(is (thrown? (transpile "(fn* a (b))")
              #"parameter declaration \(\(b\)\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn)")
+(is (thrown? (transpile "(fn*)")
              #"parameter declaration \(nil\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn {} a)")
+(is (thrown? (transpile "(fn* {} a)")
              #"parameter declaration \({}\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn ([]) a)")
+(is (thrown? (transpile "(fn* ([]) a)")
              #"Malformed fn overload form"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn ([]) (a))")
+(is (thrown? (transpile "(fn* ([]) (a))")
              #"Malformed fn overload form"))
 
 ;; =>
 
-(is (= (transpile "(fn [x] x)")
+(is (= (transpile "(fn* [x] x)")
        "(function (x) {\n    return x;\n});")
     "function compiles")
 
 ;; =>
 
-(is (= (transpile "(fn [x] (def y 1) (foo x y))")
+(is (= (transpile "(fn* [x] (def y 1) (foo x y))")
        "(function (x) {\n    var y = 1;\n    return foo(x, y);\n});")
     "function with multiple statements compiles")
 
 ;; =>
 
-(is (= (transpile "(fn identity [x] x)")
+(is (= (transpile "(fn* identity [x] x)")
                   "(function identity(x) {\n    return x;\n});")
     "named function compiles")
 
 ;; =>
 
-(is (thrown? (transpile "(fn \"doc\" a [x] x)")
+(is (thrown? (transpile "(fn* \"doc\" a [x] x)")
              #"parameter declaration (.*) must be a vector"))
 
 ;; =>
 
-(is (= (transpile "(fn foo? ^boolean [x] true)")
+(is (= (transpile "(fn* foo? ^boolean [x] true)")
        "(function isFoo(x) {\n    return true;\n});")
     "metadata is supported")
 
 ;; =>
 
-(is (= (transpile "(fn ^:static x [y] y)")
+(is (= (transpile "(fn* ^:static x [y] y)")
        "(function x(y) {\n    return y;\n});")
     "fn name metadata")
 
 ;; =>
 
-(is (= (transpile "(fn [a & b] a)")
+(is (= (transpile "(fn* [a & b] a)")
 "(function (a) {
     var b = Array.prototype.slice.call(arguments, 1);
     return a;
@@ -444,7 +444,7 @@
 
 ;; =>
 
-(is (= (transpile "(fn [& a] a)")
+(is (= (transpile "(fn* [& a] a)")
 "(function () {
     var a = Array.prototype.slice.call(arguments, 0);
     return a;
@@ -453,7 +453,7 @@
 
 ;; =>
 
-(is (= (transpile "(fn
+(is (= (transpile "(fn*
                      ([] 0)
                      ([x] x))")
 "(function () {
@@ -470,7 +470,7 @@
 
 ;; =>
 
-(is (= (transpile "(fn sum
+(is (= (transpile "(fn* sum
                     ([] 0)
                     ([x] x)
                     ([x y] (+ x y))
@@ -499,7 +499,7 @@
 
 ;; =>
 
-(is (= (transpile "(fn vector->list [v] (make list v))")
+(is (= (transpile "(fn* vector->list [v] (make list v))")
 "(function vectorToList(v) {
     return make(list, v);
 });"))
@@ -563,7 +563,7 @@
     return plus(a, b);
 })();"))
 
-(is (= (transpile "(fn [a]
+(is (= (transpile "(fn* [a]
                     (do
                       (def b 2)
                       (plus a b)))")
@@ -578,21 +578,21 @@
 
 ;; Let
 
-(is (= (transpile "(let [])")
+(is (= (transpile "(let* [])")
 "(function () {
     return void 0;
 }.call(this));"))
 
 ;; =>
 
-(is (= (transpile "(let [] x)")
+(is (= (transpile "(let* [] x)")
 "(function () {
     return x;
 }.call(this));"))
 
 ;; =>
 
-(is (= (transpile "(let [x 1 y 2] (+ x y))")
+(is (= (transpile "(let* [x 1 y 2] (+ x y))")
 "(function () {
     var xø1 = 1;
     var yø1 = 2;
@@ -601,8 +601,8 @@
 
 ;; =>
 
-(is (= (transpile "(let [x y
-                         y x]
+(is (= (transpile "(let* [x y
+                          y x]
                      [x y])")
 "(function () {
     var xø1 = y;
@@ -615,7 +615,7 @@
 
 ;; =>
 
-(is (= (transpile "(let []
+(is (= (transpile "(let* []
                      (+ x y))")
 "(function () {
     return x + y;
@@ -623,8 +623,8 @@
 
 ;; =>
 
-(is (= (transpile "(let [x 1
-                         y y]
+(is (= (transpile "(let* [x 1
+                          y y]
                      (+ x y))")
 "(function () {
     var xø1 = 1;
@@ -635,9 +635,9 @@
 
 ;; =>
 
-(is (= (transpile "(let [x 1
-                         x (inc x)
-                         x (dec x)]
+(is (= (transpile "(let* [x 1
+                          x (inc x)
+                          x (dec x)]
                      (+ x 5))")
 "(function () {
     var xø1 = 1;
@@ -648,9 +648,9 @@
 
 ;; =>
 
-(is (= (transpile "(let [x 1
-                         y (inc x)
-                         x (dec x)]
+(is (= (transpile "(let* [x 1
+                          y (inc x)
+                          x (dec x)]
                      (if x y (+ x 5)))")
 "(function () {
     var xø1 = 1;
@@ -661,7 +661,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [x x] (fn [] x))")
+(is (= (transpile "(let* [x x] (fn* [] x))")
 "(function () {
     var xø1 = x;
     return function () {
@@ -671,7 +671,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [x x] (fn [x] x))")
+(is (= (transpile "(let* [x x] (fn* [x] x))")
 "(function () {
     var xø1 = x;
     return function (x) {
@@ -681,7 +681,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [x x] (fn x [] x))")
+(is (= (transpile "(let* [x x] (fn* x [] x))")
 "(function () {
     var xø1 = x;
     return function x() {
@@ -691,7 +691,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [x x] (< x 2))")
+(is (= (transpile "(let* [x x] (< x 2))")
 "(function () {
     var xø1 = x;
     return xø1 < 2;
@@ -699,7 +699,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [a a] a.a)")
+(is (= (transpile "(let* [a a] a.a)")
 "(function () {
     var aø1 = a;
     return aø1.a;
@@ -874,7 +874,7 @@
 ;; loop
 
 
-(is (= (transpile "(loop [x 10]
+(is (= (transpile "(loop* [x 10]
                         (if (< x 7)
                           (print x)
                           (recur (- x 2))))")
@@ -889,7 +889,7 @@
 
 ;; =>
 
-(is (= (transpile "(loop [forms forms
+(is (= (transpile "(loop* [forms forms
                              result []]
                         (if (empty? forms)
                           result

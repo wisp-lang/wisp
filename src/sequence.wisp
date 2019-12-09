@@ -1,7 +1,7 @@
 (ns wisp.sequence
   (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary? set?
                                   key-values str int dec inc min merge dictionary
-                                  iterable? = complement identity]]))
+                                  iterable? = complement identity get]]))
 
 ;; Implementation of list
 
@@ -64,7 +64,7 @@
 
 (defn identity-set [& items]
   (let [js-set (Set. items)
-        f      (fn get [x y] (if (js-set.has x) x y))]
+        f      #(get js-set %1 %2)]
     (clone-proto-props! js-set f)
     (set! f.to-string (seq->string "#{" "}"))
     (set! f.__proto__ js-set)
@@ -104,9 +104,8 @@
 
 (defn ^boolean sequential?
   "Returns true if coll satisfies ISequential"
-  [x] (or (list? x)
+  [x] (or (seq? x)
           (vector? x)
-          (lazy-seq? x)
           (dictionary? x)
           (set? x)
           (string? x)))
@@ -160,11 +159,10 @@
   "Returns a sequence of the items in coll for which (f? item) returns true.
   f? must be free of side-effects."
   [f? sequence]
-  (cond (vector? sequence) (.filter sequence #(f? %))
-        (list? sequence) (filter-list f? sequence)
-        (nil? sequence) '()
-        (lazy-seq? sequence) (filter-list f? sequence)
-        :else (filter f? (seq sequence))))
+  (cond (nil? sequence)    '()
+        (seq? sequence)    (filter-list f? sequence)
+        (vector? sequence) (.filter sequence #(f? %))
+        :else              (filter f? (seq sequence))))
 
 (defn- filter-list
   "Like filter but for lists"
@@ -354,8 +352,7 @@
   (cond (vector? sequence) (.concat sequence items)
         (string? sequence) (str sequence (apply str items))
         (nil? sequence) (apply list (reverse items))
-        (or (list? sequence)
-            (lazy-seq? sequence)) (conj-list sequence items)
+        (seq? sequence) (conj-list sequence items)
         (dictionary? sequence) (merge sequence (apply merge (mapv ensure-dictionary items)))
         (set? sequence) (apply identity-set (into (vec sequence) items))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
@@ -371,6 +368,9 @@
 (defn into
   [to from]
   (apply conj to (vec from)))
+
+(defn zipmap [keys vals]
+  (into {} (map vector keys vals)))
 
 (defn assoc
   [source & key-values]
@@ -405,15 +405,20 @@
         (vector? sequence)     []
         (string? sequence)     ""
         (dictionary? sequence) {}
-        (set? sequence)        #{}))
+        (set? sequence)        #{}
+        (lazy-seq? sequence)   (lazy-seq)))
 
 (defn seq [sequence]
   (cond (nil? sequence) nil
-        (or (vector? sequence) (list? sequence) (lazy-seq? sequence)) sequence
+        (or (vector? sequence) (seq? sequence)) sequence
         (string? sequence) (.call Array.prototype.slice sequence)
         (dictionary? sequence) (key-values sequence)
         (iterable? sequence) (iterator->lseq ((get sequence Symbol.iterator)))
         :default (throw (TypeError (str "Can not seq " sequence)))))
+
+(defn seq* [sequence]
+  (let [it (seq sequence)]
+    (if-not (empty? it) it)))
 
 (defn seq? [sequence]
   (or (list? sequence)
@@ -465,17 +470,19 @@
           :else           (apply list result))))
 
 
+(defn repeatedly
+  "Takes a function of no args, presumably with side effects, and
+  returns vector of given `n` length with calls to it"
+  [n f]
+  (Array.from {:length n} f))
+
 (defn repeat
-  "Returns a vector of given `n` length with of given `x`
+  "Returns a vector of given `n` length with given `x`
   items. Not compatible with clojure as it's not a lazy
   and only finite repeats are supported"
   [n x]
-  (loop [n      (int n)
-         result []]
-    (if (<= n 0)
-      result
-      (recur (dec n)
-             (conj result x)))))
+  (repeatedly n (fn [] x)))
+
 
 (defn every?
   [predicate sequence]
@@ -521,16 +528,16 @@
 (defn nth
   "Returns nth item of the sequence"
   [sequence index not-found]
-  (cond (nil? sequence) not-found
-        (list? sequence) (if (< index (count sequence))
-                           (first (drop index sequence))
-                           not-found)
-        (or (vector? sequence)
-            (string? sequence)) (if (< index (count sequence))
-                                  (aget sequence index)
-                                  not-found)
-        (lazy-seq? sequence) (nth (lazy-seq-value sequence) index not-found)
-        :else (throw (TypeError "Unsupported type"))))
+  (let [sequence (seq* sequence)]
+    (cond (nil? sequence) not-found
+          (seq? sequence) (if-let [it (seq* (drop index sequence))]
+                            (first it)
+                            not-found)
+          (or (vector? sequence)
+              (string? sequence)) (if (< index (count sequence))
+                                    (aget sequence index)
+                                    not-found)
+          :else (throw (TypeError "Unsupported type")))))
 
 
 (defn contains?

@@ -49,6 +49,7 @@
     "prepare": "make all",
     "test": "make test",
     "build": "make browser",
+    "clean": "make clean",
     "repl": "make recompile && node bin/wisp"
   },
   "dependencies": {
