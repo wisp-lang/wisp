@@ -6,380 +6,281 @@
             [wisp.src.runtime :refer [=]]))
 
 
+;; repeating templates
+
+(defn- *unresolved [name]
+  {:op         :unresolved-binding
+   :type       :unresolved-binding
+   :start      nil
+   :end        nil
+   :identifier {:type :identifier
+                :form name}})
+
+(defn- *bound-var [name binding]
+  {:op      :var
+   :form    name
+   :type    :identifier
+   :start   nil
+   :end     nil
+   :binding binding})
+
+(defn- *var [name]
+  (*bound-var name (*unresolved name)))
+
+(defn- *symbol [name]
+  (*bound-var name nil))
+
+(defn- *value [value]
+  {:op   :constant
+   :form value})
+
+(defn- *binding [form depth name value]
+  {:op     :binding
+   :form   form
+   :type   :binding
+   :depth  depth
+   :id     name
+   :shadow (*unresolved name)
+   :init   value})
+
+(defn- *param [name depth shadow]
+  {:op     :param
+   :form   name
+   :type   :parameter
+   :id     name
+   :depth  depth
+   :start  nil
+   :end    nil
+   :shadow shadow})
+
+(defn- *param1 [name depth shadow]
+  (*param name 1 (*unresolved name)))
+
+(defn- *id [name depth shadow]
+  {:op     :var
+   :form   name
+   :type   :identifier
+   :id     name
+   :depth  depth
+   :start  nil
+   :end    nil
+   :shadow shadow})
+
+(defn- *id0 [name]
+  (*id name 0 (*unresolved name)))
+
+(defn- *aget [form computed target property]
+  {:op       :member-expression
+   :form     form
+   :computed computed
+   :start    nil
+   :end      nil
+   :target   target
+   :property property})
+
+
+;; tests
+
 (is (= (analyze {} ':foo)
-       {:op :constant
-        :env {}
-        :form ':foo}))
+       (*value ':foo)))
 
 (is (= (analyze {} "bar")
-       {:op :constant
-        :env {}
-        :form "bar"}))
+       (*value "bar")))
 
 (is (= (analyze {} true)
-       {:op :constant
-        :env {}
-        :form true}))
+       (*value true)))
 
 (is (= (analyze {} false)
-       {:op :constant
-        :env {}
-        :form false}))
+       (*value false)))
 
 (is (= (analyze {} nil)
-       {:op :constant
-        :env {}
-        :form nil}))
+       (*value nil)))
 
 (is (= (analyze {} 7)
-       {:op :constant
-        :env {}
-        :form 7}))
+       (*value 7)))
 
 (is (= (analyze {} #"foo")
-       {:op :constant
-        :env {}
-        :form #"foo"}))
+       (*value #"foo")))
 
 (is (= (analyze {} 'foo)
-       {:op :var
-        :env {}
-        :form 'foo
-        :info nil}))
+       (*var 'foo)))
 
 (is (= (analyze {} '[])
-       {:op :vector
-        :env {}
-        :form '[]
+       {:op    :vector
+        :form  '[]
         :items []}))
 
 (is (= (analyze {} '[:foo bar "baz"])
-       {:op :vector
-        :env {}
-        :form '[:foo bar "baz"]
-        :items [{:op :constant
-                 :env {}
-                 :form ':foo}
-                {:op :var
-                 :env {}
-                 :form 'bar
-                 :info nil}
-                {:op :constant
-                 :env {}
-                 :form "baz"
-                 }]}))
+       {:op    :vector
+        :form  '[:foo bar "baz"],
+        :items [(*value ':foo)
+                (*var 'bar)
+                (*value "baz")]}))
 
 (is (= (analyze {} {})
-       {:op :dictionary
-        :env {}
-        :form {}
-        :hash? true
-        :keys []
+       {:op     :dictionary
+        :form   {}
+        :keys   []
         :values []}))
 
 (is (= (analyze {} {:foo 'bar})
-       {:op :dictionary
-        :keys [{:op :constant
-                :env {}
-                :form "foo"}]
-        :values [{:op :var
-                  :env {}
-                  :form 'bar
-                  :info nil}]
-        :hash? true
-        :env {}
-        :form {:foo 'bar}}))
+       {:op     :dictionary
+        :form   '{"foo" bar}      ; emitted keys are converted to strings...
+        :keys   [(*value "foo")]
+        :values [(*var 'bar)]}))
 
 (is (= (analyze {} ())
-       {:op :constant
-        :env {}
-        :form ()}))
+       {:op    :list
+        :form  '()
+        :start nil
+        :end   nil
+        :items []}))
 
 (is (= (analyze {} '(foo))
-       {:op :invoke
-        :callee {:op :var
-                 :env {}
-                 :form 'foo
-                 :info nil}
+       {:op     :invoke
+        :form   '(foo)
         :params []
-        :tag nil
-        :form '(foo)
-        :env {}}))
+        :callee (*var 'foo)}))
 
 
 (is (= (analyze {} '(foo bar))
-       {:op :invoke
-        :callee {:op :var
-                 :env {}
-                 :form 'foo
-                 :info nil}
-        :params [{:op :var
-                  :env {}
-                  :form 'bar
-                  :info nil}]
-        :tag nil
-        :form '(foo bar)
-        :env {}}))
+       {:op     :invoke
+        :form   '(foo bar)
+        :callee (*var 'foo)
+        :params [(*var 'bar)]}))
+
 
 (is (= (analyze {} '(aget foo 'bar))
-       {:op :member-expression
-        :computed false
-        :env {}
-        :form '(aget foo 'bar)
-        :target {:op :var
-                 :env {}
-                 :form 'foo
-                 :info nil}
-        :property {:op :var
-                   :env {}
-                   :form 'bar
-                   :info nil}}))
+       (*aget '(aget foo 'bar) false
+              (*var 'foo) (*symbol 'bar))))
+
 
 (is (= (analyze {} '(aget foo bar))
-       {:op :member-expression
-        :computed true
-        :env {}
-        :form '(aget foo bar)
-        :target {:op :var
-                 :env {}
-                 :form 'foo
-                 :info nil}
-        :property {:op :var
-                   :env {}
-                   :form 'bar
-                   :info nil}}))
+       (*aget '(aget foo bar) true
+              (*var 'foo) (*var 'bar))))
+
 
 (is (= (analyze {} '(aget foo "bar"))
-       {:op :member-expression
-        :env {}
-        :form '(aget foo "bar")
-        :computed true
-        :target {:op :var
-                 :env {}
-                 :form 'foo
-                 :info nil}
-        :property {:op :constant
-                   :env {}
-                   :form "bar"}}))
+       (*aget '(aget foo "bar") true
+              (*var 'foo) (*value "bar"))))
+
 
 (is (= (analyze {} '(aget foo :bar))
-       {:op :member-expression
-        :computed true
-        :env {}
-        :form '(aget foo :bar)
-        :target {:op :var
-                 :env {}
-                 :form 'foo
-                 :info nil}
-        :property {:op :constant
-                   :env {}
-                   :form ':bar}}))
+       (*aget '(aget foo :bar) true
+              (*var 'foo) (*value ':bar))))
 
 
-(is (= (analyze {} '(aget foo (beep bar)))
-       {:op :member-expression
-        :env {}
-        :form '(aget foo (beep bar))
-        :computed true
-        :target {:op :var
-                 :env {}
-                 :form 'foo
-                 :info nil}
-        :property {:op :invoke
-                   :env {}
-                   :form '(beep bar)
-                   :tag nil
-                   :callee {:op :var
-                            :form 'beep
-                            :env {}
-                            :info nil}
-                   :params [{:op :var
-                             :form 'bar
-                             :env {}
-                             :info nil}]}}))
-
+(is (= (analyze {} '(aget foo (bar baz)))
+       (*aget '(aget foo (bar baz)) true
+              (*var 'foo) {:op     :invoke
+                           :form   '(bar baz)
+                           :callee (*var 'bar)
+                           :params [(*var 'baz)]})))
 
 (is (= (analyze {} '(if x y))
-       {:op :if
-        :env {}
-        :form '(if x y)
-        :test {:op :var
-               :env {}
-               :form 'x
-               :info nil}
-        :consequent {:op :var
-                     :env {}
-                     :form 'y
-                     :info nil}
-        :alternate {:op :constant
-                    :env {}
-                    :form nil}}))
+       {:op         :if
+        :form       '(if x y)
+        :start      nil
+        :end        nil
+        :test       (*var 'x)
+        :consequent (*var 'y)
+        :alternate  (*value nil)}))
 
 (is (= (analyze {} '(if (even? n) (inc n) (+ n 3)))
-       {:op :if
-        :env {}
-        :form '(if (even? n) (inc n) (+ n 3))
-        :test {:op :invoke
-               :env {}
-               :form '(even? n)
-               :tag nil
-               :callee {:op :var
-                        :env {}
-                        :form 'even?
-                        :info nil}
-               :params [{:op :var
-                         :env {}
-                         :form 'n
-                         :info nil}]}
-        :consequent {:op :invoke
-                     :env {}
-                     :form '(inc n)
-                     :tag nil
-                     :callee {:op :var
-                              :env {}
-                              :form 'inc
-                              :info nil}
-                     :params [{:op :var
-                               :env {}
-                               :form 'n
-                               :info nil}]}
-        :alternate {:op :invoke
-                    :env {}
-                    :form '(+ n 3)
-                    :tag nil
-                    :callee {:op :var
-                             :env {}
-                             :form '+
-                             :info nil}
-                    :params [{:op :var
-                              :env {}
-                              :form 'n
-                              :info nil}
-                             {:op :constant
-                              :env {}
-                              :form 3}]}}))
+       {:op         :if
+        :form       '(if (even? n) (inc n) (+ n 3))
+        :start      nil
+        :end        nil
+        :test       {:op     :invoke
+                     :form   '(even? n)
+                     :callee (*var 'even?)
+                     :params [(*var 'n)]}
+        :consequent {:op     :invoke
+                     :form   '(inc n)
+                     :callee (*var 'inc)
+                     :params [(*var 'n)]}
+        :alternate  {:op     :invoke
+                     :form   '(+ n 3)
+                     :callee (*var '+)
+                     :params [(*var 'n)
+                              (*value 3)]}}))
 
 (is (= (analyze {} '(throw error))
-       {:op :throw
-        :env {}
-        :form '(throw error)
-        :throw {:op :var
-                :env {}
-                :form 'error
-                :info nil}}))
+       {:op    :throw
+        :form  '(throw error)
+        :start nil
+        :end   nil
+        :throw (*var 'error)}))
 
 (is (= (analyze {} '(throw (Error "boom!")))
-       {:op :throw
-        :env {}
-        :form '(throw (Error "boom!"))
-        :throw {:op :invoke
-                :tag nil
-                :env {}
-                :form '(Error "boom!")
-                :callee {:op :var
-                         :env {}
-                         :form 'Error
-                         :info nil}
-                :params [{:op :constant
-                          :env {}
-                          :form "boom!"}]}}))
+       {:op    :throw
+        :form  '(throw (Error "boom!"))
+        :start nil
+        :end   nil
+        :throw {:op     :invoke
+                :form   '(Error "boom!")
+                :callee (*var 'Error)
+                :params [(*value "boom!")]}}))
 
 (is (= (analyze {} '(new Error "Boom!"))
-       {:op :new
-        :env {}
-        :form '(new Error "Boom!")
-        :constructor {:op :var
-                      :env {}
-                      :form 'Error
-                      :info nil}
-        :params [{:op :constant
-                  :env {}
-                  :form "Boom!"}]}))
+       {:op          :new
+        :form        '(new Error "Boom!")
+        :start       nil
+        :end         nil
+        :constructor (*var 'Error)
+        :params      [(*value "Boom!")]}))
 
 (is (= (analyze {} '(try (read-string unicode-error)))
-       {:op :try
-        :env {}
-        :form '(try (read-string unicode-error))
-        :body {:env {}
-               :statements nil
-               :result {:op :invoke
-                        :env {}
-                        :form '(read-string unicode-error)
-                        :tag nil
-                        :callee {:op :var
-                                 :env {}
-                                 :form 'read-string
-                                 :info nil}
-                        :params [{:op :var
-                                  :env {}
-                                  :form 'unicode-error
-                                  :info nil}]}}
-        :handler nil
+       {:op        :try
+        :form      '(try (read-string unicode-error))
+        :start     nil
+        :end       nil
+        :body      {:statements nil
+                    :result     {:op     :invoke
+                                 :form   '(read-string unicode-error)
+                                 :callee (*var 'read-string)
+                                 :params [(*var 'unicode-error)]}}
+        :handler   nil
         :finalizer nil}))
+
 
 (is (= (analyze {} '(try
                       (read-string unicode-error)
                       (catch error :throw)))
 
-       {:op :try
-        :env {}
-        :form '(try
-                 (read-string unicode-error)
-                 (catch error :throw))
-        :body {:env {}
-               :statements nil
-               :result {:op :invoke
-                        :env {}
-                        :form '(read-string unicode-error)
-                        :tag nil
-                        :callee {:op :var
-                                 :env {}
-                                 :form 'read-string
-                                 :info nil}
-                        :params [{:op :var
-                                  :env {}
-                                  :form 'unicode-error
-                                  :info nil}]}}
-        :handler {:env {}
-                  :name {:op :var
-                         :env {}
-                         :form 'error
-                         :info nil}
-                  :statements nil
-                  :result {:op :constant
-                           :env {}
-                           :form ':throw}}
+       {:op        :try
+        :form      '(try (read-string unicode-error) (catch error :throw))
+        :start     nil
+        :end       nil
+        :body      {:statements nil
+                    :result     {:op     :invoke
+                                 :form   '(read-string unicode-error)
+                                 :callee (*var 'read-string)
+                                 :params [(*var 'unicode-error)]}}
+        :handler   {:name       (*var 'error)
+                    :statements nil
+                    :result     (*value ':throw)}
         :finalizer nil}))
+
 
 (is (= (analyze {} '(try
                       (read-string unicode-error)
                       (finally :end)))
 
-       {:op :try
-        :env {}
-        :form '(try
-                 (read-string unicode-error)
-                 (finally :end))
-        :body {:env {}
-               :statements nil
-               :result {:op :invoke
-                        :env {}
-                        :form '(read-string unicode-error)
-                        :tag nil
-                        :callee {:op :var
-                                 :env {}
-                                 :form 'read-string
-                                 :info nil}
-                        :params [{:op :var
-                                  :env {}
-                                  :form 'unicode-error
-                                  :info nil}]}}
-        :handler nil
-        :finalizer {:env {}
-                    :statements nil
-                    :result {:op :constant
-                             :env {}
-                             :form ':end}}}))
+       {:op        :try
+        :form      '(try
+                      (read-string unicode-error)
+                      (finally :end))
+        :start     nil
+        :end       nil
+        :body      {:statements nil
+                    :result     {:op     :invoke
+                                 :form   '(read-string unicode-error)
+                                 :callee (*var 'read-string)
+                                 :params [(*var 'unicode-error)]}}
+        :handler   nil
+        :finalizer {:statements nil
+                    :result     (*value ':end)}}))
 
 
 (is (= (analyze {} '(try (read-string unicode-error)
@@ -389,693 +290,369 @@
                       (finally
                        (print "done")
                        :end)))
-       {:op :try
-        :env {}
-        :form '(try (read-string unicode-error)
-                 (catch error
-                   (print error)
-                   :error)
-                 (finally
-                  (print "done")
-                  :end))
-        :body {:env {}
-               :statements nil
-               :result {:op :invoke
-                        :env {}
-                        :form '(read-string unicode-error)
-                        :tag nil
-                        :callee {:op :var
-                                 :env {}
-                                 :form 'read-string
-                                 :info nil}
-                        :params [{:op :var
-                                  :env {}
-                                  :form 'unicode-error
-                                  :info nil}]}}
-        :handler {:env {}
-                  :name {:op :var
-                         :env {}
-                         :form 'error
-                         :info nil}
-                  :statements [{:op :invoke
-                                :env {}
-                                :form '((aget console 'log) error)
-                                :tag nil
-                                :callee {:op :member-expression
-                                         :computed false
-                                         :env {}
-                                         :form '(aget console 'log)
-                                         :target {:op :var
-                                                  :env {}
-                                                  :form 'console
-                                                  :info nil}
-                                         :property {:op :var
-                                                    :env {}
-                                                    :form 'log
-                                                    :info nil}}
-                                :params [{:op :var
-                                          :env {}
-                                          :form 'error
-                                          :info nil}]}]
-                  :result {:op :constant
-                           :form ':error
-                           :env {}}}
-        :finalizer {:env {}
-                    :statements [{:op :invoke
-                                  :env {}
-                                  :form '((aget console 'log) "done")
-                                  :tag nil
-                                  :callee {:op :member-expression
-                                           :computed false
-                                           :env {}
-                                           :form '(aget console 'log)
-                                           :target {:op :var
-                                                    :env {}
 
-                                                    :form 'console
-                                                    :info nil}
-                                           :property {:op :var
-                                                      :env {}
-                                                      :form 'log
-                                                      :info nil}}
-                                  :params [{:op :constant
-                                            :env {}
-                                            :form "done"}]}]
-                    :result {:op :constant
-                             :form ':end
-                             :env {}}}}))
+       {:op        :try
+        :form      '(try
+                      (read-string unicode-error)
+                      (catch error (print error) :error)
+                      (finally (print "done") :end))
+        :start     nil
+        :end       nil
+        :body      {:statements nil
+                    :result     {:op     :invoke
+                                 :form   '(read-string unicode-error)
+                                 :callee (*var 'read-string)
+                                 :params [(*var 'unicode-error)]}}
+        :handler   {:name       (*var 'error)
+                    :statements [{:op     :invoke
+                                  :form   '(console.log error)
+                                  :callee (*aget '(aget console 'log) false
+                                                 (*var 'console) (*symbol 'log))
+                                  :params [(*var 'error)]}]
+                    :result     (*value ':error)}
+        :finalizer {:statements [{:op     :invoke
+                                  :form   '(console.log "done")
+                                  :callee (*aget '(aget console 'log) false
+                                                 (*var 'console) (*symbol 'log))
+                                  :params [(*value "done")]}]
+                     :result    (*value ':end)}}))
 
 
 (is (= (analyze {} '(set! foo bar))
-       {:op :set!
-        :target {:op :var
-                 :env {}
-                 :form 'foo
-                 :info nil}
-        :value {:op :var
-                :env {}
-                :form 'bar
-                :info nil}
-        :form '(set! foo bar)
-        :env {}}))
+       {:op     :set!
+        :form   '(set! foo bar)
+        :start  nil
+        :end    nil
+        :target (*var 'foo)
+        :value  (*var 'bar)}))
 
 (is (= (analyze {} '(set! *registry* {}))
-       {:op :set!
-        :target {:op :var
-                 :env {}
-                 :form '*registry*
-                 :info nil}
-        :value {:op :dictionary
-                :env {}
-                :form {}
-                :keys []
-                :values []
-                :hash? true}
-        :form '(set! *registry* {})
-        :env {}}))
+       {:op     :set!
+        :form   '(set! *registry* {})
+        :start  nil
+        :end    nil
+        :target (*var '*registry*)
+        :value  {:op     :dictionary
+                 :form   {}
+                 :keys   []
+                 :values []}}))
 
 (is (= (analyze {} '(set! (.-log console) print))
-       {:op :set!
-        :target {:op :member-expression
-                 :env {}
-                 :form '(aget console 'log)
-                 :computed false
-                 :target {:op :var
-                          :env {}
-                          :form 'console
-                          :info nil}
-                 :property {:op :var
-                            :env {}
-                            :form 'log
-                            :info nil}}
-        :value {:op :var
-                :env {}
-                :form 'print
-                :info nil}
-        :form '(set! (.-log console) print)
-        :env {}}))
+       {:op     :set!
+        :form   '(set! (.-log console) print)
+        :start  nil
+        :end    nil
+        :target (*aget '(aget console 'log) false
+                       (*var 'console) (*symbol 'log))
+        :value  (*var 'print)}))
+
 
 (is (= (analyze {} '(do
                       (read content)
                       (print "read")
                       (write content)))
-       {:op :do
-        :env {}
-        :form '(do
-                 (read content)
-                 (print "read")
-                 (write content))
-        :statements [{:op :invoke
-                      :env {}
-                      :form '(read content)
-                      :tag nil
-                      :callee {:op :var
-                               :env {}
-                               :form 'read
-                               :info nil}
-                      :params [{:op :var
-                                :env {}
-                                :form 'content
-                                :info nil}]}
-                     {:op :invoke
-                      :env {}
-                      :form '((aget console 'log) "read")
-                      :tag nil
-                      :callee {:op :member-expression
-                               :computed false
-                               :env {}
-                               :form '(aget console 'log)
-                               :target {:op :var
-                                        :env {}
 
-                                        :form 'console
-                                        :info nil}
-                               :property {:op :var
-                                          :env {}
-                                          :form 'log
-                                          :info nil}}
-                      :params [{:op :constant
-                                :env {}
-                                :form "read"}]}]
-        :result {:op :invoke
-                 :env {}
-                 :form '(write content)
-                 :tag nil
-                 :callee {:op :var
-                          :env {}
-                          :form 'write
-                          :info nil}
-                 :params [{:op :var
-                           :env {}
-                           :form 'content
-                           :info nil}]}}))
+       {:op         :do
+        :form       '(do (read content) (print "read") (write content))
+        :start      nil
+        :end        nil
+        :statements [{:op     :invoke
+                      :form   '(read content)
+                      :callee (*var 'read)
+                      :params [(*var 'content)]}
+                     {:op     :invoke
+                      :form   '(console.log "read")
+                      :callee (*aget '(aget console 'log) false
+                                     (*var 'console) (*symbol 'log))
+                      :params [(*value "read")]}]
+        :result     {:op     :invoke
+                     :form   '(write content)
+                     :callee (*var 'write)
+                     :params [(*var 'content)]}}))
+
 
 (is (= (analyze {} '(def x 1))
-       {:op :def
-        :env {}
-        :form '(def x 1)
-        :doc nil
-        :var {:op :var
-              :env {}
-              :form 'x
-              :info nil}
-        :init {:op :constant
-               :env {}
-               :form 1}
-        :tag nil
-        :dinamyc nil
-        :export false}))
+       {:op     :def
+        :form   '(def x 1)
+        :start  nil
+        :end    nil
+        :export nil
+        :doc    nil
+        :id     (*id0 'x)
+        :init   (*value 1)}))
 
 (is (= (analyze {:parent {}} '(def x 1))
-       {:op :def
-        :env {:parent {}}
-        :form '(def x 1)
-        :doc nil
-        :var {:op :var
-              :env {:parent {}}
-              :form 'x
-              :info nil}
-        :init {:op :constant
-               :env {:parent {}}
-               :form 1}
-        :tag nil
-        :dinamyc nil
-        :export true}))
+       {:op     :def
+        :form   '(def x 1)
+        :start  nil
+        :end    nil
+        :export nil
+        :doc    nil
+        :id     (*id0 'x)
+        :init   (*value 1)}))
 
 (is (= (analyze {:parent {}} '(def x (foo bar)))
-       {:op :def
-        :env {:parent {}}
-        :form '(def x (foo bar))
-        :doc nil
-        :tag nil
-        :var {:op :var
-              :env {:parent {}}
-              :form 'x
-              :info nil}
-        :init {:op :invoke
-               :env {:parent {}}
-               :form '(foo bar)
-               :tag nil
-               :callee {:op :var
-                        :form 'foo
-                        :env {:parent {}}
-                        :info nil}
-               :params [{:op :var
-                         :form 'bar
-                         :env {:parent {}}
-                         :info nil}]}
-        :dinamyc nil
-        :export true}))
+       {:op     :def
+        :form   '(def x (foo bar))
+        :start  nil
+        :end    nil
+        :export nil
+        :doc    nil
+        :id     (*id0 'x)
+        :init   {:op     :invoke
+                 :form   '(foo bar)
+                 :callee (*var 'foo)
+                 :params [(*var 'bar)]}}))
 
-(let [bindings [{:name 'x
-                 :init {:op :constant
-                        :env {}
-                        :form 1}
-                 :tag nil
-                 :local true
-                 :shadow nil}
-                {:name 'y
-                 :init {:op :constant
-                        :env {}
-                        :form 2}
-                 :tag nil
-                 :local true
-                 :shadow nil}]]
-  (is (= (analyze {} '(let [x 1 y 2] (+ x y)))
-         {:op :let
-          :env {}
-          :form '(let [x 1 y 2] (+ x y))
-          :loop false
-          :bindings bindings
+
+(is (= (analyze {} '(let* [x 1 y 2] (+ x y)))
+
+       (let [*x (*binding '[x 1] 1
+                          'x (*value 1))
+             *y (*binding '[y 2] 1
+                          'y (*value 2))]
+
+         {:op         :let
+          :form       '(let* [x 1, y 2] (+ x y))
+          :start      nil
+          :end        nil
+          :bindings   [*x *y]
           :statements nil
-          :result {:op :invoke
-                   :form '(+ x y)
-                   :env {:parent {}
-                         :bindings bindings}
-                   :tag nil
-                   :callee {:op :var
-                            :form '+
-                            :env {:parent {}
-                                  :bindings bindings}
-                            :info nil}
-                   :params [{:op :var
-                             :form 'x
-                             :env {:parent {}
-                                   :bindings bindings}
-                             :info nil}
-                            {:op :var
-                             :form 'y
-                             :env {:parent {}
-                                   :bindings bindings}
-                             :info nil}]}})))
+          :result     {:op     :invoke
+                       :form   '(+ x y)
+                       :callee (*var '+)
+                       :params [(*bound-var 'x *x)
+                                (*bound-var 'y *y)]}})))
 
-(let [bindings [{:name 'chars
-                 :init {:op :var
-                        :form 'stream
-                        :info nil
-                        :env {}}
-                 :tag nil
-                 :shadow nil
-                 :local true}
-                {:name 'result
-                 :init {:op :vector
-                        :items []
-                        :form []
-                        :env {}}
-                 :tag nil
-                 :shadow nil
-                 :local true}]]
 
-  (is (= (analyze {} '(loop [chars stream
-                             result []]
-                        (if (empty? chars)
-                          :eof
-                          (recur (rest chars)
-                                 (conj result (first chars))))))
-         {:op :loop
-          :loop true
-          :form '(loop [chars stream
-                        result []]
-                   (if (empty? chars) :eof
-                     (recur (rest chars)
-                            (conj result (first chars)))))
-          :env {}
-          :bindings bindings
+(is (= (analyze {} '(loop* [chars stream
+                            result []]
+                      (if (empty? chars)
+                        :eof
+                        (recur (rest chars)
+                               (conj result (first chars))))))
+
+       (let [*chars  (*binding '[chars stream] 1
+                               'chars (*var 'stream))
+             *result (*binding '[result []] 1
+                               'result {:op    :vector
+                                        :form  []
+                                        :items []})]
+
+         {:op         :loop
+          :form       '(loop* [chars stream, result []]
+                         (if (empty? chars)
+                           :eof
+                           (recur (rest chars)
+                                  (conj result (first chars)))))
+          :start      nil
+          :end        nil
+          :bindings   [*chars *result]
           :statements nil
-          :result {:op :if
-                   :form '(if (empty? chars)
-                            :eof
-                            (recur (rest chars)
-                                   (conj result (first chars))))
-                   :env {:parent {}
-                         :bindings bindings
-                         :params bindings}
-
-                   :test {:op :invoke
-                          :form '(empty? chars)
-                          :env {:parent {}
-                                :bindings bindings
-                                :params bindings}
-                          :tag nil
-                          :callee {:op :var
-                                   :env {:parent {}
-                                         :bindings bindings
-                                         :params bindings}
-                                   :form 'empty?
-                                   :info nil}
-                          :params [{:op :var
-                                    :form 'chars
-                                    :info nil
-                                    :env {:parent {}
-                                          :bindings bindings
-                                          :params bindings}}]}
-
-                   :consequent {:op :constant
-                                :env {:parent {}
-                                      :bindings bindings
-                                      :params bindings}
-                                :form ':eof}
-
-                   :alternate {:op :recur
-                               :form '(recur (rest chars)
-                                             (conj result (first chars)))
-                               :env {:parent {}
-                                     :bindings bindings
-                                     :params bindings}
-                               :params [{:op :invoke
-                                         :tag nil
-                                         :form '(rest chars)
-                                         :env {:parent {}
-                                               :bindings bindings
-                                               :params bindings}
-                                         :callee {:op :var
-                                                  :form 'rest
-                                                  :info nil
-                                                  :env {:parent {}
-                                                        :bindings bindings
-                                                        :params bindings}}
-                                         :params [{:op :var
-                                                   :form 'chars
-                                                   :info nil
-                                                   :env {:parent {}
-                                                         :bindings bindings
-                                                         :params bindings}}]}
-                                        {:op :invoke
-                                         :tag nil
-                                         :form '(conj result (first chars))
-                                         :env {:parent {}
-                                               :bindings bindings
-                                               :params bindings}
-                                         :callee {:op :var
-                                                  :form 'conj
-                                                  :info nil
-                                                  :env {:parent {}
-                                                        :bindings bindings
-                                                        :params bindings}}
-                                         :params [{:op :var
-                                                   :form 'result
-                                                   :info nil
-                                                   :env {:parent {}
-                                                         :bindings bindings
-                                                         :params bindings}}
-                                                  {:op :invoke
-                                                   :tag nil
-                                                   :form '(first chars)
-                                                   :env {:parent {}
-                                                         :bindings bindings
-                                                         :params bindings}
-                                                   :callee {:op :var
-                                                            :form 'first
-                                                            :info nil
-                                                            :env {:parent {}
-                                                                  :bindings bindings
-                                                                  :params bindings}}
-                                                   :params [{:op :var
-                                                             :form 'chars
-                                                             :info nil
-                                                             :env {:parent {}
-                                                                   :bindings bindings
-                                                                   :params bindings}}]}]}]}}})))
+          :result     {:op         :if
+                       :form       '(if (empty? chars)
+                                      :eof
+                                      (recur (rest chars)
+                                             (conj result (first chars))))
+                       :start      nil
+                       :end        nil
+                       :test       {:op     :invoke
+                                    :form   '(empty? chars)
+                                    :callee (*var 'empty?)
+                                    :params [(*bound-var 'chars *chars)]}
+                       :consequent (*value ':eof)
+                       :alternate  {:op     :recur
+                                    :form   '(recur (rest chars) (conj result (first chars)))
+                                    :start  nil
+                                    :end    nil
+                                    :params [{:op     :invoke
+                                              :form   '(rest chars)
+                                              :callee (*var 'rest)
+                                              :params [(*bound-var 'chars *chars)]}
+                                             {:op     :invoke
+                                              :form   '(conj result (first chars))
+                                              :callee (*var 'conj)
+                                              :params [(*bound-var 'result *result)
+                                                       {:op     :invoke
+                                                        :form   '(first chars)
+                                                        :callee (*var 'first)
+                                                        :params [(*bound-var 'chars *chars)]}]}]}}})))
 
 
 
-(is (= (analyze {} '(fn [] x))
-       {:op :fn
-        :name nil
-        :variadic false
-        :form '(fn [] x)
-        :methods [{:op :overload
-                   :variadic false
-                   :arity 0
-                   :params []
-                   :form '([] x)
-                   :statements nil
-                   :result {:op :var
-                            :form 'x
-                            :info nil
-                            :env {:parent {}
-                                  :locals {}}}
-                   :env {:parent {}
-                         :locals {}}}]
-        :env {}}))
+(is (= (analyze {} '(fn* [] x))
+       {:op       :fn
+        :form     '(fn* [] x)
+        :type     :function
+        :start    nil
+        :end      nil
+        :variadic nil
+        :id       nil
+        :methods  [{:op         :overload
+                    :form       '([] x)
+                    :arity      0
+                    :variadic   nil
+                    :params     []
+                    :statements nil
+                    :result     (*var 'x)}]}))
 
+(is (= (analyze {} '(fn* foo [] x))
+       {:op       :fn
+        :form     '(fn* foo [] x)
+        :type     :function
+        :start    nil
+        :end      nil
+        :variadic nil
+        :id       (*id0 'foo)
+        :methods  [{:op         :overload
+                    :form       '([] x)
+                    :arity      0
+                    :variadic   nil
+                    :params     []
+                    :statements nil
+                    :result     (*var 'x)}]}))
 
-(is (= (analyze {} '(fn foo [] x))
-       {:op :fn
-        :name 'foo
-        :variadic false
-        :form '(fn foo [] x)
-        :methods [{:op :overload
-                   :variadic false
-                   :arity 0
-                   :params []
-                   :form '([] x)
-                   :statements nil
-                   :result {:op :var
-                            :form 'x
-                            :info nil
-                            :env {:parent {}
-                                  :locals {:foo {:op :var
-                                                 :fn-var true
-                                                 :shadow nil
-                                                 :form 'foo
-                                                 :env {}}}}}
-                   :env {:parent {}
-                         :locals {:foo {:op :var
-                                        :fn-var true
-                                        :shadow nil
-                                        :form 'foo
-                                        :env {}}}}}]
-        :env {}}))
+(is (= (analyze {} '(fn* foo [a] x))
+       {:op       :fn
+        :form     '(fn* foo [a] x)
+        :type     :function
+        :start    nil
+        :end      nil
+        :variadic nil
+        :id       (*id0 'foo)
+        :methods  [{:op         :overload
+                    :form       '([a] x)
+                    :arity      1
+                    :variadic   nil
+                    :params     [(*param1 'a)]
+                    :statements nil
+                    :result     (*var 'x)}]}))
 
-(is (= (analyze {} '(fn foo [a] x))
-       {:op :fn
-        :name 'foo
-        :variadic false
-        :form '(fn foo [a] x)
-        :methods [{:op :overload
-                   :variadic false
-                   :arity 1
-                   :params [{:name 'a
-                             :tag nil
-                             :shadow nil}]
-                   :form '([a] x)
-                   :statements nil
-                   :result {:op :var
-                            :form 'x
-                            :info nil
-                            :env {:parent {}
-                                  :locals {:foo {:op :var
-                                                 :fn-var true
-                                                 :shadow nil
-                                                 :form 'foo
-                                                 :env {}}
-                                           :a {:name 'a
-                                               :tag nil
-                                               :shadow nil}}}}
-                   :env {:parent {}
-                         :locals {:foo {:op :var
-                                        :fn-var true
-                                        :shadow nil
-                                        :form 'foo
-                                        :env {}}
-                                  :a {:name 'a
-                                      :tag nil
-                                      :shadow nil}}}}]
-        :env {}}))
+(is (= (analyze {} '(fn* ([] x)))
+       {:op       :fn
+        :form     '(fn* ([] x))
+        :type     :function
+        :start    nil
+        :end      nil
+        :variadic nil
+        :id       nil
+        :methods  [{:op         :overload
+                    :form       '([] x)
+                    :arity      0
+                    :variadic   nil
+                    :params     []
+                    :statements nil
+                    :result     (*var 'x)}]}))
 
-
-(is (= (analyze {} '(fn ([] x)))
-       {:op :fn
-        :name nil
-        :variadic false
-        :form '(fn ([] x))
-        :methods [{:op :overload
-                   :variadic false
-                   :arity 0
-                   :params []
-                   :form '([] x)
-                   :statements nil
-                   :result {:op :var
-                            :form 'x
-                            :info nil
-                            :env {:parent {}
-                                  :locals {}}}
-                   :env {:parent {}
-                         :locals {}}}]
-        :env {}}))
-
-
-(is (= (analyze {} '(fn [& args] x))
-       {:op :fn
-        :name nil
+(is (= (analyze {} '(fn* [& args] x))
+       {:op       :fn
+        :form     '(fn* [& args] x)
+        :type     :function
+        :start    nil
+        :end      nil
         :variadic true
-        :form '(fn [& args] x)
-        :methods [{:op :overload
-                   :variadic true
-                   :arity 0
-                   :params [{:name 'args
-                             :tag nil
-                             :shadow nil}]
-                   :form '([& args] x)
-                   :statements nil
-                   :result {:op :var
-                            :form 'x
-                            :info nil
-                            :env {:parent {}
-                                  :locals {:args {:name 'args
-                                                  :tag nil
-                                                  :shadow nil}}}}
-                   :env {:parent {}
-                         :locals {:args {:name 'args
-                                         :tag nil
-                                         :shadow nil}}}}]
-        :env {}}))
+        :id       nil
+        :methods  [{:op         :overload
+                    :form       '([& args] x)
+                    :arity      0
+                    :variadic   true
+                    :params     [(*param1 'args)]
+                    :statements nil
+                    :result     (*var 'x)}]}))
+
+(is (= (analyze {} '(fn* ([] 0) ([x] x)))
+       {:op       :fn
+        :form     '(fn* ([] 0) ([x] x))
+        :type     :function
+        :start    nil
+        :end      nil
+        :variadic nil
+        :id       nil
+        :methods  [{:op         :overload
+                    :form       '([] 0)
+                    :arity      0
+                    :variadic   nil
+                    :params     []
+                    :statements nil
+                    :result     (*value 0)}
+                   {:op         :overload
+                    :form       '([x] x)
+                    :arity      1
+                    :variadic   nil
+                    :params     [(*param1 'x)]
+                    :statements nil
+                    :result     (*bound-var 'x (*param1 'x))}]}))
 
 
-(is (= (analyze {} '(fn ([] 0) ([x] x)))
-       {:op :fn
-        :name nil
-        :variadic false
-        :form '(fn ([] 0) ([x] x))
-        :methods [{:op :overload
-                   :variadic false
-                   :arity 0
-                   :params []
-                   :form '([] 0)
-                   :statements nil
-                   :result {:op :constant
-                            :form 0
-                            :env {:parent {}
-                                  :locals {}}}
-                   :env {:parent {}
-                         :locals {}}}
-                  {:op :overload
-                   :variadic false
-                   :arity 1
-                   :params [{:name 'x
-                             :tag nil
-                             :shadow nil}]
-                   :form '([x] x)
-                   :statements nil
-                   :result {:op :var
-                            :form 'x
-                            :info {:name 'x
-                                   :tag nil
-                                   :shadow nil}
-                            :env {:parent {}
-                                  :locals {:x {:name 'x
-                                               :tag nil
-                                               :shadow nil}}}}
-                   :env {:parent {}
-                         :locals {:x {:name 'x
-                                      :tag nil
-                                      :shadow nil}}}}]
-        :env {}}))
-
-
-(is (= (analyze {} '(fn ([] 0) ([x] x) ([x & nums] :etc)))
-       {:op :fn
-        :name nil
+(is (= (analyze {} '(fn* ([] 0) ([x] x) ([x & nums] :etc)))
+       {:op       :fn
+        :form     '(fn* ([] 0) ([x] x) ([x & nums] :etc))
+        :type     :function
+        :start    nil
+        :end      nil
         :variadic true
-        :form '(fn ([] 0) ([x] x) ([x & nums] :etc))
-        :methods [{:op :overload
-                   :variadic false
-                   :arity 0
-                   :params []
-                   :form '([] 0)
-                   :statements nil
-                   :result {:op :constant
-                            :form 0
-                            :env {:parent {}
-                                  :locals {}}}
-                   :env {:parent {}
-                         :locals {}}}
-                  {:op :overload
-                   :variadic false
-                   :arity 1
-                   :params [{:name 'x
-                             :tag nil
-                             :shadow nil}]
-                   :form '([x] x)
-                   :statements nil
-                   :result {:op :var
-                            :form 'x
-                            :info {:name 'x
-                                   :tag nil
-                                   :shadow nil}
-                            :env {:parent {}
-                                  :locals {:x {:name 'x
-                                               :tag nil
-                                               :shadow nil}}}}
-                   :env {:parent {}
-                         :locals {:x {:name 'x
-                                      :tag nil
-                                      :shadow nil}}}}
-                  {:op :overload
-                   :variadic true
-                   :arity 1
-                   :params [{:name 'x
-                             :tag nil
-                             :shadow nil}
-                            {:name 'nums
-                             :tag nil
-                             :shadow nil}]
-                   :form '([x & nums] :etc)
-                   :statements nil
-                   :result {:op :constant
-                            :form ':etc
-                            :env {:parent {}
-                                  :locals {:x {:name 'x
-                                               :tag nil
-                                               :shadow nil}
-                                           :nums {:name 'nums
-                                                  :tag nil
-                                                  :shadow nil}}}}
-                   :env {:parent {}
-                         :locals {:x {:name 'x
-                                      :tag nil
-                                      :shadow nil}
-                                  :nums {:name 'nums
-                                         :tag nil
-                                         :shadow nil}}}}]
-        :env {}}))
+        :id       nil
+        :methods  [{:op         :overload
+                    :form       '([] 0)
+                    :arity      0
+                    :variadic   nil
+                    :params     []
+                    :statements nil
+                    :result     (*value 0)}
+                   {:op         :overload
+                    :form       '([x] x)
+                    :arity      1
+                    :variadic   nil
+                    :params     [(*param1 'x)]
+                    :statements nil
+                    :result     (*bound-var 'x (*param1 'x))}
+                   {:op         :overload
+                    :form       '([x & nums] :etc)
+                    :arity      1
+                    :variadic   true
+                    :params     [(*param1 'x)
+                                 (*param1 'nums)]
+                    :statements nil
+                    :result     (*value ':etc)}]}))
+
 
 (is (= (analyze {} '(ns foo.bar
                       "hello world"
                       (:require [my.lib :refer [foo bar]]
                                 [foo.baz :refer [a] :rename {a b}])))
-       {:op :ns
-        :name 'foo.bar
-        :doc "hello world"
-        :require [{:op :require
+       {:op      :ns
+        :form    '(ns foo.bar
+                    "hello world"
+                    (:require [my.lib :refer [foo bar]]
+                              [foo.baz :refer [a] :rename {a b}]))
+        :name    'foo.bar
+        :doc     "hello world"
+        :start   nil
+        :end     nil
+        :require [{:op    :require
+                   :form  '[my.lib :refer [foo bar]]
+                   :ns    'my.lib
                    :alias nil
-                   :ns 'my.lib
-                   :refer [{:op :refer
-                            :name 'foo
-                            :form 'foo
-                            :rename nil
-                            :ns 'my.lib}
-                           {:op :refer
-                            :name 'bar
-                            :form 'bar
-                            :rename nil
-                            :ns 'my.lib}]
-                   :form '[my.lib :refer [foo bar]]}
-                  {:op :require
+                   :refer [{:op     :refer
+                            :form   'foo
+                            :ns     'my.lib
+                            :name   'foo
+                            :rename nil}
+                           {:op     :refer
+                            :form   'bar
+                            :ns     'my.lib
+                            :name   'bar
+                            :rename nil}]}
+                  {:op    :require
+                   :form  '[foo.baz :refer [a] :rename {a b}]
+                   :ns    'foo.baz
                    :alias nil
-                   :ns 'foo.baz
-                   :refer [{:op :refer
-                            :name 'a
-                            :form 'a
-                            :rename 'b
-                            :ns 'foo.baz}]
-                   :form '[foo.baz :refer [a] :rename {a b}]}]
-        :form '(ns foo.bar
-                 "hello world"
-                 (:require [my.lib :refer [foo bar]]
-                           [foo.baz :refer [a] :rename {a b}]))
-        :env {}}))
+                   :refer [{:op     :refer
+                            :form   'a
+                            :ns     'foo.baz
+                            :name   'a
+                            :rename 'b}]}]}))
+
 
 (is (= (analyze {} '(ns foo.bar
                       "hello world"
@@ -1086,78 +663,77 @@
                                 [lib.e :refer [beep baz] :as e]
                                 [lib.f :refer [faz] :rename {faz saz}]
                                 [lib.g :refer [beer] :rename {beer coffee} :as booze])))
-       {:op :ns
-        :name 'foo.bar
-        :doc "hello world"
-        :require [{:op :require
+       {:op      :ns
+        :form    '(ns foo.bar "hello world"
+                    (:require lib.a
+                              [lib.b]
+                              [lib.c :as c]
+                              [lib.d :refer [foo bar]]
+                              [lib.e :refer [beep baz] :as e]
+                              [lib.f :refer [faz] :rename {faz saz}]
+                              [lib.g :refer [beer] :rename {beer coffee} :as booze]))
+        :name    'foo.bar
+        :doc     "hello world"
+        :start   nil
+        :end     nil
+        :require [{:op    :require
+                   :form  'lib.a
+                   :ns    'lib.a
                    :alias nil
-                   :ns 'lib.a
-                   :refer nil
-                   :form 'lib.a}
-                  {:op :require
+                   :refer nil}
+                  {:op    :require
+                   :form  '[lib.b]
+                   :ns    'lib.b
                    :alias nil
-                   :ns 'lib.b
-                   :refer nil
-                   :form '[lib.b]}
-                  {:op :require
+                   :refer nil}
+                  {:op    :require
+                   :form  '[lib.c :as c]
+                   :ns    'lib.c
                    :alias 'c
-                   :ns 'lib.c
-                   :refer nil
-                   :form '[lib.c :as c]}
-                  {:op :require
+                   :refer nil}
+                  {:op    :require
+                   :form  '[lib.d :refer [foo bar]]
+                   :ns    'lib.d
                    :alias nil
-                   :ns 'lib.d
-                   :form '[lib.d :refer [foo bar]]
-                   :refer [{:op :refer
-                            :name 'foo
-                            :form 'foo
-                            :rename nil
-                            :ns 'lib.d}
-                           {:op :refer
-                            :name 'bar
-                            :form 'bar
-                            :rename nil
-                            :ns 'lib.d
-                            }]}
-                  {:op :require
+                   :refer [{:op     :refer
+                            :form   'foo
+                            :ns     'lib.d
+                            :name   'foo
+                            :rename nil}
+                           {:op     :refer
+                            :form   'bar
+                            :ns     'lib.d
+                            :name   'bar
+                            :rename nil}]}
+                  {:op    :require
+                   :form  '[lib.e :refer [beep baz] :as e]
+                   :ns    'lib.e
                    :alias 'e
-                   :ns 'lib.e
-                   :form '[lib.e :refer [beep baz] :as e]
-                   :refer [{:op :refer
-                            :name 'beep
-                            :form 'beep
-                            :rename nil
-                            :ns 'lib.e}
-                           {:op :refer
-                            :name 'baz
-                            :form 'baz
-                            :rename nil
-                            :ns 'lib.e}]}
-                  {:op :require
+                   :refer [{:op     :refer
+                            :form   'beep
+                            :ns     'lib.e
+                            :name   'beep
+                            :rename nil}
+                           {:op     :refer
+                            :form   'baz
+                            :ns     'lib.e
+                            :name   'baz
+                            :rename nil}]}
+                  {:op    :require
+                   :form  '[lib.f :refer [faz] :rename {faz saz}]
+                   :ns    'lib.f
                    :alias nil
-                   :ns 'lib.f
-                   :form '[lib.f :refer [faz] :rename {faz saz}]
-                   :refer [{:op :refer
-                            :name 'faz
-                            :form 'faz
-                            :rename 'saz
-                            :ns 'lib.f}]}
-                  {:op :require
+                   :refer [{:op     :refer
+                            :form   'faz
+                            :ns     'lib.f
+                            :name   'faz
+                            :rename 'saz}]}
+                  {:op    :require
+                   :form  '[lib.g :refer [beer] :rename {beer coffee} :as booze]
+                   :ns    'lib.g
                    :alias 'booze
-                   :ns 'lib.g
-                   :form '[lib.g :refer [beer] :rename {beer coffee} :as booze]
-                   :refer [{:op :refer
-                            :name 'beer
-                            :form 'beer
-                            :rename 'coffee
-                            :ns 'lib.g}]}]
-        :form '(ns foo.bar
-                 "hello world"
-                 (:require lib.a
-                           [lib.b]
-                           [lib.c :as c]
-                           [lib.d :refer [foo bar]]
-                           [lib.e :refer [beep baz] :as e]
-                           [lib.f :refer [faz] :rename {faz saz}]
-                           [lib.g :refer [beer] :rename {beer coffee} :as booze]))
-        :env {}}))
+                   :refer [{:op     :refer
+                            :form   'beer
+                            :ns     'lib.g
+                            :name   'beer
+                            :rename 'coffee}]}]}))

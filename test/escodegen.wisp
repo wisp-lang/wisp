@@ -1387,13 +1387,13 @@
 
 (is (= (transpile "(defprotocol IFoo)")
 "{
-    var IFoo = exports.IFoo = { wisp_core$IProtocol$id: 'user.wisp/IFoo' };
+    var IFoo = exports.IFoo = { 'wisp_core$IProtocol$id': 'user.wisp/IFoo' };
     IFoo;
 }") "protocol defined")
 
 (is (= (transpile "(defprotocol IBar \"optional docs\")")
 "{
-    var IBar = exports.IBar = { wisp_core$IProtocol$id: 'user.wisp/IBar' };
+    var IBar = exports.IBar = { 'wisp_core$IProtocol$id': 'user.wisp/IBar' };
     IBar;
 }") "optionally docs can be provided")
 
@@ -1404,20 +1404,26 @@
   (^clj -rest [coll]))")
 "{
     var ISeq = exports.ISeq = {
-            wisp_core$IProtocol$id: 'user.wisp/ISeq',
+            'wisp_core$IProtocol$id': 'user.wisp/ISeq',
             _first: function user_wisp$ISeq$First(self) {
-                var f = self === null ? user_wisp$ISeq$First.nil : self === void 0 ? user_wisp$ISeq$First.nil : 'else' ? self.user_wisp$ISeq$First || user_wisp$ISeq$First[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ISeq$First._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$ISeq$First.nil : self.user_wisp$ISeq$First || user_wisp$ISeq$First[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$ISeq$First._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ISeq.user*wisp$ISeq$-first defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             },
             _rest: function user_wisp$ISeq$Rest(self) {
-                var f = self === null ? user_wisp$ISeq$Rest.nil : self === void 0 ? user_wisp$ISeq$Rest.nil : 'else' ? self.user_wisp$ISeq$Rest || user_wisp$ISeq$Rest[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ISeq$Rest._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$ISeq$Rest.nil : self.user_wisp$ISeq$Rest || user_wisp$ISeq$Rest[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$ISeq$Rest._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ISeq.user*wisp$ISeq$-rest defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             }
         };
     var _first = exports._first = ISeq._first;
     var _rest = exports._rest = ISeq._rest;
     ISeq;
-}") "methods can are also generated & exported")
+}") "methods can also be generated & exported")
 
 (is (= (transpile
 "(ns wisp.core)
@@ -1433,14 +1439,20 @@
 }
 {
     var ISeq = exports.ISeq = {
-            wisp_core$IProtocol$id: 'wisp.core/ISeq',
+            'wisp_core$IProtocol$id': 'wisp.core/ISeq',
             _first: function wisp_core$ISeq$First(self) {
-                var f = self === null ? wisp_core$ISeq$First.nil : self === void 0 ? wisp_core$ISeq$First.nil : 'else' ? self.wisp_core$ISeq$First || wisp_core$ISeq$First[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || wisp_core$ISeq$First._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? wisp_core$ISeq$First.nil : self.wisp_core$ISeq$First || wisp_core$ISeq$First[Object.prototype.toString.call(self).slice(8, -1)] || wisp_core$ISeq$First._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ISeq.wisp*core$ISeq$-first defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             },
             _rest: function wisp_core$ISeq$Rest(self) {
-                var f = self === null ? wisp_core$ISeq$Rest.nil : self === void 0 ? wisp_core$ISeq$Rest.nil : 'else' ? self.wisp_core$ISeq$Rest || wisp_core$ISeq$Rest[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || wisp_core$ISeq$Rest._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? wisp_core$ISeq$Rest.nil : self.wisp_core$ISeq$Rest || wisp_core$ISeq$Rest[Object.prototype.toString.call(self).slice(8, -1)] || wisp_core$ISeq$Rest._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ISeq.wisp*core$ISeq$-rest defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             }
         };
     var _first = exports._first = ISeq._first;
@@ -1453,7 +1465,7 @@
 "(defprotocol ^:private Fn
   \"Marker protocol\")")
 "{
-    var Fn = { wisp_core$IProtocol$id: 'user.wisp/Fn' };
+    var Fn = { 'wisp_core$IProtocol$id': 'user.wisp/Fn' };
     Fn;
 }") "protocol defs can be private")
 
@@ -1463,14 +1475,20 @@
   (bar []))")
 "{
     var IFooBar = {
-            wisp_core$IProtocol$id: 'user.wisp/IFooBar',
+            'wisp_core$IProtocol$id': 'user.wisp/IFooBar',
             foo: function user_wisp$IFooBar$foo(self) {
-                var f = self === null ? user_wisp$IFooBar$foo.nil : self === void 0 ? user_wisp$IFooBar$foo.nil : 'else' ? self.user_wisp$IFooBar$foo || user_wisp$IFooBar$foo[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$IFooBar$foo._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$IFooBar$foo.nil : self.user_wisp$IFooBar$foo || user_wisp$IFooBar$foo[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$IFooBar$foo._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method IFooBar.user*wisp$IFooBar$foo defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             },
             bar: function user_wisp$IFooBar$bar(self) {
-                var f = self === null ? user_wisp$IFooBar$bar.nil : self === void 0 ? user_wisp$IFooBar$bar.nil : 'else' ? self.user_wisp$IFooBar$bar || user_wisp$IFooBar$bar[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$IFooBar$bar._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$IFooBar$bar.nil : self.user_wisp$IFooBar$bar || user_wisp$IFooBar$bar[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$IFooBar$bar._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method IFooBar.user*wisp$IFooBar$bar defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             }
         };
     var foo = IFooBar.foo;
@@ -1483,10 +1501,13 @@
   (^number -count [coll] \"constant time count\"))")
 "{
     var ICounted = exports.ICounted = {
-            wisp_core$IProtocol$id: 'user.wisp/ICounted',
+            'wisp_core$IProtocol$id': 'user.wisp/ICounted',
             _count: function user_wisp$ICounted$Count(self) {
-                var f = self === null ? user_wisp$ICounted$Count.nil : self === void 0 ? user_wisp$ICounted$Count.nil : 'else' ? self.user_wisp$ICounted$Count || user_wisp$ICounted$Count[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ICounted$Count._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$ICounted$Count.nil : self.user_wisp$ICounted$Count || user_wisp$ICounted$Count[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$ICounted$Count._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ICounted.user*wisp$ICounted$-count defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             }
         };
     var _count = exports._count = ICounted._count;
