@@ -16,15 +16,17 @@
                                     (= x z)
                                     (if (aget inv x)
                                       false
-                                      (do (aset gensyms y x)
-                                          (aset inv x y)
-                                          (. (name x) starts-with (. (name y) replace #"#.*" ""))))))
+                                      (let [x* (name x), y* (. (name y) replace #"#.*" "")]
+                                        (aset gensyms y x)
+                                        (aset inv x y)
+                                        (and (. x* starts-with y*)
+                                             (.. x* (slice (count y*)) (match #"^[0-9]+$")))))))
              (symbol? y)     (and (symbol? x) (= (name x) (name y)) (= (namespace x) (namespace y)))
              (vector? y)     (and (vector? x) (= (count x) (count y)) (.every x #(*matches %1 (aget y %2))))
              (list? y)       (and (list? x) (*matches (vec x) (vec y)))
              (dictionary? y) (and (dictionary? x) (*matches (.sort (keys x)) (.sort (keys y)))
                                   (.every (keys x) #(*matches (aget x %) (aget y %))))
-             :else       (= x y)))
+             :else           (= x y)))
      x y)))
 (def *= *expansion-matches)
 
@@ -114,6 +116,15 @@
 (is (= (macroexpand '(.. x (foo) (bar 42) -baz))
        '(aget (. (. x foo) bar 42) 'baz)))
 
+(is (= (macroexpand-1 '(as-> owners $ (nth $ 0) (:pets $) (deref $) ($ 1) ($ :type)))
+       '(let [$ owners
+              $ (nth $ 0)
+              $ (:pets $)
+              $ (deref $)
+              $ ($ 1)
+              $ ($ :type)]
+          $)))
+
 
 (is (= (macroexpand-1 '(cond foo   bar
                            :else baz))
@@ -122,6 +133,81 @@
        '(if :else baz (cond))))
 (is (= (macroexpand-1 '(cond))
        nil))
+
+(is (= (macroexpand-1 '(case x
+                         1       :foo
+                         (3 4)   :bar
+                         ((5 6)) :baz))
+       '(cond (= x '1)               :foo
+              (or (= x '3) (= x '4)) :bar
+              (or (= x '(5 6)))      :baz
+              :else                  (throw (Error (str "No matching clause: " x))))))
+(is (*= (macroexpand-1 '(case (foo bar baz)
+                          1       :foo
+                          (3 4)   :bar
+                          ((5 6)) :baz))
+        '(let [case-binding# (foo bar baz)]
+           (cond (= case-binding# '1)          :foo
+                 (or (= case-binding# '3)
+                     (= case-binding# '4))     :bar
+                 (or (= case-binding# '(5 6))) :baz
+                 :else                         (throw (Error (str "No matching clause: " case-binding#)))))))
+(is (= (macroexpand-1 '(case x
+                         [1] :foo
+                         (bar 42)))
+       '(cond (= x '[1]) :foo
+              :else      (bar 42))))
+
+(is (*= (macroexpand-1 '(condp get (foo bar baz)
+                          "foo"     :foo
+                          {:bar 42} :>> inc
+                          #{42}     :>> #(* % %)))
+        '(let [condp-binding# (foo bar baz)]
+           (if (get "foo" condp-binding#)
+              :foo
+              (if-let [condp-binding# (get {:bar 42} condp-binding#)]
+                (inc condp-binding#)
+                (if-let [condp-binding# (get #{42} condp-binding#)]
+                  (#(* % %) condp-binding#)
+                  (throw (Error (str "No matching clause: " condp-binding#)))))))))
+(is (*= (macroexpand-1 '(condp some xs
+                          #{1 2 3} (foo)
+                          #{4 5 6} :>> inc
+                          (bar)))
+        '(if (some #{1 2 3} xs)
+           (foo)
+           (if-let [condp-binding# (some #{4 5 6} xs)]
+             (inc condp-binding#)
+             (bar)))))
+
+(is (*= (macroexpand-1 '(cond-> (foo)
+                          true    inc
+                          false   (- 42)
+                          (= 2 2) (/)))
+        '(as-> (foo) cond-thread-binding#
+               (if (not true)    cond-thread-binding# (inc cond-thread-binding#))
+               (if (not false)   cond-thread-binding# (- cond-thread-binding# 42))
+               (if (not (= 2 2)) cond-thread-binding# (/ cond-thread-binding#)))))
+
+(is (*= (macroexpand-1 '(cond->> (foo)
+                          true    inc
+                          false   (- 42)
+                          (= 2 2) (/)))
+        '(as-> (foo) cond-thread-binding#
+               (if (not true)    cond-thread-binding# (inc cond-thread-binding#))
+               (if (not false)   cond-thread-binding# (- 42 cond-thread-binding#))
+               (if (not (= 2 2)) cond-thread-binding# (/ cond-thread-binding#)))))
+
+(is (*= (macroexpand-1 '(some-> {:a 1} :b (- 2)))
+        '(as-> {:a 1} some-thread-binding#
+               (if (nil? some-thread-binding#) some-thread-binding# (:b some-thread-binding#))
+               (if (nil? some-thread-binding#) some-thread-binding# (- some-thread-binding# 2)))))
+
+(is (*= (macroexpand-1 '(some->> {:a 1} :b (- 2)))
+        '(as-> {:a 1} some-thread-binding#
+               (if (nil? some-thread-binding#) some-thread-binding# (:b some-thread-binding#))
+               (if (nil? some-thread-binding#) some-thread-binding# (- 2 some-thread-binding#)))))
+
 
 (is (= (macroexpand-1 '(defn foo []))
        '(def foo (fn foo []))))
@@ -164,22 +250,42 @@
 (is (*= (macroexpand-1 '(if-let [x (foo)]
                           bar
                           baz))
-        '(let [x# (foo)]
-           (if x#
-             (let [x x#] bar)
+        '(let [if-let-binding# (foo)]
+           (if if-let-binding#
+             (let [x if-let-binding#] bar)
              baz))))
 (is (*= (macroexpand-1 '(if-let [[x & xs] (foo)]
                           bar
                           baz))
-        '(let [G__# (foo)]
-           (if G__#
-             (let [[x & xs] G__#] bar)
+        '(let [if-let-binding# (foo)]
+           (if if-let-binding#
+             (let [[x & xs] if-let-binding#] bar)
              baz))))
 
 (is (= (macroexpand-1 '(when-let [x (foo)]
                          bar
                          baz))
        '(if-let [x (foo)] (do bar baz))))
+
+(is (*= (macroexpand-1 '(if-some [[x & xs] (foo)]
+                          bar
+                          baz))
+        '(let [if-some-binding# (foo)]
+            (if-not (nil? if-some-binding#)
+              (let [[x & xs] if-some-binding#] bar)
+              baz))))
+
+(is (= (macroexpand-1 '(when-some [x (foo)]
+                         bar
+                         baz))
+       `(if-some [x (foo)] (do bar baz))))
+
+(is (= (macroexpand-1 '(when-first [x (foo)]
+                         bar
+                         baz))
+       '(when-let [[x] (seq* (foo))]
+          bar
+          baz)))
 
 (is (= (macroexpand-1 '(while foo
                          bar

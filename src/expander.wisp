@@ -7,11 +7,11 @@
                                    empty? map mapv vec set every? concat
                                    first second third rest last mapcat nth
                                    butlast interleave cons count take dissoc
-                                   some assoc reduce filter seq? zipmap
+                                   some assoc reduce filter seq? zipmap drop
                                    lazy-seq range reverse dorun map-indexed]]
             [wisp.runtime :refer [nil? dictionary? vector? keys get
                                   vals string? number? boolean?
-                                  date? re-pattern? even? = max
+                                  date? re-pattern? even? odd? = max
                                   inc dec dictionary merge subs]]
             [wisp.string :refer [split join capitalize]]))
 
@@ -316,6 +316,17 @@
                  forms)))
 (install-macro! :.. expand-dots)
 
+(defn expand-thread-as
+  "Binds name to expr, evaluates the first form in the lexical context
+  of that binding, then binds name to that result, repeating for each
+  successive form, returning the result of the last form."
+  [expr name & forms]
+  `(let [~name ~expr
+         ~@(mapcat (fn [form] [name form])
+                   forms)]
+     ~name))
+(install-macro! :as-> expand-thread-as)
+
 
 (defn expand-cond
   "Takes a set of test/expr pairs. It evaluates each test one at a
@@ -330,6 +341,139 @@
             (second clauses))
           (cons 'cond (rest (rest clauses))))))
 (install-macro! :cond expand-cond)
+
+(defn expand-case
+  "Takes an expression, and a set of clauses.
+  Each clause can take the form of either:
+
+  test-constant result-expr
+  (test-constant1 ... test-constantN)  result-expr
+
+  The test-constants are not evaluated. They must be compile-time
+  literals, and need not be quoted.  If the expression is equal to a
+  test-constant, the corresponding result-expr is returned. A single
+  default expression can follow the clauses, and its value will be
+  returned if no clause matches. If no default expression is provided
+  and no clause matches, an Error is thrown.
+
+  Unlike cond and condp, case does a constant-time dispatch, the
+  clauses are not considered sequentially.  All manner of constant
+  expressions are acceptable in case, including numbers, strings,
+  symbols, keywords, and composites thereof. Note that since
+  lists are used to group multiple constants that map to the same
+  expression, a vector can be used to match a list if needed. The
+  test-constants need not be all of the same type.
+
+  Depends on ="
+  [e & clauses]
+  (let [sym      (if (symbol? e) e (gensym :case-binding))
+        pairs    (partition 2 clauses)
+        eq*      (fn [c] `(= ~sym '~c))
+        tail     (if (odd? (count clauses))
+                   (last clauses)
+                   `(throw (Error (str "No matching clause: " ~sym))))]
+    (loop [pairs pairs, conds []]
+      (if (empty? pairs)
+        (let [result `(cond ~@conds :else ~tail)]
+          (if (= e sym) result `(let [~sym ~e] ~result)))
+        (let [x (first pairs), xs (rest pairs), consts (first x), res (second x)]
+          (recur xs (conj conds (if-not (list? consts)
+                                  (eq* consts)
+                                  `(or ~@(map eq* consts)))
+                                res)))))))
+(install-macro! :case expand-case)
+
+(defn expand-condp
+  "Takes a binary predicate, an expression, and a set of clauses.
+  Each clause can take the form of either:
+
+  test-expr result-expr
+  test-expr :>> result-fn
+
+  Note :>> is an ordinary keyword.
+
+  For each clause, (pred test-expr expr) is evaluated. If it returns
+  logical true, the clause is a match. If a binary clause matches, the
+  result-expr is returned, if a ternary clause matches, its result-fn,
+  which must be a unary function, is called with the result of the
+  predicate as its argument, the result of that call being the return
+  value of condp. A single default expression can follow the clauses,
+  and its value will be returned if no clause matches. If no default
+  expression is provided and no clause matches, an Error is thrown."
+  [pred expr & clauses]
+  (let [sym*    (gensym :condp-binding)
+        sym     (if (symbol? expr) expr sym*)
+        compare (fn [x] `(~pred ~x ~sym))
+        splits  (fn splits [xs]
+                  (cond (empty? xs)          `(throw (Error (str "No matching clause: " ~sym)))
+                        (= 1 (count xs))     (first xs)
+                        (= ':>> (second xs)) `(if-let [~sym* ~(compare (first xs))]
+                                                (~(third xs) ~sym*)
+                                                ~(splits (drop 3 xs)))
+                        :else                `(if ~(compare (first xs))
+                                                ~(second xs)
+                                                ~(splits (drop 2 xs)))))]
+    (if (= sym expr)
+      (splits clauses)
+      `(let [~sym ~expr] ~(splits clauses)))))
+(install-macro! :condp expand-condp)
+
+
+(defn- *thread [insert sym test form]
+  (let [form (if (list? form) form (list form))]
+    `(if ~test
+       ~sym
+       ~(insert sym form))))
+
+(defn- *cond-thread [expr clauses insert]
+  (let [sym (gensym :cond-thread-binding)]
+    `(as-> ~expr ~sym
+           ~@(map #(*thread insert sym `(not ~(first %)) (second %))
+                  (partition 2 clauses)))))
+
+(defn expand-cond-thread-first
+  "Takes an expression and a set of test/form pairs. Threads expr (via ->)
+  through each form for which the corresponding test
+  expression is true. Note that, unlike cond branching, cond-> threading does
+  not short circuit after the first true test expression."
+  [expr & clauses]
+  (*cond-thread expr clauses (fn [sym form] (apply list (first form) sym (vec (rest form))))))
+(install-macro! :cond-> expand-cond-thread-first)
+
+(defn expand-cond-thread-last
+  "Takes an expression and a set of test/form pairs. Threads expr (via ->>)
+  through each form for which the corresponding test expression
+  is true.  Note that, unlike cond branching, cond->> threading does not short circuit
+  after the first true test expression."
+  [expr & clauses]
+  (*cond-thread expr clauses (fn [sym form] (apply list (vec (concat form [sym]))))))
+(install-macro! :cond->> expand-cond-thread-last)
+
+
+(defn- *some-thread [expr forms insert]
+  (let [sym (gensym :some-thread-binding)]
+    `(as-> ~expr ~sym
+           ~@(map #(*thread insert sym `(nil? ~sym) %)
+                  forms))))
+
+(defn expand-some-thread-first
+  "When expr is not nil, threads it into the first form (via ->),
+  and when that result is not nil, through the next etc
+
+  Depends on nil?"
+  [expr & forms]
+  (*some-thread expr forms (fn [sym form] (apply list (first form) sym (vec (rest form))))))
+(install-macro! :some-> expand-some-thread-first)
+
+(defn expand-some-thread-last
+  "When expr is not nil, threads it into the first form (via ->>),
+  and when that result is not nil, through the next etc
+
+  Depends on nil?"
+  [expr & forms]
+  (*some-thread expr forms (fn [sym form] (apply list (vec (concat form [sym]))))))
+(install-macro! :some->> expand-some-thread-last)
+
 
 (defn expand-defn
   "Same as (def name (fn [params* ] exprs*)) or
@@ -401,9 +545,9 @@
   "bindings => binding-form test
   body => [then else]
   If test is true, evaluates then with binding-form bound to the value of
-  test, if not, yields else."
+  test, if not, yields else*."
   [bindings then else*]
-  (let [name (first bindings), test (second bindings), sym (gensym (if (symbol? name) name))]
+  (let [name (first bindings), test (second bindings), sym (gensym :if-let-binding)]
     `(let [~sym ~test]
        (if ~sym (let [~name ~sym] ~then) ~else*))))
 (install-macro :if-let expand-if-let)
@@ -414,6 +558,40 @@
   [bindings & body]
   `(if-let ~bindings (do ~@body)))
 (install-macro :when-let expand-when-let)
+
+
+(defn expand-if-some
+  "bindings => binding-form test
+  If test is not nil, evaluates then with binding-form bound to the
+  value of test, if not, yields else*.
+
+  Depends on nil?"
+  [bindings then else*]
+  (let [name (first bindings), test (second bindings), sym (if (symbol? name) name (gensym :if-some-binding))]
+    `(let [~sym ~test]
+       (if-not (nil? ~sym)
+         (let [~name ~sym] ~then)
+         ~else*))))
+(install-macro :if-some expand-if-some)
+
+(defn expand-when-some
+  "bindings => binding-form test
+  When test is not nil, evaluates body with binding-form bound to the
+  value of test."
+  [bindings & body]
+  `(if-some ~bindings (do ~@body)))
+(install-macro :when-some expand-when-some)
+
+
+(defn expand-when-first
+  "bindings => x xs
+  Roughly the same as (when (seq xs) (let [x (first xs)] body)) but xs is evaluated only once
+
+  Depends on seq*"
+  [bindings & body]
+  (let [name (first bindings), test (second bindings)]
+    `(when-let [[~name] (seq* ~test)] ~@body)))
+(install-macro :when-first expand-when-first)
 
 
 (defn expand-while
