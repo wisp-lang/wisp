@@ -46,6 +46,10 @@
        (get **macros** (name op))))
 
 
+(defn dot-syntax?
+  [op]
+  (and (symbol? op) (identical? \. (name op))))
+
 (defn method-syntax?
   [op]
   (let [id (and (symbol? op) (name op))]
@@ -114,6 +118,17 @@
       (throw (Error "Malformed member expression, expecting (.-member target)"))
       `(aget ~target (quote ~member)))))
 
+(defn dot-syntax
+  "Example:
+  '(. object -field) => '(aget object 'field)
+  '(. string substring 2 5) => '((aget string 'substring) 2 5)"
+  [op target field & params]
+  (if-not (symbol? field)
+    (throw (Error "Malformed . form")))
+  (let [*field (name field)]
+    (apply (if (identical? \- (first *field)) field-syntax method-syntax)
+           (symbol (str \. *field)) target params)))
+
 (defn new-syntax
   "Example:
   '(Point. x y) => '(new Point x y)"
@@ -138,8 +153,10 @@
   "Calling a keyword desugars to property access with that
   keyword name on the given argument:
   '(:foo bar) => '(get bar :foo)"
-  [keyword target]
-  `(get ~target ~keyword))
+  ([keyword target]
+    `(get ~target ~keyword))
+  ([keyword target default*]
+    `(get ~target ~keyword ~default*)))
 
 (defn- desugar
   [expander form]
@@ -159,7 +176,9 @@
           ;; object associated with that key:
           ;; '(:foo bar) => '(get bar :foo)
           (keyword? op) (desugar keyword-invoke form)
-          ;; '(.-field object) => (aget object 'field)
+          ;; '(. object method foo bar) => '((aget object method) foo bar)
+          (dot-syntax? op) (desugar dot-syntax form)
+          ;; '(.-field object) => '(aget object 'field)
           (field-syntax? op) (desugar field-syntax form)
           ;; '(.substring string 2 5) => '((aget string 'substring) 2 5)
           (method-syntax? op) (desugar method-syntax form)
@@ -232,7 +251,7 @@
   "Takes sequence of forms and expands them:
 
   ((unquote a)) -> ([a])
-  ((unquote-splicing a) -> (a)
+  ((unquote-splicing a)) -> (a)
   (a) -> ([(quote b)])
   ((unquote a) b (unquote-splicing a)) -> ([a] [(quote b)] c)"
   [forms]
@@ -241,19 +260,20 @@
                (unquote-splicing? form) (unquote-splicing-expand (second form))
                :else [(syntax-quote-expand form)]))
        forms))
-(install-macro! :syntax-quote syntax-quote)
+(install-macro! :syntax-quote syntax-quote-expand)
 
 ;; TODO: New reader translates not= correctly
 ;; but for the time being use not-equal name
-(defn not-equal
+(defn expand-not-equal
   [& body]
   `(not (= ~@body)))
-(install-macro! :not= not-equal)
+(install-macro! :not= expand-not-equal)
 
-(defn if-not [condition truthy alternative]
+(defn expand-if-not
   "Complements the `if` exclusive conditional branch."
+  [condition truthy alternative]
   `(if (not ~condition) ~truthy ~alternative))
-(install-macro! :if-not if-not)
+(install-macro! :if-not expand-if-not)
 
 (defn expand-comment
   "Ignores body, yields nil"
@@ -281,6 +301,21 @@
     (map #(if (list? %) % `(~%))
          (rest operations))))
 (install-macro! :->> expand-thread-last)
+
+(defn expand-dots
+  "form => fieldName-symbol or (instanceMethodName-symbol args*)
+  Expands into a member access (.) of the first member on the first
+  argument, followed by the next member on the result, etc. For
+  instance:
+  (.. document -body (get-attribute :class))
+  expands to:
+  (. (. document -body) get-attribute :class)
+  but is easier to write, read, and understand."
+  [x & forms]
+  `(-> ~x ~@(map #(if (list? %) (cons '. %) (list '. %))
+                 forms)))
+(install-macro! :.. expand-dots)
+
 
 (defn expand-cond
   "Takes a set of test/expr pairs. It evaluates each test one at a
@@ -340,7 +375,9 @@
   "Takes a body of expressions that returns an ISeq or nil, and yields
   a Seqable object that will invoke the body only the first time seq
   is called, and will cache the result and return it on all subsequent
-  seq calls. See also - realized?"
+  seq calls. See also - realized?
+
+  Depends on lazy-seq"
   {:added "1.0"}
   [& body]
   `(.call lazy-seq nil false (fn [] ~@body)))
@@ -394,7 +431,7 @@
   are evaluated in order.  Returns x.
   (doto (Map.) (.set :a 1) (.set :b 2))"
   [x & forms]
-  (let [sym (gensym :doto)]
+  (let [sym (gensym :doto-binding)]
     `(let [~sym ~x]
        ~@(map #(concat [(first %) sym] (rest %)) forms)
        ~sym)))
@@ -405,7 +442,7 @@
   Repeatedly executes body (presumably for side-effects) with name
   bound to integers from 0 through n-1."
   [bindings & body]
-  (let [name (first bindings),  n (second bindings),  sym (gensym :dotimes)]
+  (let [name (first bindings),  n (second bindings),  sym (gensym :dotimes-binding)]
     `(let [~sym ~n]
        (loop [~name 0]
          (when (< ~name ~sym)
@@ -454,7 +491,9 @@
    and nested coll-exprs can refer to bindings created in prior
    binding-forms.  Supported modifiers are: :let [binding-form expr ...],
    :while test, :when test.
-  (take 100 (for [x (infinite-range), y (infinite-range), :while (< y x)]  [x y]))"
+  (take 100 (for [x (infinite-range), y (infinite-range), :while (< y x)]  [x y]))
+
+  Depends on lazy-seq, lazy-concat, empty?, first, rest, cons"
   [seq-exprs body-expr]
   (let [iter (gensym :for-iter), coll (gensym :for-coll), parts (for-parts (partition 2 seq-exprs))]
     (:body (reduce #(apply for-step %1 %2)
@@ -465,7 +504,9 @@
 (defn expand-doseq
   "Repeatedly executes body (presumably for side-effects) with
   bindings and filtering as provided by 'for'. Does not retain
-  the head of the sequence. Returns nil."
+  the head of the sequence. Returns nil.
+
+  Depends on lazy-seq, lazy-concat, empty?, first, rest, cons, dorun"
   [seq-exprs & body]
   `(dorun (for ~seq-exprs (do ~@body nil))))
 (install-macro :doseq expand-doseq)
@@ -540,7 +581,9 @@
 
   Evaluates the exprs in a lexical context in which the symbols in
   the binding-forms are bound to their respective init-exprs or parts
-  therein."
+  therein.
+
+  Depends on dictionary?, dictionary, vec, get"
   [bindings & body]
   `(let* ~(destructure bindings) ~@body))
 (install-macro :let expand-let)
@@ -554,7 +597,9 @@
   next-param => binding-form
   name => symbol
 
-  Defines a function"
+  Defines a function
+
+  Depends on dictionary?, dictionary, vec, get"
   [& args]
   (let [name (if (symbol? (first args)) (first args))
         defs (if name (rest args) args)
@@ -575,7 +620,9 @@
 (defn expand-loop
   "Evaluates the exprs in a lexical context in which the symbols in
   the binding-forms are bound to their respective init-exprs or parts
-  therein. Acts as a recur target."
+  therein. Acts as a recur target.
+
+  Depends on dictionary?, dictionary, vec, get"
   [bindings & body]
   (let [pairs   (partition 2 bindings)
         indices (bind-indices* (mapv first pairs))

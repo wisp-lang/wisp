@@ -11,7 +11,7 @@
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
                                   false? nil? re-pattern? inc dec str char
-                                  int = ==]]
+                                  int = == get]]
             [wisp.string :refer [split join upper-case replace triml]]
             [wisp.expander :refer [install-macro!]]
             [escodegen :refer [generate]]))
@@ -850,7 +850,7 @@
    `(aget (or ~target 0)
           ~property))
   ([target property default*]
-    (if (nil? default*)
+    (if (identical? default* nil)
       `(get ~target ~property)
       `(apply get ~[target property default*]))))
 (install-macro! :get get-macro)

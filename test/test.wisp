@@ -7,4 +7,5 @@
             wisp.test.reader
             wisp.test.escodegen
             wisp.test.protocols
-            wisp.test.analyzer))
+            wisp.test.analyzer
+            wisp.test.macros))
