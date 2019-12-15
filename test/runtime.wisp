@@ -3,7 +3,8 @@
             [wisp.src.runtime :refer [dictionary? vector? iterable? set?
                                       subs str and or = == not= > >= < <=
                                       + - / * quot mod rem rem* nan?]]
-            [wisp.src.sequence :refer [list cons concat vec lazy-seq]]
+            [wisp.src.sequence :refer [list cons concat vec lazy-seq seq set
+                                       take range infinite-range lazy-concat]]
             [wisp.src.ast :refer [symbol]]))
 
 
@@ -43,7 +44,6 @@
 (is (not (apply = [1 2 3])))
 (is (apply = [1 1 1 1 1 1]))
 (is (not (apply = [1 1 1 1 2 1])))
-(is (= '(1 2 3) (cons 1 [2 3])))
 
 (is (apply == [1]))
 (is (apply == [1 1]))
@@ -215,6 +215,16 @@
               {:x 1 :y [2 [3 {:z 4}]]}
               {:x 1 :y [2 [3 {:z 4}]]}
               {:x 1 :y [2 [3 {:z 4}]]}]))
+(is (= '(1 2 3) (cons 1 [2 3])))
+(is (= '(1 2 3) [1 2 3]))
+(is (= (range 10) (take 10 (infinite-range))))
+(is (= (range 10) (seq (Set. (range 10)))))
+(is (not= (range 10) (infinite-range)))
+(is (not= (infinite-range 1) (infinite-range 1 2)))
+(is (= (lazy-concat (range 10) \+ (range 2))
+       (lazy-concat (range 10) \+ #{0 1})))
+(is (not= (lazy-concat (range 10) \+ (infinite-range 1))
+          (lazy-concat (range 10) \+ (infinite-range 1 2))))
 
 (is (not (apply not= [])))
 (is (not (apply not= [1 1])))

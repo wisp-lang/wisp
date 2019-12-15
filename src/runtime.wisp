@@ -332,21 +332,6 @@
                     false)
                   true))))))
 
-(defn- ^boolean vector-equal?
-  [x y]
-  (and (vector? x)
-       (vector? y)
-       (identical? (.-length x) (.-length y))
-       (loop [xs x
-              ys y
-              index 0
-              count (.-length x)]
-        (if (< index count)
-          (if (equivalent? (get xs index) (get ys index))
-              (recur xs ys (inc index) count)
-              false)
-          true))))
-
 (defn- ^boolean equivalent?
   "Equality. Returns true if x equals y, false if not. Compares
   numbers and collections in a type-independent manner. Clojure's
@@ -361,11 +346,11 @@
                    (number? x) (and (number? y) (identical? (.valueOf x)
                                                             (.valueOf y)))
                    (set? x) (set-equal? x y)
-                   (list? x) (and (list? y) (= (Array.from x) (Array.from y)))
+                   (or (vector? x) (list? x) (lazy-seq? x)) (and (or (vector? y) (list? y) (lazy-seq? y))
+                                                                 (=.*seq= x y))
                    (fn? x) false
                    (boolean? x) false
                    (date? x) (date-equal? x y)
-                   (vector? x) (vector-equal? x y)
                    (re-pattern? x) (pattern-equal? x y)
                    :else (dictionary-equal? x y))))
   ([x y & more]

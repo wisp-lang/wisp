@@ -91,6 +91,17 @@
 (def identity-set? identity-set?)
 (def list? list?)
 
+(set! =.*seq=
+  (fn [x y]
+    (and (or (vector? x) (seq? x))
+         (or (vector? y) (seq? y))
+         (loop [x (seq x), y (seq y)]
+           (cond (and (vector? x) (vector? y)) (and (= (count x) (count y))
+                                                    (.every x #(= %1 (aget y %2))))
+                 (or (empty? x) (empty? y))    (and (empty? x) (empty? y))
+                 (not= (first x) (first y))    false
+                 :else                         (recur (rest x) (rest y)))))))
+
 (defn list
   "Creates list of the given items"
   []
