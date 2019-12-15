@@ -1,9 +1,19 @@
 (ns wisp.sequence
   (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary? set?
-                                  key-values str int dec inc min merge dictionary
-                                  iterable? = complement identity get]]))
+                                  key-values str int dec inc min merge dictionary get
+                                  iterable? = complement identity list? lazy-seq? identity-set?]]))
+
+(def ^:private -wisp-types (aget = '-wisp-types))
 
 ;; Implementation of list
+
+(defn- list-iterator []
+  (let [self this]
+    {:next #(if (empty? self)
+              {:done true}
+              (let [x (first self)]
+                (set! self (rest self))
+                {:value x}))}))
 
 (defn- seq->string [lparen rparen]
   (fn []
@@ -31,10 +41,11 @@
   this)
 
 (set! List.prototype.length 0)
-(set! List.type "wisp.list")
+(set! List.type (:list -wisp-types))
 (set! List.prototype.type List.type)
 (set! List.prototype.tail (Object.create List.prototype))
 (set! List.prototype.to-string (seq->string "(" ")"))
+(aset List.prototype Symbol.iterator list-iterator)
 
 (defn- lazy-seq-value [lazy-seq]
   (if (.-realized lazy-seq)
@@ -49,8 +60,9 @@
   (set! (.-realized this) (or realized false))
   (set! (.-x this) x)
   this)
-(set! LazySeq.type "wisp.lazy.seq")
+(set! LazySeq.type (:lazy-seq -wisp-types))
 (set! LazySeq.prototype.type LazySeq.type)
+(aset LazySeq.prototype Symbol.iterator list-iterator)
 
 (defn lazy-seq
   [realized body]
@@ -72,21 +84,12 @@
     (aset f Symbol.iterator f.values)
     (aset f :type identity-set.type)
     f))
-(set! identity-set.type "wisp.identity-set")
+(set! identity-set.type (:set -wisp-types))
 (def set identity-set)
 
-(defn lazy-seq?
-  [value]
-  (and value (identical? LazySeq.type value.type)))
-
-(defn identity-set?
-  [value]
-  (and value (identical? identity-set.type value.type)))
-
-(defn list?
-  "Returns true if list"
-  [value]
-  (and value (identical? List.type value.type)))
+(def lazy-seq? lazy-seq?)
+(def identity-set? identity-set?)
+(def list? list?)
 
 (defn list
   "Creates list of the given items"
@@ -429,22 +432,12 @@
              (if-not (.-done x) [(.-value x) %]))
           iterator))
 
-(defn- list->vector [source]
-  (loop [result []
-         list source]
-    (if (empty? list)
-      result
-      (recur
-        (do (.push result (first list)) result)
-        (rest list)))))
-
 (defn vec
   "Creates a new vector containing the contents of sequence"
   [sequence]
   (cond (nil? sequence) []
-        (vector? sequence) (Array.from sequence)
-        (list? sequence) (list->vector sequence)
-        (lazy-seq? sequence) (let [xs (list->vector sequence)]          ; optimizing count
+        (or (vector? sequence) (list? sequence)) (Array.from sequence)
+        (lazy-seq? sequence) (let [xs (Array.from sequence)]            ; optimizing count
                                (set! (.-length sequence) (.-length xs))
                                xs)
         :else (vec (seq sequence))))

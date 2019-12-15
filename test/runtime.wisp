@@ -1,9 +1,9 @@
 (ns wisp.test.runtime
   (:require [wisp.test.util :refer [is thrown?]]
             [wisp.src.runtime :refer [dictionary? vector? iterable? set?
-                                      subs str and or = == > >= < <=
+                                      subs str and or = == not= > >= < <=
                                       + - / * quot mod rem rem* nan?]]
-            [wisp.src.sequence :refer [list concat vec]]
+            [wisp.src.sequence :refer [list cons concat vec lazy-seq]]
             [wisp.src.ast :refer [symbol]]))
 
 
@@ -18,8 +18,9 @@
 (is (vector? []) "[] is vector")
 
 (is (not (iterable? nil)) "nil is not iterable")
-(is (not (iterable? '())) "() is not iterable")
 (is (not (iterable? {})) "{} is not iterable")
+(is (iterable? '()) "() is iterable")
+(is (iterable? (lazy-seq)) "(lazy-seq) is iterable")
 (is (iterable? []) "[] is iterable")
 (is (iterable? (Set.)) "Set{} is iterable")
 (is (iterable? (.keys (Set.))) "(.keys Set{}) is iterable")
@@ -42,6 +43,7 @@
 (is (not (apply = [1 2 3])))
 (is (apply = [1 1 1 1 1 1]))
 (is (not (apply = [1 1 1 1 2 1])))
+(is (= '(1 2 3) (cons 1 [2 3])))
 
 (is (apply == [1]))
 (is (apply == [1 1]))
@@ -213,6 +215,13 @@
               {:x 1 :y [2 [3 {:z 4}]]}
               {:x 1 :y [2 [3 {:z 4}]]}
               {:x 1 :y [2 [3 {:z 4}]]}]))
+
+(is (not (apply not= [])))
+(is (not (apply not= [1 1])))
+(is (apply not= [1 2]))
+(is (apply not= [1 "1"]))
+(is (apply not= [1 :1]))
+(is (apply not= ["b" 'b]))
 
 (is (= (apply nan? []) true))
 (is (= (apply nan? [nil]) true))

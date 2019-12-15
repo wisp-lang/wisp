@@ -1,6 +1,27 @@
 (ns wisp.runtime
   "Core primitives required for runtime")
 
+
+(def ^:private -wisp-types
+  (Object.freeze
+    {:list     "wisp.list"
+     :lazy-seq "wisp.lazy.seq"
+     :set      "wisp.identity-set"}))
+
+(defn lazy-seq?
+  [value]
+  (and value (identical? (:lazy-seq -wisp-types) value.type)))
+
+(defn identity-set?
+  [value]
+  (and value (identical? (:set -wisp-types) value.type)))
+
+(defn list?
+  "Returns true if list"
+  [value]
+  (and value (identical? (:list -wisp-types) value.type)))
+
+
 (defn identity
   "Returns its argument."
   [x] x)
@@ -340,10 +361,11 @@
                    (number? x) (and (number? y) (identical? (.valueOf x)
                                                             (.valueOf y)))
                    (set? x) (set-equal? x y)
+                   (list? x) (and (list? y) (= (Array.from x) (Array.from y)))
                    (fn? x) false
                    (boolean? x) false
                    (date? x) (date-equal? x y)
-                   (vector? x) (vector-equal? x y [] [])
+                   (vector? x) (vector-equal? x y)
                    (re-pattern? x) (pattern-equal? x y)
                    :else (dictionary-equal? x y))))
   ([x y & more]
@@ -360,6 +382,13 @@
           true)))))
 
 (def = equivalent?)
+(set! (aget = '-wisp-types) -wisp-types)
+
+(defn ^boolean not=
+  "Same as (not (= obj1 obj2))"
+  ([x] false)
+  ([x y] (not (= x y)))
+  ([x y & more] (not (apply = x y more))))
 
 (defn ^boolean ==
   "Equality. Returns true if x equals y, false if not. Compares
