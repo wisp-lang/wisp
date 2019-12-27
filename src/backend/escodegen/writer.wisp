@@ -5,13 +5,13 @@
                               syntax-quote? name gensym pr-str]]
             [wisp.sequence :refer [empty? count list? list first second third
                                    rest cons conj butlast reverse reduce vec
-                                   last map filter take concat partition
+                                   last map mapv filter take concat partition
                                    repeat interleave assoc]]
             [wisp.runtime :refer [odd? dictionary? dictionary merge keys vals
                                   contains-vector? map-dictionary string?
                                   number? vector? boolean? subs re-find true?
                                   false? nil? re-pattern? inc dec str char
-                                  int = ==]]
+                                  int = == get]]
             [wisp.string :refer [split join upper-case replace triml]]
             [wisp.expander :refer [install-macro!]]
             [escodegen :refer [generate]]))
@@ -846,9 +846,13 @@
 
 
 (defn get-macro
-  [target property]
-  `(aget (or ~target 0)
-         ~property))
+  ([target property]
+   `(aget (or ~target 0)
+          ~property))
+  ([target property default*]
+    (if (identical? default* nil)
+      `(get ~target ~property)
+      `(apply get ~[target property default*]))))
 (install-macro! :get get-macro)
 
 ;; Logical operators
@@ -940,7 +944,7 @@
 (install-arithmetic-operator! :- :- #(>= % 1) 0)
 (install-arithmetic-operator! :* :* nil 1)
 (install-arithmetic-operator! (keyword \/) (keyword \/) #(>= % 1) 1)
-(install-arithmetic-operator! :mod (keyword \%) #(== % 2) 1)
+(install-arithmetic-operator! :rem (keyword \%) #(== % 2) 1)
 
 
 ;; Comparison operators
@@ -1058,6 +1062,11 @@
 (install-macro! :assert expand-assert)
 
 
+(defn expand-typestr [it]
+  (let [prefix "[object ", suffix "]"]
+    `(-> (.call Object.prototype.to-string ~it)
+         (.slice ~(count prefix) ~(- (count suffix))))))
+
 (defn expand-defprotocol
   [&env id & forms]
   (let [ns (name (:name (:ns &env)))
@@ -1067,34 +1076,28 @@
         protocol-methods (if protocol-doc
                            (rest forms)
                            forms)
-        protocol (reduce (fn [protocol method]
-                           (let [method-name (first method)
-                                 id (id->ns (str ns "$"
-                                                 protocol-name "$"
-                                                 (name method-name)))]
-                             (conj protocol
-                                   {:id method-name
-                                    :fn `(fn ~id [self]
-                                           (def f (cond (identical? self null)
-                                                        (.-nil ~id)
-
-                                                        (identical? self nil)
-                                                        (.-nil ~id)
-
-                                                        :else (or (aget self '~id)
-                                                                  (aget ~id
-                                                                        (.replace (.replace (.call Object.prototype.toString self)
-                                                                                            "[object " "")
-                                                                                  #"\]$" ""))
-                                                                  (.-_ ~id))))
-                                           (.apply f self arguments))})))
-
-                         []
-                         protocol-methods)
+        not-supported (fn [method] `#(throw (str ~(str "No protocol method " protocol-name
+                                                       "." method " defined for type ")
+                                                 ~(expand-typestr '%) ": " %)))
+        protocol (mapv (fn [method]
+                         (let [method-name (first method)
+                               id (id->ns (str ns "$"
+                                               protocol-name "$"
+                                               (name method-name)))]
+                           {:id method-name
+                            :fn `(fn ~id [self]
+                                   (.apply (or (if (or (identical? self null) (identical? self nil))
+                                                 (.-nil ~id)
+                                                 (or (aget self '~id)
+                                                     (aget ~id ~(expand-typestr 'self))
+                                                     (.-_ ~id)))
+                                               ~(not-supported (name id)))
+                                           self arguments))}))
+                       protocol-methods)
         fns (map (fn [form]
                    `(def ~(:id form) (aget ~id '~(:id form))))
                  protocol)
-        satisfy (assoc {} 'wisp_core$IProtocol$id (str ns "/" protocol-name))
+        satisfy {:wisp_core$IProtocol$id (str ns "/" protocol-name)}
         body (reduce (fn [body method]
                        (assoc body (:id method) (:fn method)))
                      satisfy

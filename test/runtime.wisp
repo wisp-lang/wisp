@@ -1,9 +1,10 @@
 (ns wisp.test.runtime
   (:require [wisp.test.util :refer [is thrown?]]
-            [wisp.src.runtime :refer [dictionary? vector? subs str
-                                      and or = == > >= < <= + - / *
-                                      nan?]]
-            [wisp.src.sequence :refer [list concat vec]]
+            [wisp.src.runtime :refer [dictionary? vector? iterable? set?
+                                      subs str and or = == not= > >= < <=
+                                      + - / * quot mod rem rem* nan?]]
+            [wisp.src.sequence :refer [list cons concat vec lazy-seq seq set
+                                       take range infinite-range lazy-concat]]
             [wisp.src.ast :refer [symbol]]))
 
 
@@ -17,11 +18,24 @@
 (is (not (vector? '())) "() is not vector")
 (is (vector? []) "[] is vector")
 
-(is (= '(1 2 3 4 5)
-       `(1 ~@'(2 3) 4 ~@'(5))))
+(is (not (iterable? nil)) "nil is not iterable")
+(is (not (iterable? {})) "{} is not iterable")
+(is (iterable? '()) "() is iterable")
+(is (iterable? (lazy-seq)) "(lazy-seq) is iterable")
+(is (iterable? []) "[] is iterable")
+(is (iterable? (Set.)) "Set{} is iterable")
+(is (iterable? (.keys (Set.))) "(.keys Set{}) is iterable")
 
-(is (= "lojure" (subs "Clojure" 1)))
-(is (= "lo" (subs "Clojure" 1 3)))
+(is (set? (Set.)) "Set{} is a set")
+(is (not (set? (Map.))) "Map{} is not a set")
+
+(is (= (Set. [1 2]) (Set. [2 1])))
+
+(is (= `(1 ~@'(2 3) 4 ~@'(5))
+       '(1 2 3 4 5)))
+
+(is (= (subs "Clojure" 1) "lojure"))
+(is (= (subs "Clojure" 1 3) "lo"))
 
 (is (apply = [1]))
 (is (apply = [1 1]))
@@ -82,48 +96,80 @@
 (is (apply <= [0 1 2 3 4 4]))
 (is (not (apply <= [0 1 2 1 4 5])))
 
-(is (= 0 (apply + [])))
-(is (= 1 (apply + [1])))
-(is (= 3 (apply + [1 2])))
-(is (= 6 (apply + [1 2 3])))
-(is (= 21 (apply + [1 2 3 4 5 6])))
+(is (= (apply + []) 0))
+(is (= (apply + [1]) 1))
+(is (= (apply + [1 2]) 3))
+(is (= (apply + [1 2 3]) 6))
+(is (= (apply + [1 2 3 4 5 6]) 21))
 
-(is (= -1 (apply - [1])))
-(is (= 3 (apply - [5 2])))
-(is (= 5 (apply - [10 2 3])))
-(is (= 9 (apply - [30 1 2 3 4 5 6])))
+(is (= (apply - [1]) -1))
+(is (= (apply - [5 2]) 3))
+(is (= (apply - [10 2 3]) 5))
+(is (= (apply - [30 1 2 3 4 5 6]) 9))
 
-(is (= 1 (apply * [])))
-(is (= 5 (apply * [5])))
-(is (= 4 (apply * [2 2])))
-(is (= 6 (apply * [1 2 3])))
-(is (= 720 (apply * [1 2 3 4 5 6])))
+(is (= (apply * []) 1))
+(is (= (apply * [5]) 5))
+(is (= (apply * [2 2]) 4))
+(is (= (apply * [1 2 3]) 6))
+(is (= (apply * [1 2 3 4 5 6]) 720))
 
-(is (= 1 (apply / [1])))
-(is (= 1/2 (apply / [2])))
-(is (= 5/2 (apply / [5 2])))
-(is (= 3 (apply / [6 2])))
-(is (= 5/3 (apply / [10 2 3])))
-(is (= 1/24 (apply / [30 1 2 3 4 5 6])))
+(is (= (apply / [1]) 1))
+(is (= (apply / [2]) 1/2))
+(is (= (apply / [5 2]) 5/2))
+(is (= (apply / [6 2]) 3))
+(is (= (apply / [10 2 3]) 5/3))
+(is (= (apply / [30 1 2 3 4 5 6]) 1/24))
 
-(is (= true (apply and [])))
-(is (= 1 (apply and [1])))
-(is (= 2 (apply and [1 2])))
-(is (= 2 (apply and [5 2])))
-(is (= false (apply and [6 false 2])))
-(is (= nil (apply and [6 4 nil 2])))
-(is (= 3 (apply and [10 2 3])))
-(is (= 6 (apply and [30 1 2 3 4 5 6])))
-(is (= false (apply and [30 1 2 false 3 4 5 6])))
-(is (= 17 (apply and [30 1 2 3 4 5 6 30 1 2 3 4 5 6 17])))
+(is (= (apply quot [ 10  3])  3))
+(is (= (apply quot [-10  3]) -4))  ; difference from Clojure: int rounds down, not towards zero
+(is (= (apply quot [ 10 -3]) -4))
+(is (= (apply quot [-10 -3])  3))
+(is (= (apply quot [ 1024.8402 5.12])  200))
+(is (= (apply quot [-1024.8402 5.12]) -201))
 
-(is (= nil (apply or [])))
-(is (= 1 (apply or [nil 1])))
-(is (= 1 (apply or [1 nil 2])))
-(is (= 5 (apply or [5 2])))
-(is (= 2 (apply or [nil false 2])))
-(is (= false (apply or [nil nil nil nil nil nil nil nil nil false])))
-(is (= 17 (apply or [nil nil nil nil nil nil nil nil nil nil nil nil nil 17 18])))
+(defn- approx= [x delta & xs]
+  (.every xs #(> delta (Math.abs (- x %)))))
+
+(is (= (apply mod [ 10  3])  1))
+(is (= (apply mod [-10  3])  2))
+(is (= (apply mod [ 10 -3]) -2))
+(is (= (apply mod [-10 -3]) -1))
+(is (approx= (apply mod [ 1024.8402 5.12]) 1e-5 0.8402))
+(is (approx= (apply mod [-1024.8402 5.12]) 1e-5 4.2798))
+
+(is (= (apply rem  [ 10  3])  1))
+(is (= (apply rem  [-10  3]) -1))
+(is (= (apply rem  [ 10 -3])  1))
+(is (= (apply rem  [-10 -3]) -1))
+(is (= (apply rem* [ 10  3])  1))
+(is (= (apply rem* [-10  3]) -1))
+(is (= (apply rem* [ 10 -3])  1))
+(is (= (apply rem* [-10 -3]) -1))
+(is (approx= (apply rem  [ 1024.8402 5.12]) 1e-5  0.8402))
+(is (approx= (apply rem  [-1024.8402 5.12]) 1e-5 -0.8402))
+(is (approx= (apply rem* [ 1024.8402 5.12]) 1e-5  0.8402))
+(is (approx= (apply rem* [-1024.8402 5.12]) 1e-5 -0.8402))
+
+
+
+(is (= (apply and []) true))
+(is (= (apply and [1]) 1))
+(is (= (apply and [1 2]) 2))
+(is (= (apply and [5 2]) 2))
+(is (= (apply and [6 false 2]) false))
+(is (= (apply and [6 4 nil 2]) nil))
+(is (= (apply and [10 2 3]) 3))
+(is (= (apply and [30 1 2 3 4 5 6]) 6))
+(is (= (apply and [30 1 2 false 3 4 5 6]) false))
+(is (= (apply and [30 1 2 3 4 5 6 30 1 2 3 4 5 6 17]) 17))
+
+(is (= (apply or []) nil))
+(is (= (apply or [nil 1]) 1))
+(is (= (apply or [1 nil 2]) 1))
+(is (= (apply or [5 2]) 5))
+(is (= (apply or [nil false 2]) 2))
+(is (= (apply or [nil nil nil nil nil nil nil nil nil false]) false))
+(is (= (apply or [nil nil nil nil nil nil nil nil nil nil nil nil nil 17 18]) 17))
 
 (is (apply = []))
 (is (apply = [1 1]))
@@ -169,11 +215,28 @@
               {:x 1 :y [2 [3 {:z 4}]]}
               {:x 1 :y [2 [3 {:z 4}]]}
               {:x 1 :y [2 [3 {:z 4}]]}]))
+(is (= '(1 2 3) (cons 1 [2 3])))
+(is (= '(1 2 3) [1 2 3]))
+(is (= (range 10) (take 10 (infinite-range))))
+(is (= (range 10) (seq (Set. (range 10)))))
+(is (not= (range 10) (infinite-range)))
+(is (not= (infinite-range 1) (infinite-range 1 2)))
+(is (= (lazy-concat (range 10) \+ (range 2))
+       (lazy-concat (range 10) \+ #{0 1})))
+(is (not= (lazy-concat (range 10) \+ (infinite-range 1))
+          (lazy-concat (range 10) \+ (infinite-range 1 2))))
 
-(is (= true (apply nan? [])))
-(is (= true (apply nan? [nil])))
-(is (= true (apply nan? ["hi"])))
-(is (= false (apply nan? [false])))
-(is (= false (apply nan? [true])))
-(is (= false (apply nan? [1])))
-(is (= false (apply nan? ["2"])))
+(is (not (apply not= [])))
+(is (not (apply not= [1 1])))
+(is (apply not= [1 2]))
+(is (apply not= [1 "1"]))
+(is (apply not= [1 :1]))
+(is (apply not= ["b" 'b]))
+
+(is (= (apply nan? []) true))
+(is (= (apply nan? [nil]) true))
+(is (= (apply nan? ["hi"]) true))
+(is (= (apply nan? [false]) false))
+(is (= (apply nan? [true]) false))
+(is (= (apply nan? [1]) false))
+(is (= (apply nan? ["2"]) false))

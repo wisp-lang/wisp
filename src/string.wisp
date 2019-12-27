@@ -1,12 +1,41 @@
 (ns wisp.string
-  (:require [wisp.runtime :refer [str subs re-matches nil? string? re-pattern?]]
-            [wisp.sequence :refer [vec empty?]]))
+  (:require [wisp.runtime :refer [fn? str subs re-matches nil? string? re-pattern? dec max]]
+            [wisp.sequence :refer [seq lazy-seq vec conj cons first rest take count empty?]]))
+
+(def
+  ^{:doc "Returns all matches of pattern occurring in string (as is)"}
+  re-find-all
+  (if (fn? (.-match-all ""))               ; Chrome 73+, Firefox 67+, Node 12+
+    (fn re-find-all [re s]
+      (seq (.match-all s (RegExp re \g))))
+    (fn re-find-all [re s]
+      ((fn rec [suffix prefix]             ; simulating match-all behaviour
+         (let [x (.match suffix re)]
+           (if x
+             (let [pos (+ (.-index x) (max 1 (count (first x))))]
+               (Object.assign x {:input s, :index (+ prefix (.-index x))})
+               (if (empty? suffix)
+                 (lazy-seq [x])
+                 (lazy-seq (cons x (rec (subs suffix pos) (+ prefix pos)))))))))
+       s #_"removing prefix to prevent repeat matches"
+       0 #_"keeping track of removed prefix length"))))
+
+(defn- clojure-split [string pattern limit]
+  (loop [matches (take (dec limit) (re-find-all pattern string)),  res [],  index 0]
+    (if (empty? matches)
+      (conj res (subs string index))
+      (let [x (first matches)]
+        (recur (rest matches)
+               (conj res (subs string index (.-index x)))
+               (+ (.-index x) (count (first x))))))))
 
 (defn split
   "Splits string on a regular expression.  Optional argument limit is
   the maximum number of splits. Not lazy. Returns vector of the splits."
   [string pattern limit]
-  (.split string pattern limit))
+  (if (not limit)
+    (.split string pattern)
+    (clojure-split string pattern (if (> limit 0) limit Infinity))))
 
 (defn split-lines
   "Splits s on \n or \r\n."

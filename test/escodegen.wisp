@@ -330,14 +330,14 @@
 ;; functions
 
 
-(is (= (transpile "(fn [] (+ x y))")
+(is (= (transpile "(fn* [] (+ x y))")
 "(function () {
     return x + y;
 });"))
 
 ;; =>
 
-(is (= (transpile "(fn [x] (def y 7) (+ x y))")
+(is (= (transpile "(fn* [x] (def y 7) (+ x y))")
 "(function (x) {
     var y = 7;
     return x + y;
@@ -345,98 +345,98 @@
 
 ;; =>
 
-(is (= (transpile "(fn [])")
+(is (= (transpile "(fn* [])")
 "(function () {
     return void 0;
 });"))
 
 ;; =>
 
-(is (= (transpile "(fn ([]))")
+(is (= (transpile "(fn* ([]))")
 "(function () {
     return void 0;
 });"))
 
 ;; =>
 
-(is (= (transpile "(fn ([]))")
+(is (= (transpile "(fn* ([]))")
 "(function () {
     return void 0;
 });"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn a b)")
+(is (thrown? (transpile "(fn* a b)")
              #"parameter declaration \(b\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn a ())")
+(is (thrown? (transpile "(fn* a ())")
              #"parameter declaration \(\(\)\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn a (b))")
+(is (thrown? (transpile "(fn* a (b))")
              #"parameter declaration \(\(b\)\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn)")
+(is (thrown? (transpile "(fn*)")
              #"parameter declaration \(nil\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn {} a)")
+(is (thrown? (transpile "(fn* {} a)")
              #"parameter declaration \({}\) must be a vector"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn ([]) a)")
+(is (thrown? (transpile "(fn* ([]) a)")
              #"Malformed fn overload form"))
 
 ;; =>
 
-(is (thrown? (transpile "(fn ([]) (a))")
+(is (thrown? (transpile "(fn* ([]) (a))")
              #"Malformed fn overload form"))
 
 ;; =>
 
-(is (= (transpile "(fn [x] x)")
+(is (= (transpile "(fn* [x] x)")
        "(function (x) {\n    return x;\n});")
     "function compiles")
 
 ;; =>
 
-(is (= (transpile "(fn [x] (def y 1) (foo x y))")
+(is (= (transpile "(fn* [x] (def y 1) (foo x y))")
        "(function (x) {\n    var y = 1;\n    return foo(x, y);\n});")
     "function with multiple statements compiles")
 
 ;; =>
 
-(is (= (transpile "(fn identity [x] x)")
+(is (= (transpile "(fn* identity [x] x)")
                   "(function identity(x) {\n    return x;\n});")
     "named function compiles")
 
 ;; =>
 
-(is (thrown? (transpile "(fn \"doc\" a [x] x)")
+(is (thrown? (transpile "(fn* \"doc\" a [x] x)")
              #"parameter declaration (.*) must be a vector"))
 
 ;; =>
 
-(is (= (transpile "(fn foo? ^boolean [x] true)")
+(is (= (transpile "(fn* foo? ^boolean [x] true)")
        "(function isFoo(x) {\n    return true;\n});")
     "metadata is supported")
 
 ;; =>
 
-(is (= (transpile "(fn ^:static x [y] y)")
+(is (= (transpile "(fn* ^:static x [y] y)")
        "(function x(y) {\n    return y;\n});")
     "fn name metadata")
 
 ;; =>
 
-(is (= (transpile "(fn [a & b] a)")
+(is (= (transpile "(fn* [a & b] a)")
 "(function (a) {
     var b = Array.prototype.slice.call(arguments, 1);
     return a;
@@ -444,7 +444,7 @@
 
 ;; =>
 
-(is (= (transpile "(fn [& a] a)")
+(is (= (transpile "(fn* [& a] a)")
 "(function () {
     var a = Array.prototype.slice.call(arguments, 0);
     return a;
@@ -453,7 +453,7 @@
 
 ;; =>
 
-(is (= (transpile "(fn
+(is (= (transpile "(fn*
                      ([] 0)
                      ([x] x))")
 "(function () {
@@ -470,7 +470,7 @@
 
 ;; =>
 
-(is (= (transpile "(fn sum
+(is (= (transpile "(fn* sum
                     ([] 0)
                     ([x] x)
                     ([x y] (+ x y))
@@ -499,7 +499,7 @@
 
 ;; =>
 
-(is (= (transpile "(fn vector->list [v] (make list v))")
+(is (= (transpile "(fn* vector->list [v] (make list v))")
 "(function vectorToList(v) {
     return make(list, v);
 });"))
@@ -563,7 +563,7 @@
     return plus(a, b);
 })();"))
 
-(is (= (transpile "(fn [a]
+(is (= (transpile "(fn* [a]
                     (do
                       (def b 2)
                       (plus a b)))")
@@ -578,21 +578,21 @@
 
 ;; Let
 
-(is (= (transpile "(let [])")
+(is (= (transpile "(let* [])")
 "(function () {
     return void 0;
 }.call(this));"))
 
 ;; =>
 
-(is (= (transpile "(let [] x)")
+(is (= (transpile "(let* [] x)")
 "(function () {
     return x;
 }.call(this));"))
 
 ;; =>
 
-(is (= (transpile "(let [x 1 y 2] (+ x y))")
+(is (= (transpile "(let* [x 1 y 2] (+ x y))")
 "(function () {
     var xø1 = 1;
     var yø1 = 2;
@@ -601,8 +601,8 @@
 
 ;; =>
 
-(is (= (transpile "(let [x y
-                         y x]
+(is (= (transpile "(let* [x y
+                          y x]
                      [x y])")
 "(function () {
     var xø1 = y;
@@ -615,7 +615,7 @@
 
 ;; =>
 
-(is (= (transpile "(let []
+(is (= (transpile "(let* []
                      (+ x y))")
 "(function () {
     return x + y;
@@ -623,8 +623,8 @@
 
 ;; =>
 
-(is (= (transpile "(let [x 1
-                         y y]
+(is (= (transpile "(let* [x 1
+                          y y]
                      (+ x y))")
 "(function () {
     var xø1 = 1;
@@ -635,9 +635,9 @@
 
 ;; =>
 
-(is (= (transpile "(let [x 1
-                         x (inc x)
-                         x (dec x)]
+(is (= (transpile "(let* [x 1
+                          x (inc x)
+                          x (dec x)]
                      (+ x 5))")
 "(function () {
     var xø1 = 1;
@@ -648,9 +648,9 @@
 
 ;; =>
 
-(is (= (transpile "(let [x 1
-                         y (inc x)
-                         x (dec x)]
+(is (= (transpile "(let* [x 1
+                          y (inc x)
+                          x (dec x)]
                      (if x y (+ x 5)))")
 "(function () {
     var xø1 = 1;
@@ -661,7 +661,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [x x] (fn [] x))")
+(is (= (transpile "(let* [x x] (fn* [] x))")
 "(function () {
     var xø1 = x;
     return function () {
@@ -671,7 +671,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [x x] (fn [x] x))")
+(is (= (transpile "(let* [x x] (fn* [x] x))")
 "(function () {
     var xø1 = x;
     return function (x) {
@@ -681,7 +681,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [x x] (fn x [] x))")
+(is (= (transpile "(let* [x x] (fn* x [] x))")
 "(function () {
     var xø1 = x;
     return function x() {
@@ -691,7 +691,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [x x] (< x 2))")
+(is (= (transpile "(let* [x x] (< x 2))")
 "(function () {
     var xø1 = x;
     return xø1 < 2;
@@ -699,7 +699,7 @@
 
 ;; =>
 
-(is (= (transpile "(let [a a] a.a)")
+(is (= (transpile "(let* [a a] a.a)")
 "(function () {
     var aø1 = a;
     return aø1.a;
@@ -874,7 +874,7 @@
 ;; loop
 
 
-(is (= (transpile "(loop [x 10]
+(is (= (transpile "(loop* [x 10]
                         (if (< x 7)
                           (print x)
                           (recur (- x 2))))")
@@ -889,7 +889,7 @@
 
 ;; =>
 
-(is (= (transpile "(loop [forms forms
+(is (= (transpile "(loop* [forms forms
                              result []]
                         (if (empty? forms)
                           result
@@ -1325,16 +1325,16 @@
 
 ;; =>
 
-(is (thrown? (transpile "(mod)")
-             #"Wrong number of arguments \(0\) passed to: mod"))
+(is (thrown? (transpile "(rem)")
+             #"Wrong number of arguments \(0\) passed to: rem"))
 ;; =>
 
-(is (thrown? (transpile "(mod 1)")
-             #"Wrong number of arguments \(1\) passed to: mod"))
+(is (thrown? (transpile "(rem 1)")
+             #"Wrong number of arguments \(1\) passed to: rem"))
 
 ;; =>
 
-(is (= (transpile "(mod 1 2)")
+(is (= (transpile "(rem 1 2)")
        "1 % 2;"))
 ;; =>
 
@@ -1387,13 +1387,13 @@
 
 (is (= (transpile "(defprotocol IFoo)")
 "{
-    var IFoo = exports.IFoo = { wisp_core$IProtocol$id: 'user.wisp/IFoo' };
+    var IFoo = exports.IFoo = { 'wisp_core$IProtocol$id': 'user.wisp/IFoo' };
     IFoo;
 }") "protocol defined")
 
 (is (= (transpile "(defprotocol IBar \"optional docs\")")
 "{
-    var IBar = exports.IBar = { wisp_core$IProtocol$id: 'user.wisp/IBar' };
+    var IBar = exports.IBar = { 'wisp_core$IProtocol$id': 'user.wisp/IBar' };
     IBar;
 }") "optionally docs can be provided")
 
@@ -1404,20 +1404,26 @@
   (^clj -rest [coll]))")
 "{
     var ISeq = exports.ISeq = {
-            wisp_core$IProtocol$id: 'user.wisp/ISeq',
+            'wisp_core$IProtocol$id': 'user.wisp/ISeq',
             _first: function user_wisp$ISeq$First(self) {
-                var f = self === null ? user_wisp$ISeq$First.nil : self === void 0 ? user_wisp$ISeq$First.nil : 'else' ? self.user_wisp$ISeq$First || user_wisp$ISeq$First[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ISeq$First._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$ISeq$First.nil : self.user_wisp$ISeq$First || user_wisp$ISeq$First[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$ISeq$First._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ISeq.user*wisp$ISeq$-first defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             },
             _rest: function user_wisp$ISeq$Rest(self) {
-                var f = self === null ? user_wisp$ISeq$Rest.nil : self === void 0 ? user_wisp$ISeq$Rest.nil : 'else' ? self.user_wisp$ISeq$Rest || user_wisp$ISeq$Rest[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ISeq$Rest._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$ISeq$Rest.nil : self.user_wisp$ISeq$Rest || user_wisp$ISeq$Rest[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$ISeq$Rest._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ISeq.user*wisp$ISeq$-rest defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             }
         };
     var _first = exports._first = ISeq._first;
     var _rest = exports._rest = ISeq._rest;
     ISeq;
-}") "methods can are also generated & exported")
+}") "methods can also be generated & exported")
 
 (is (= (transpile
 "(ns wisp.core)
@@ -1433,14 +1439,20 @@
 }
 {
     var ISeq = exports.ISeq = {
-            wisp_core$IProtocol$id: 'wisp.core/ISeq',
+            'wisp_core$IProtocol$id': 'wisp.core/ISeq',
             _first: function wisp_core$ISeq$First(self) {
-                var f = self === null ? wisp_core$ISeq$First.nil : self === void 0 ? wisp_core$ISeq$First.nil : 'else' ? self.wisp_core$ISeq$First || wisp_core$ISeq$First[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || wisp_core$ISeq$First._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? wisp_core$ISeq$First.nil : self.wisp_core$ISeq$First || wisp_core$ISeq$First[Object.prototype.toString.call(self).slice(8, -1)] || wisp_core$ISeq$First._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ISeq.wisp*core$ISeq$-first defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             },
             _rest: function wisp_core$ISeq$Rest(self) {
-                var f = self === null ? wisp_core$ISeq$Rest.nil : self === void 0 ? wisp_core$ISeq$Rest.nil : 'else' ? self.wisp_core$ISeq$Rest || wisp_core$ISeq$Rest[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || wisp_core$ISeq$Rest._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? wisp_core$ISeq$Rest.nil : self.wisp_core$ISeq$Rest || wisp_core$ISeq$Rest[Object.prototype.toString.call(self).slice(8, -1)] || wisp_core$ISeq$Rest._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ISeq.wisp*core$ISeq$-rest defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             }
         };
     var _first = exports._first = ISeq._first;
@@ -1453,7 +1465,7 @@
 "(defprotocol ^:private Fn
   \"Marker protocol\")")
 "{
-    var Fn = { wisp_core$IProtocol$id: 'user.wisp/Fn' };
+    var Fn = { 'wisp_core$IProtocol$id': 'user.wisp/Fn' };
     Fn;
 }") "protocol defs can be private")
 
@@ -1463,14 +1475,20 @@
   (bar []))")
 "{
     var IFooBar = {
-            wisp_core$IProtocol$id: 'user.wisp/IFooBar',
+            'wisp_core$IProtocol$id': 'user.wisp/IFooBar',
             foo: function user_wisp$IFooBar$foo(self) {
-                var f = self === null ? user_wisp$IFooBar$foo.nil : self === void 0 ? user_wisp$IFooBar$foo.nil : 'else' ? self.user_wisp$IFooBar$foo || user_wisp$IFooBar$foo[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$IFooBar$foo._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$IFooBar$foo.nil : self.user_wisp$IFooBar$foo || user_wisp$IFooBar$foo[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$IFooBar$foo._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method IFooBar.user*wisp$IFooBar$foo defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             },
             bar: function user_wisp$IFooBar$bar(self) {
-                var f = self === null ? user_wisp$IFooBar$bar.nil : self === void 0 ? user_wisp$IFooBar$bar.nil : 'else' ? self.user_wisp$IFooBar$bar || user_wisp$IFooBar$bar[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$IFooBar$bar._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$IFooBar$bar.nil : self.user_wisp$IFooBar$bar || user_wisp$IFooBar$bar[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$IFooBar$bar._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method IFooBar.user*wisp$IFooBar$bar defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             }
         };
     var foo = IFooBar.foo;
@@ -1483,10 +1501,13 @@
   (^number -count [coll] \"constant time count\"))")
 "{
     var ICounted = exports.ICounted = {
-            wisp_core$IProtocol$id: 'user.wisp/ICounted',
+            'wisp_core$IProtocol$id': 'user.wisp/ICounted',
             _count: function user_wisp$ICounted$Count(self) {
-                var f = self === null ? user_wisp$ICounted$Count.nil : self === void 0 ? user_wisp$ICounted$Count.nil : 'else' ? self.user_wisp$ICounted$Count || user_wisp$ICounted$Count[Object.prototype.toString.call(self).replace('[object ', '').replace(/\\]$/, '')] || user_wisp$ICounted$Count._ : void 0;
-                return f.apply(self, arguments);
+                return ((self === null || self === void 0 ? user_wisp$ICounted$Count.nil : self.user_wisp$ICounted$Count || user_wisp$ICounted$Count[Object.prototype.toString.call(self).slice(8, -1)] || user_wisp$ICounted$Count._) || function ($1) {
+                    return (function () {
+                        throw '' + 'No protocol method ICounted.user*wisp$ICounted$-count defined for type ' + Object.prototype.toString.call($1).slice(8, -1) + ': ' + $1;
+                    })();
+                }).apply(self, arguments);
             }
         };
     var _count = exports._count = ICounted._count;

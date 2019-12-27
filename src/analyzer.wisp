@@ -377,12 +377,12 @@
 (defn analyze-let
   [env form]
   (analyze-let* env form false))
-(install-special! :let analyze-let)
+(install-special! :let* analyze-let)
 
 (defn analyze-loop
   [env form]
   (conj (analyze-let* env form true) {:op :loop}))
-(install-special! :loop analyze-loop)
+(install-special! :loop* analyze-loop)
 
 
 (defn analyze-recur
@@ -622,7 +622,7 @@
      :variadic variadic
      :methods methods
      :form form}))
-(install-special! :fn analyze-fn)
+(install-special! :fn* analyze-fn)
 
 (defn parse-references
   "Takes part of namespace definition and creates hash

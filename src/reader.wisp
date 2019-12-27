@@ -3,7 +3,7 @@
   as wisp data structures"
   (:require [wisp.sequence :refer [list list? count empty? first second third
                                    rest map vec cons conj rest concat last
-                                   butlast sort lazy-seq reduce]]
+                                   butlast sort reduce set]]
             [wisp.runtime :refer [odd? dictionary keys nil? inc dec vector? string?
                                   number? boolean? object? dictionary? re-pattern
                                   re-matches re-find str subs char vals =]]
@@ -608,10 +608,18 @@
     (reader-error
      nil "Queue literal expects a vector for its elements.")))
 
+(defn ^:private read-date
+  [date]
+  (if (string? date)
+    `(Date. ~date)
+    (reader-error
+     nil "Date literal expects a string as its representation.")))
+
 
 (def **tag-table**
-  (dictionary :uuid read-uuid
-              :queue read-queue))
+  (dictionary :uuid  read-uuid
+              :queue read-queue
+              :inst  read-date))
 
 (defn maybe-read-tagged-type
   [reader initch]

@@ -1,6 +1,27 @@
 (ns wisp.runtime
   "Core primitives required for runtime")
 
+
+(def ^:private -wisp-types
+  (Object.freeze
+    {:list     "wisp.list"
+     :lazy-seq "wisp.lazy.seq"
+     :set      "wisp.identity-set"}))
+
+(defn lazy-seq?
+  [value]
+  (and value (identical? (:lazy-seq -wisp-types) value.type)))
+
+(defn identity-set?
+  [value]
+  (and value (identical? (:set -wisp-types) value.type)))
+
+(defn list?
+  "Returns true if list"
+  [value]
+  (and value (identical? (:list -wisp-types) value.type)))
+
+
 (defn identity
   "Returns its argument."
   [x] x)
@@ -8,17 +29,23 @@
 (defn complement
   "Takes a fn f and returns a fn that takes the same arguments as f,
   has the same effects, if any, and returns the opposite truth value."
-  [f] (fn 
+  [f] (fn
         ([] (not (f)))
         ([x] (not (f x)))
         ([x y] (not (f x y)))
         ([x y & zs] (not (apply f x y zs)))))
 
 (defn ^boolean odd? [n]
-  (identical? (mod n 2) 1))
+  (identical? (rem n 2) 1))
 
 (defn ^boolean even? [n]
-  (identical? (mod n 2) 0))
+  (identical? (rem n 2) 0))
+
+(defn get [target key default*]
+  (cond (set? target) (if (.has target key) key default*)
+        :else         (if (and target (.has-own-property target key))
+                        (aget target key)
+                        default*)))
 
 (defn ^boolean dictionary?
   "Returns true if dictionary"
@@ -152,6 +179,11 @@
     Array.isArray
     (fn [x] (identical? (.call to-string x) "[object Array]"))))
 
+(defn ^boolean iterable?
+  "Returns true if x is or can produce a JS iterator"
+  [x]
+  (fn? (get x Symbol.iterator)))
+
 (defn ^boolean date?
   "Returns true if x is a date"
   [x]
@@ -168,6 +200,11 @@
   "Returns true if x is a regular expression"
   [x]
   (identical? (.call to-string x) "[object RegExp]"))
+
+(defn ^boolean set?
+  "Returns true if x is a JS Set instance"
+  [x]
+  (instance? Set x))
 
 
 (defn ^boolean object?
@@ -227,9 +264,8 @@
   (- x 1))
 
 (defn str
-  "With no args, returns the empty string. With one arg x, returns
-  x.toString().  (str nil) returns the empty string. With more than
-  one arg, returns the concatenation of the str values of the args."
+  "With no args, returns the empty string. With one arg x, returns x.toString().
+  With more than one arg, returns the concatenation of the str values of the args."
   []
   (.apply String.prototype.concat "" arguments))
 
@@ -242,11 +278,9 @@
 (defn int
   "Coerce to int by stripping decimal places."
   [x]
-  (if (number? x)
-    (if (>= x 0)
-      (.floor Math x)
-      (.floor Math x))
-    (.charCodeAt x 0)))
+  (cond (number? x) (.floor Math x)
+        (string? x) (.charCodeAt x 0)   ; not like in Clojure
+        :else       0))                 ; like in Clojure
 
 (defn subs
   "Returns the substring of s beginning at start inclusive, and ending
@@ -272,6 +306,13 @@
        (identical? (Number x) (Number y))))
 
 
+(defn- ^boolean set-equal?
+  [x y]
+  (and (set? x)
+       (set? y)
+       (identical? x.size y.size)
+       (.every (Array.from x) #(y.has %))))
+
 (defn- ^boolean dictionary-equal?
   [x y]
   (and (object? x)
@@ -291,21 +332,6 @@
                     false)
                   true))))))
 
-(defn- ^boolean vector-equal?
-  [x y]
-  (and (vector? x)
-       (vector? y)
-       (identical? (.-length x) (.-length y))
-       (loop [xs x
-              ys y
-              index 0
-              count (.-length x)]
-        (if (< index count)
-          (if (equivalent? (get xs index) (get ys index))
-              (recur xs ys (inc index) count)
-              false)
-          true))))
-
 (defn- ^boolean equivalent?
   "Equality. Returns true if x equals y, false if not. Compares
   numbers and collections in a type-independent manner. Clojure's
@@ -319,10 +345,12 @@
                                                             (.toString y)))
                    (number? x) (and (number? y) (identical? (.valueOf x)
                                                             (.valueOf y)))
+                   (set? x) (set-equal? x y)
+                   (or (vector? x) (list? x) (lazy-seq? x)) (and (or (vector? y) (list? y) (lazy-seq? y))
+                                                                 (=.*seq= x y))
                    (fn? x) false
                    (boolean? x) false
                    (date? x) (date-equal? x y)
-                   (vector? x) (vector-equal? x y [] [])
                    (re-pattern? x) (pattern-equal? x y)
                    :else (dictionary-equal? x y))))
   ([x y & more]
@@ -339,6 +367,13 @@
           true)))))
 
 (def = equivalent?)
+(set! (aget = '-wisp-types) -wisp-types)
+
+(defn ^boolean not=
+  "Same as (not (= obj1 obj2))"
+  ([x] false)
+  ([x y] (not (= x y)))
+  ([x y & more] (not (apply = x y more))))
 
 (defn ^boolean ==
   "Equality. Returns true if x equals y, false if not. Compares
@@ -380,7 +415,7 @@
           true)))))
 
 (defn ^boolean >=
-  "Returns non-nil if nums are in monotonically decreasing order,
+  "Returns non-nil if nums are in monotonically non-increasing order,
   otherwise false."
   ([x] true)
   ([x y] (>= x y))
@@ -399,7 +434,7 @@
 
 
 (defn ^boolean <
-  "Returns non-nil if nums are in monotonically decreasing order,
+  "Returns non-nil if nums are in monotonically increasing order,
   otherwise false."
   ([x] true)
   ([x y] (< x y))
@@ -418,7 +453,7 @@
 
 
 (defn ^boolean <=
-  "Returns non-nil if nums are in monotonically decreasing order,
+  "Returns non-nil if nums are in monotonically non-decreasing order,
   otherwise false."
   ([x] true)
   ([x y] (<= x y))
@@ -506,6 +541,19 @@
               (inc index)
               count)
        value))))
+
+(defn ^boolean quot [num div] (int (/ num div)))
+(defn ^boolean mod [num div] (- num (* div (quot num div))))
+(defn ^boolean rem* [num div]
+  (let [m (apply mod [num div])]
+    (if (identical? (>= num 0) (>= div 0))
+      m
+      (- m div))))
+(def ^boolean rem
+  (if (let [rem #(identity nil)]    ; checking if rem is macro-shadowed
+        (nil? (rem 1 1)))
+    rem*
+    (fn [num div] (rem num div))))
 
 (defn ^boolean and
   ([] true)

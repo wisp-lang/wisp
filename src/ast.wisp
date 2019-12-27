@@ -1,6 +1,6 @@
 (ns wisp.ast
   (:require [wisp.sequence :refer [list? sequential? first second count
-                                   last map vec repeat]]
+                                   identity-set? last map vec repeat]]
             [wisp.string :refer [split join]]
             [wisp.runtime :refer [nil? vector? number? string? boolean?
                                   object? date? re-pattern? dictionary?
@@ -184,6 +184,7 @@
                                               (str key " " value)))
                                           x))
                                "}")
+          (identity-set? x) (str "#{" (join " " (map #(pr-str % (inc offset)) (vec x))) "}")
           (sequential? x) (str "(" (join " " (map #(pr-str % (inc offset))
                                                   (vec x))) ")")
           (re-pattern? x) (str "#\"" (join "\\/" (split (.-source x) "/")) "\"")

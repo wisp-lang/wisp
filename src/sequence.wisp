@@ -1,66 +1,106 @@
 (ns wisp.sequence
-  (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary?
-                                  key-values str dec inc merge dictionary]]))
+  (:require [wisp.runtime :refer [nil? vector? fn? number? string? dictionary? set?
+                                  key-values str int dec inc min merge dictionary get
+                                  iterable? = complement identity list? lazy-seq? identity-set?]]))
+
+(def ^:private -wisp-types (aget = '-wisp-types))
 
 ;; Implementation of list
+
+(defn- list-iterator []
+  (let [self this]
+    {:next #(if (empty? self)
+              {:done true}
+              (let [x (first self)]
+                (set! self (rest self))
+                {:value x}))}))
+
+(defn- seq->string [lparen rparen]
+  (fn []
+    (loop [list this, result ""]
+      (if (empty? list)
+        (str lparen (.substr result 1) rparen)
+        (recur (rest list)
+               (str result
+                    " "
+                    (let [x (first list)]
+                      (cond (vector? x) (str "[" (.join x " ") "]")
+                            (nil?    x) "nil"
+                            (string? x) (.stringify JSON x)
+                            (number? x) (.stringify JSON x)
+                            :else       x))))))))
 
 (defn- List
   "List type"
   [head tail]
   (set! this.head head)
   (set! this.tail (or tail (list)))
-  (set! this.length (inc (count this.tail)))
+  (set! this.length
+    (if (or (nil? this.tail) (dictionary? this.tail) (number? (.-length this.tail)))
+      (inc (count this.tail))))
   this)
 
 (set! List.prototype.length 0)
-(set! List.type "wisp.list")
+(set! List.type (:list -wisp-types))
 (set! List.prototype.type List.type)
 (set! List.prototype.tail (Object.create List.prototype))
-(set! List.prototype.to-string
-      (fn []
-        (loop [result ""
-               list this]
-          (if (empty? list)
-            (str "(" (.substr result 1) ")")
-            (recur
-             (str result
-                  " "
-                  (if (vector? (first list))
-                    (str "[" (.join (first list) " ") "]")
-                    (if (nil? (first list))
-                      "nil"
-                      (if (string? (first list))
-                        (.stringify JSON (first list))
-                        (if (number? (first list))
-                          (.stringify JSON (first list))
-                          (first list))))))
-             (rest list))))))
+(set! List.prototype.to-string (seq->string "(" ")"))
+(aset List.prototype Symbol.iterator list-iterator)
 
 (defn- lazy-seq-value [lazy-seq]
-  (if (not (.-realized lazy-seq))
-    (and (set! (.-realized lazy-seq) true)
-         (set! (.-x lazy-seq) (.x lazy-seq)))
-    (.-x lazy-seq)))
+  (if (.-realized lazy-seq)
+    (.-x lazy-seq)
+    (let [x (.x lazy-seq)]
+      (set! (.-realized lazy-seq) true)
+      (if (empty? x)
+        (set! (.-length lazy-seq) 0))
+      (set! (.-x lazy-seq) x))))
 
 (defn- LazySeq [realized x]
   (set! (.-realized this) (or realized false))
   (set! (.-x this) x)
   this)
-(set! LazySeq.type "wisp.lazy.seq")
+(set! LazySeq.type (:lazy-seq -wisp-types))
 (set! LazySeq.prototype.type LazySeq.type)
+(aset LazySeq.prototype Symbol.iterator list-iterator)
 
 (defn lazy-seq
   [realized body]
   (LazySeq. realized body))
 
-(defn lazy-seq?
-  [value]
-  (and value (identical? LazySeq.type value.type)))
+(defn- clone-proto-props! [from to]
+  (apply Object.assign to
+         (.map (Object.get-own-property-names from.__proto__)
+               #(let [x (aget from %)]
+                  (dictionary % (if (fn? x) (.bind x from) x))))))
 
-(defn list?
-  "Returns true if list"
-  [value]
-  (and value (identical? List.type value.type)))
+(defn identity-set [& items]
+  (let [js-set (Set. items)
+        f      #(get js-set %1 %2)]
+    (clone-proto-props! js-set f)
+    (set! f.to-string (seq->string "#{" "}"))
+    (set! f.__proto__ js-set)
+    (Object.define-property f :length {:value f.size})
+    (aset f Symbol.iterator f.values)
+    (aset f :type identity-set.type)
+    f))
+(set! identity-set.type (:set -wisp-types))
+(def set identity-set)
+
+(def lazy-seq? lazy-seq?)
+(def identity-set? identity-set?)
+(def list? list?)
+
+(set! =.*seq=
+  (fn [x y]
+    (and (or (vector? x) (seq? x))
+         (or (vector? y) (seq? y))
+         (loop [x (seq x), y (seq y)]
+           (cond (and (vector? x) (vector? y)) (and (= (count x) (count y))
+                                                    (.every x #(= %1 (aget y %2))))
+                 (or (empty? x) (empty? y))    (and (empty? x) (empty? y))
+                 (not= (first x) (first y))    false
+                 :else                         (recur (rest x) (rest y)))))))
 
 (defn list
   "Creates list of the given items"
@@ -76,59 +116,67 @@
   [head tail]
   (new List head tail))
 
-(defn- reverse-list
-  [sequence]
-  (loop [items []
-           source sequence]
-      (if (empty? source)
-        (apply list items)
-        (recur (.concat [(first source)] items)
-               (rest source)))))
-
 (defn ^boolean sequential?
   "Returns true if coll satisfies ISequential"
-  [x] (or (list? x)
+  [x] (or (seq? x)
           (vector? x)
-          (lazy-seq? x)
           (dictionary? x)
+          (set? x)
           (string? x)))
+
+(defn- ^boolean native? [sequence]
+  (or (vector? sequence) (string? sequence) (dictionary? sequence)))
 
 
 (defn reverse
   "Reverse order of items in the sequence"
   [sequence]
-  (cond (list? sequence) (reverse-list sequence)
-        (vector? sequence) (.reverse sequence)
-        (nil? sequence) '()
-        :else (reverse (seq sequence))))
+  (if (vector? sequence)
+    (.reverse (vec sequence))
+    (into nil sequence)))
+
+(defn range
+  "Returns a vector of nums from start (inclusive) to end
+  (exclusive), by step, where start defaults to 0 and step to 1."
+  ([end]            (range 0 end 1))
+  ([start end]      (range start end 1))
+  ([start end step] (if (< step 0)
+                      (.map (range (- start) (- end) (- step)) #(- %))
+                      (Array.from {:length (-> (+ end step) (- start 1) (/ step))}
+                                  (fn [_ i] (+ start (* i step)))))))
+
+(defn mapv
+  "Returns a vector consisting of the result of applying `f` to the
+  first items, followed by applying f to the second items, until one of
+  sequences is exhausted."
+  [f & sequences]
+  (let [vectors (.map sequences vec),  n (apply min (.map vectors count))]
+    (.map (range n) (fn [i] (apply f (.map vectors #(aget % i)))))))
 
 (defn map
   "Returns a sequence consisting of the result of applying `f` to the
-  first item, followed by applying f to the second items, until sequence is
-  exhausted."
-  [f sequence]
-  (cond (vector? sequence) (.map sequence #(f %))
-        (list? sequence) (map-list f sequence)
-        (nil? sequence) '()
-        :else (map f (seq sequence))))
+  first items, followed by applying f to the second items, until one of
+  sequences is exhausted."
+  [f & sequences]
+  (let [result (apply mapv f sequences)]
+    (if (native? (first sequences)) result (apply list result))))
 
-(defn- map-list
-  "Like map but optimized for lists"
-  [f sequence]
-  (loop [result '()
-         items sequence]
-    (if (empty? items)
-      (reverse result)
-      (recur (cons (f (first items)) result) (rest items)))))
+(defn map-indexed
+  "Returns a sequence consisting of the result of applying `f` to 0 and
+  the first items, followed by applying f to 1 and the second items,
+  until one of sequences is exhausted."
+  [f & sequences]
+  (let [sequence (first sequences),  n (count sequence),  indices (range n)]
+    (apply map f (if (native? sequence) indices (apply list indices)) sequences)))
 
 (defn filter
   "Returns a sequence of the items in coll for which (f? item) returns true.
   f? must be free of side-effects."
   [f? sequence]
-  (cond (vector? sequence) (.filter sequence f?)
-        (list? sequence) (filter-list f? sequence)
-        (nil? sequence) '()
-        :else (filter f? (seq sequence))))
+  (cond (nil? sequence)    '()
+        (seq? sequence)    (filter-list f? sequence)
+        (vector? sequence) (.filter sequence #(f? %))
+        :else              (filter f? (seq sequence))))
 
 (defn- filter-list
   "Like filter but for lists"
@@ -138,43 +186,40 @@
     (if (empty? items)
       (reverse result)
       (recur (if (f? (first items))
-              (cons (first items) result)
-              result)
-              (rest items)))))
+               (cons (first items) result)
+               result)
+             (rest items)))))
+
+(defn filterv [f? sequence]
+  (vec (filter f? sequence)))
 
 (defn reduce
   [f & params]
   (let [has-initial (>= (count params) 2)
-        initial (if has-initial (first params))
-        sequence (if has-initial (second params) (first params))]
-    (cond (nil? sequence) initial
-          (vector? sequence) (if has-initial
-                              (.reduce sequence f initial)
-                              (.reduce sequence f))
-          (list? sequence) (if has-initial
-                            (reduce-list f initial sequence)
-                            (reduce-list f (first sequence) (rest sequence)))
-          :else (reduce f initial (seq sequence)))))
-
-(defn- reduce-list
-  [f initial sequence]
-  (loop [result initial
-         items sequence]
-    (if (empty? items)
-      result
-      (recur (f result (first items)) (rest items)))))
+        initial     (if has-initial (first params))
+        sequence    (if has-initial (second params) (first params))]
+    (if has-initial
+      (.reduce (vec sequence) f initial)
+      (.reduce (vec sequence) f))))
 
 (defn count
   "Returns number of elements in list"
   [sequence]
-  (if (nil? sequence)
-    0
-    (.-length (seq sequence))))
+  (if (and sequence (number? (.-length sequence)))
+    (.-length sequence)
+    (let [it (seq sequence)]
+      (cond (nil? it)      0
+            (lazy-seq? it) (count (vec it))
+            :else          (.-length it)))))
 
 (defn empty?
   "Returns true if list is empty"
   [sequence]
-  (identical? (count sequence) 0))
+  (let [it (seq sequence)]
+    (identical? 0 (if-not (lazy-seq? it)
+                    (count it)
+                    (do (first it)             ; forcing evaluation
+                        (.-length it))))))
 
 (defn first
   "Return first item in a list"
@@ -239,8 +284,7 @@
                     (list? sequence) (apply list (butlast (vec sequence)))
                     (lazy-seq? sequence) (butlast (lazy-seq-value sequence))
                     :else (butlast (seq sequence)))]
-    (if (not (or (nil? items) (empty? items)))
-        items)))
+    (if-not (empty? items) items)))
 
 (defn take
   "Returns a sequence of the first `n` items, or all items if
@@ -249,41 +293,17 @@
   (cond (nil? sequence) '()
         (vector? sequence) (take-from-vector n sequence)
         (list? sequence) (take-from-list n sequence)
-        (lazy-seq? sequence) (take n (lazy-seq-value sequence))
+        (lazy-seq? sequence) (if (> n 0) (take n (lazy-seq-value sequence)))
         :else (take n (seq sequence))))
-
-(defn- take-vector-while
-  [predicate vector]
-  (loop [result []
-         tail vector
-         head (first vector)]
-    (if (and (not (empty? tail))
-             (predicate head))
-      (recur (conj result head)
-             (rest tail)
-             (first tail))
-      result)))
-
-(defn- take-list-while
-  [predicate items]
-  (loop [result []
-         tail items
-         head (first items)]
-    (if (and (not (empty? tail))
-             (predicate? head))
-      (recur (conj result head)
-             (rest tail)
-             (first tail))
-      (apply list result))))
-
 
 (defn take-while
   [predicate sequence]
-  (cond (nil? sequence) '()
-        (vector? sequence) (take-vector-while predicate sequence)
-        (list? sequence) (take-vector-while predicate sequence)
-        :else (take-while predicate
-                          (lazy-seq-value sequence))))
+  (loop [items sequence, result []]
+    (let [head (first items), tail (rest items)]
+      (if (and (not (empty? items))
+               (predicate head))
+        (recur tail (conj result head))
+        (if (native? sequence) result (apply list result))))))
 
 
 (defn- take-from-vector
@@ -296,8 +316,8 @@
   [n sequence]
   (loop [taken '()
          items sequence
-         n n]
-    (if (or (identical? n 0) (empty? items))
+         n     (or (int n) 0)]
+    (if (or (<= n 0) (empty? items))
       (reverse taken)
       (recur (cons (first items) taken)
              (rest items)
@@ -324,20 +344,47 @@
           (lazy-seq? sequence) (drop n (lazy-seq-value sequence))
           :else (drop n (seq sequence)))))
 
+(defn drop-while
+  [predicate sequence]
+  (loop [items (seq sequence)]
+    (if (or (empty? items) (not (predicate (first items))))
+      items
+      (recur (rest items)))))
+
 
 (defn- conj-list
   [sequence items]
   (reduce (fn [result item] (cons item result)) sequence items))
+
+(defn- ensure-dictionary [x]
+  (if-not (vector? x)
+    x
+    (dictionary (first x) (second x))))
 
 (defn conj
   [sequence & items]
   (cond (vector? sequence) (.concat sequence items)
         (string? sequence) (str sequence (apply str items))
         (nil? sequence) (apply list (reverse items))
-        (or (list? sequence)
-            (lazy-seq?)) (conj-list sequence items)
-        (dictionary? sequence) (merge sequence (apply merge items))
+        (seq? sequence) (conj-list sequence items)
+        (dictionary? sequence) (merge sequence (apply merge (mapv ensure-dictionary items)))
+        (set? sequence) (apply identity-set (into (vec sequence) items))
         :else (throw (TypeError (str "Type can't be conjoined " sequence)))))
+
+(defn disj
+  [coll & ks]
+  (let [predicate (complement (apply identity-set ks))]
+    (cond (empty? ks)        coll
+          (set? coll)        (apply identity-set (filterv predicate coll))
+          (dictionary? coll) (into {} (filter #(predicate (first %)) coll))
+          :else              (throw (TypeError (str "Type can't be disjoined " coll))))))
+
+(defn into
+  [to from]
+  (apply conj to (vec from)))
+
+(defn zipmap [keys vals]
+  (into {} (map vector keys vals)))
 
 (defn assoc
   [source & key-values]
@@ -347,73 +394,99 @@
   ;             (object? source)) "Can only assoc on dictionaries")
   (conj source (apply dictionary key-values)))
 
+(defn dissoc
+  [coll & ks]
+  (if (dictionary? coll)
+    (apply disj coll ks)
+    (throw (TypeError (str "Can only dissoc on dictionaries")))))
+
 (defn concat
   "Returns list representing the concatenation of the elements in the
   supplied lists."
   [& sequences]
-  (reverse
-    (reduce
-      (fn [result sequence]
-        (reduce
-          (fn [result item] (cons item result))
-          result
-          (seq sequence)))
-      '()
-      sequences)))
+  (reduce #(conj-list %1 (reverse %2))
+          (let [tail (last sequences)]
+            (if (lazy-seq? tail) tail (apply list (vec tail))))
+          (rest (reverse sequences))))
+
+(defn mapcat [f & colls]
+  (apply concat (apply mapv f colls)))
+
+(defn empty
+  "Produces empty sequence of the same type as argument."
+  [sequence]
+  (cond (list? sequence)       '()
+        (vector? sequence)     []
+        (string? sequence)     ""
+        (dictionary? sequence) {}
+        (set? sequence)        #{}
+        (lazy-seq? sequence)   (lazy-seq)))
 
 (defn seq [sequence]
   (cond (nil? sequence) nil
-        (or (vector? sequence) (list? sequence) (lazy-seq? sequence)) sequence
+        (or (vector? sequence) (seq? sequence)) sequence
         (string? sequence) (.call Array.prototype.slice sequence)
         (dictionary? sequence) (key-values sequence)
+        (iterable? sequence) (iterator->lseq ((get sequence Symbol.iterator)))
         :default (throw (TypeError (str "Can not seq " sequence)))))
+
+(defn seq* [sequence]
+  (let [it (seq sequence)]
+    (if-not (empty? it) it)))
 
 (defn seq? [sequence]
   (or (list? sequence)
       (lazy-seq? sequence)))
 
-(defn- list->vector [source]
-  (loop [result []
-         list source]
-    (if (empty? list)
-      result
-      (recur
-        (do (.push result (first list)) result)
-        (rest list)))))
+(defn- iterator->lseq [iterator]
+  (unfold #(let [x (.next %)]
+             (if-not (.-done x) [(.-value x) %]))
+          iterator))
 
 (defn vec
   "Creates a new vector containing the contents of sequence"
   [sequence]
   (cond (nil? sequence) []
-        (vector? sequence) sequence
-        (or (list? sequence) (lazy-seq? sequence)) (list->vector sequence)
+        (or (vector? sequence) (list? sequence)) (Array.from sequence)
+        (lazy-seq? sequence) (let [xs (Array.from sequence)]            ; optimizing count
+                               (set! (.-length sequence) (.-length xs))
+                               xs)
         :else (vec (seq sequence))))
+
+(defn vector [& sequence] sequence)
+
+(def ^{:private true}
+  sort-comparator
+  (if (= [1 2 3] (.sort [2 1 3] (fn [a b] (if (< a b) 0 1))))
+    #(fn [a b] (if (% b a)  1 0))       ; quicksort (Chrome, Node), mergesort (Firefox)
+    #(fn [a b] (if (% a b) -1 0))))     ; timsort (Chrome 70+, Node 11+)
 
 (defn sort
   "Returns a sorted sequence of the items in coll.
   If no comparator is supplied, uses compare."
   [f items]
   (let [has-comparator (fn? f)
-        items (if (and (not has-comparator) (nil? items)) f items)
-        compare (if has-comparator (fn [a b] (if (f a b) 0 1)))]
-    (cond (nil? items) '()
-          (vector? items) (.sort items compare)
-          (list? items) (apply list (.sort (vec items) compare))
-          (dictionary? items) (.sort (seq items) compare)
-          :else (sort f (seq items)))))
+        items          (if (and (not has-comparator) (nil? items)) f items)
+        compare        (if has-comparator (sort-comparator f))
+        result         (.sort (vec items) compare)]
+    (cond (nil? items)    '()
+          (vector? items) result
+          :else           (apply list result))))
 
+
+(defn repeatedly
+  "Takes a function of no args, presumably with side effects, and
+  returns vector of given `n` length with calls to it"
+  [n f]
+  (Array.from {:length n} f))
 
 (defn repeat
-  "Returns a vector of given `n` length with of given `x`
+  "Returns a vector of given `n` length with given `x`
   items. Not compatible with clojure as it's not a lazy
   and only finite repeats are supported"
   [n x]
-  (loop [n n
-         result []]
-    (if (<= n 0)
-      result
-      (recur (dec n)
-             (conj result x)))))
+  (repeatedly n (fn [] x)))
+
 
 (defn every?
   [predicate sequence]
@@ -423,13 +496,11 @@
   "Returns the first logical true value of (pred x) for any x in coll,
   else nil.  One common idiom is to use a set as pred, for example
   this will return :fred if :fred is in the sequence, otherwise nil:
-  (some even? [1 3]) => false
-  (some even? [1 2 3 4] => true"
-  [predicate sequence]
-  (loop [items sequence]
-    (cond (empty? items) false
-          (predicate (first items)) true
-          :else (recur (rest items)))))
+  (some #{:fred} coll)"
+  [pred coll]
+  (loop [items (seq coll)]
+    (if-not (empty? items)
+      (or (pred (first items)) (recur (rest items))))))
 
 
 (defn partition
@@ -448,37 +519,149 @@
                          (take n (vec (concat chunk
                                               pad)))))))))
 
-(defn interleave
-  ([ax bx]
-   (loop [cx []
-          ax ax
-          bx bx]
-     (if (or (empty? ax)
-             (empty? bx))
-       (seq cx)
-       (recur (conj cx
-                    (first ax)
-                    (first bx))
-              (rest ax)
-              (rest bx)))))
-  ([& sequences]
-   (loop [result []
-          sequences sequences]
-     (if (some empty? sequences)
-       result
-       (recur (concat result (map first sequences))
-              (map rest sequences))))))
+(defn interleave [& sequences]
+  (if (empty? sequences)
+    []
+    (loop [result []
+           sequences sequences]
+      (if (some empty? sequences)
+        (vec result)
+        (recur (concat result (map first sequences))
+               (map rest sequences))))))
 
 (defn nth
   "Returns nth item of the sequence"
   [sequence index not-found]
-  (cond (nil? sequence) not-found
-        (list? sequence) (if (< index (count sequence))
-                           (first (drop index sequence))
-                           not-found)
-        (or (vector? sequence)
-            (string? sequence)) (if (< index (count sequence))
-                                  (aget sequence index)
-                                  not-found)
-        (lazy-seq? sequence) (nth (lazy-seq-value sequence) index not-found)
-        :else (throw (TypeError "Unsupported type"))))
+  (let [sequence (seq* sequence)]
+    (cond (nil? sequence) not-found
+          (seq? sequence) (if-let [it (seq* (drop index sequence))]
+                            (first it)
+                            not-found)
+          (or (vector? sequence)
+              (string? sequence)) (if (< index (count sequence))
+                                    (aget sequence index)
+                                    not-found)
+          :else (throw (TypeError "Unsupported type")))))
+
+
+(defn contains?
+  "Returns true if key is present in the given collection, otherwise
+  returns false.  Note that for numerically indexed collections like
+  vectors and strings, this tests if the numeric key is within the
+  range of indexes. 'contains?' operates constant or logarithmic time;
+  it will not perform a linear search for a value.  See also 'some'."
+  [coll v]
+  (cond (set? coll)                                           (.has coll v)
+        (or (dictionary? coll) (vector? coll) (string? coll)) (.has-own-property coll v)
+        :else                                                 false))
+
+(defn union
+  "Return a set that is the union of the input sets"
+  [& sets]
+  (into #{} (apply concat sets)))
+
+(defn difference
+  "Return a set that is the first set without elements of the remaining sets"
+  [s1 & sets]
+  (into #{} (filter (complement (apply union sets))
+                    s1)))
+
+(defn intersection
+  "Return a set that is the intersection of the input sets"
+  [& sets]
+  (let [sets     (mapv #(into #{} %) sets)
+        in-each? (fn [x] (every? #(.has % x) sets))
+        min-size (apply min (mapv count sets))
+        smallest (.find sets #(= min-size (count %)))]
+    (into #{} (filter in-each? smallest))))
+
+(defn subset?
+  "Is set1 a subset of set2?"
+  [set1 set2]
+  (if (set? set2)
+    (every? #(.has set2 %) set1)
+    (subset? set1 (into #{} set2))))
+
+(defn superset?
+  "Is set1 a superset of set2?"
+  [set1 set2]
+  (subset? set2 set1))
+
+
+(defn unfold
+  "Returns a lazy sequence; (f x) is expected to return either nil (signifying end of sequence)
+  or [y x1] (where y is next sequence item, and x1 is next value of x)"
+  [f x]
+  (lazy-seq (if-let [next (f x)]
+              (cons (first next) (unfold f (second next))))))
+
+(defn iterate
+  "Returns a lazy sequence of x, (f x), (f (f x)) etc. f must be free of side-effects"
+  [f x]
+  (lazy-seq (cons x (iterate f (f x)))))
+
+(defn cycle
+  "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
+  [coll]
+  (lazy-seq (if-not (empty? coll)
+              (concat coll (cycle coll)))))
+
+(defn infinite-range
+  ([] (infinite-range 0))
+  ([n] (iterate inc n))
+  ([n step] (iterate #(+ % step) n)))
+
+(defn lazy-map [f & sequences]
+  (unfold #(if-not (some empty? %)
+             [(apply f (mapv first %)) (mapv rest %)])
+          sequences))
+
+(defn lazy-filter [f sequence]
+  (unfold #(loop [xs %]
+             (cond (empty? xs)    nil
+                   (f (first xs)) [(first xs) (rest xs)]
+                   :else          (recur (rest xs))))
+          (seq sequence)))
+
+(defn lazy-concat [& sequences]
+  (if-not (empty? sequences)
+    ((fn iter [xs]
+       (lazy-seq (if (empty? xs)
+                   (apply lazy-concat (rest sequences))
+                   (cons (first xs) (iter (rest xs))))))
+     (seq (first sequences)))))
+
+(defn lazy-partition
+  ([n coll] (lazy-partition n n coll))
+  ([n step coll] (lazy-partition n step [] coll))
+  ([n step pad coll]
+    (unfold #(let [chunk (take n (concat (take n %) pad))]
+               (if (and (not (empty? %)) (identical? n (count chunk)))
+                 [chunk (drop step %)]))
+            coll)))
+
+
+(defn run!
+  "Runs the supplied procedure (via reduce), for purposes of side
+  effects, on successive items in the collection. Returns nil"
+  [proc coll]
+  (reduce (fn [_ x] (proc x) nil) nil coll))
+
+(defn dorun
+  "When lazy sequences are produced via functions that have side
+  effects, any effects other than those needed to produce the first
+  element in the seq do not occur until the seq is consumed. dorun can
+  be used to force any effects. Walks through the successive nexts of
+  the seq, does not retain the head and returns nil."
+  ([coll] (dorun Infinity coll))
+  ([n coll] (run! identity (take n coll))))
+
+(defn doall
+  "When lazy sequences are produced via functions that have side
+  effects, any effects other than those needed to produce the first
+  element in the seq do not occur until the seq is consumed. dorun can
+  be used to force any effects. Walks through the successive nexts of
+  the seq, retains the head and returns it, thus causing the entire
+  seq to reside in memory at one time."
+  ([coll] (doall Infinity coll))
+  ([n coll] (dorun n coll) coll))

@@ -31,7 +31,7 @@
     "satisfies protocol")
 
 (is (nope? (Nope.))
-    "implements protcol method")
+    "implements protocol method")
 
 (extend-type number
   INope
