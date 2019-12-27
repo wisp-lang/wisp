@@ -172,6 +172,7 @@ installMacro(symbol(void 0, 'defmacro'), withMeta(expandDefmacro, { 'implicit': 
     var vec = wisp_sequence.vec;
     var last = wisp_sequence.last;
     var map = wisp_sequence.map;
+    var mapv = wisp_sequence.mapv;
     var filter = wisp_sequence.filter;
     var take = wisp_sequence.take;
     var concat = wisp_sequence.concat;
@@ -205,6 +206,7 @@ installMacro(symbol(void 0, 'defmacro'), withMeta(expandDefmacro, { 'implicit': 
     var int = wisp_runtime.int;
     var isEqual = wisp_runtime.isEqual;
     var isStrictEqual = wisp_runtime.isStrictEqual;
+    var get = wisp_runtime.get;
     var wisp_string = require('./../../string');
     var split = wisp_string.split;
     var join = wisp_string.join;
@@ -274,12 +276,28 @@ var writeLocation = exports.writeLocation = function writeLocation(form, origina
             return !isNil(startø1) ? {
                 'loc': {
                     'start': {
-                        'line': inc((startø1 || 0)['line']),
-                        'column': (startø1 || 0)['column']
+                        'line': inc(get.apply(void 0, [
+                            startø1,
+                            'line',
+                            -1
+                        ])),
+                        'column': get.apply(void 0, [
+                            startø1,
+                            'column',
+                            -1
+                        ])
                     },
                     'end': {
-                        'line': inc((endø1 || 0)['line']),
-                        'column': (endø1 || 0)['column']
+                        'line': inc(get.apply(void 0, [
+                            endø1,
+                            'line',
+                            -1
+                        ])),
+                        'column': get.apply(void 0, [
+                            endø1,
+                            'column',
+                            -1
+                        ])
                     }
                 }
             } : {};
@@ -1079,8 +1097,24 @@ var compile = exports.compile = function compile() {
             return generate(write_.apply(void 0, forms), options);
         }
     };
-var getMacro = exports.getMacro = function getMacro(target, property) {
-        return list.apply(void 0, [symbol(void 0, 'aget')].concat([list.apply(void 0, [symbol(void 0, 'or')].concat([target], [0]))], [property]));
+var getMacro = exports.getMacro = function getMacro() {
+        switch (arguments.length) {
+        case 2:
+            var target = arguments[0];
+            var property = arguments[1];
+            return list.apply(void 0, [symbol(void 0, 'aget')].concat([list.apply(void 0, [symbol(void 0, 'or')].concat([target], [0]))], [property]));
+        case 3:
+            var target = arguments[0];
+            var property = arguments[1];
+            var default_ = arguments[2];
+            return default_ === void 0 ? list.apply(void 0, [symbol(void 0, 'get')].concat([target], [property])) : list.apply(void 0, [symbol(void 0, 'apply')].concat([symbol(void 0, 'get')], [[
+                    target,
+                    property,
+                    default_
+                ]]));
+        default:
+            throw RangeError('Wrong number of arguments passed');
+        }
     };
 installMacro('get', getMacro);
 var installLogicalOperator = exports.installLogicalOperator = function installLogicalOperator(callee, operator, fallback) {
@@ -1162,7 +1196,7 @@ installArithmeticOperator('*', '*', void 0, 1);
 installArithmeticOperator(keyword('/'), keyword('/'), function ($1) {
     return $1 >= 1;
 }, 1);
-installArithmeticOperator('mod', keyword('%'), function ($1) {
+installArithmeticOperator('rem', keyword('%'), function ($1) {
     return $1 == 2;
 }, 1);
 var installComparisonOperator = exports.installComparisonOperator = function installComparisonOperator(callee, operator, fallback) {
@@ -1278,6 +1312,13 @@ var expandAssert = exports.expandAssert = function expandAssert() {
         }
     };
 installMacro('assert', expandAssert);
+var expandTypestr = exports.expandTypestr = function expandTypestr(it) {
+        return function () {
+            var prefixø1 = '[object ';
+            var suffixø1 = ']';
+            return list.apply(void 0, [symbol(void 0, '->')].concat([list.apply(void 0, [symbol(void 0, '.call')].concat([symbol(void 0, 'Object.prototype.to-string')], [it]))], [list.apply(void 0, [symbol(void 0, '.slice')].concat([count(prefixø1)], [0 - count(suffixø1)]))]));
+        }.call(this);
+    };
 var expandDefprotocol = exports.expandDefprotocol = function expandDefprotocol(_andEnv, id) {
         var forms = Array.prototype.slice.call(arguments, 2);
         return function () {
@@ -1285,20 +1326,23 @@ var expandDefprotocol = exports.expandDefprotocol = function expandDefprotocol(_
             var protocolNameø1 = name(id);
             var protocolDocø1 = isString(first(forms)) ? first(forms) : void 0;
             var protocolMethodsø1 = protocolDocø1 ? rest(forms) : forms;
-            var protocolø1 = reduce(function (protocol, method) {
+            var notSupportedø1 = function (method) {
+                return list.apply(void 0, [symbol(void 0, 'fn')].concat([[symbol(void 0, '%1')].concat()], [list.apply(void 0, [symbol(void 0, 'throw')].concat([list.apply(void 0, [symbol(void 0, 'str')].concat(['' + 'No protocol method ' + protocolNameø1 + '.' + method + ' defined for type '], [expandTypestr(symbol(void 0, '%1'))], [': '], [symbol(void 0, '%1')]))]))]));
+            };
+            var protocolø1 = mapv(function (method) {
                     return function () {
                         var methodNameø1 = first(method);
                         var idø2 = idToNs('' + nsø1 + '$' + protocolNameø1 + '$' + name(methodNameø1));
-                        return conj(protocol, {
+                        return {
                             'id': methodNameø1,
-                            'fn': list.apply(void 0, [symbol(void 0, 'fn')].concat([idø2], [[symbol(void 0, 'self')].concat()], [list.apply(void 0, [symbol(void 0, 'def')].concat([symbol(void 0, 'f')], [list.apply(void 0, [symbol(void 0, 'cond')].concat([list.apply(void 0, [symbol(void 0, 'identical?')].concat([symbol(void 0, 'self')], [symbol(void 0, 'null')]))], [list.apply(void 0, [symbol(void 0, '.-nil')].concat([idø2]))], [list.apply(void 0, [symbol(void 0, 'identical?')].concat([symbol(void 0, 'self')], [void 0]))], [list.apply(void 0, [symbol(void 0, '.-nil')].concat([idø2]))], ['\uA789else'], [list.apply(void 0, [symbol(void 0, 'or')].concat([list.apply(void 0, [symbol(void 0, 'aget')].concat([symbol(void 0, 'self')], [list.apply(void 0, [symbol(void 0, 'quote')].concat([idø2]))]))], [list.apply(void 0, [symbol(void 0, 'aget')].concat([idø2], [list.apply(void 0, [symbol(void 0, '.replace')].concat([list.apply(void 0, [symbol(void 0, '.replace')].concat([list.apply(void 0, [symbol(void 0, '.call')].concat([symbol(void 0, 'Object.prototype.toString')], [symbol(void 0, 'self')]))], ['[object '], ['']))], [/\]$/], ['']))]))], [list.apply(void 0, [symbol(void 0, '.-_')].concat([idø2]))]))]))]))], [list.apply(void 0, [symbol(void 0, '.apply')].concat([symbol(void 0, 'f')], [symbol(void 0, 'self')], [symbol(void 0, 'arguments')]))]))
-                        });
+                            'fn': list.apply(void 0, [symbol(void 0, 'fn')].concat([idø2], [[symbol(void 0, 'self')].concat()], [list.apply(void 0, [symbol(void 0, '.apply')].concat([list.apply(void 0, [symbol(void 0, 'or')].concat([list.apply(void 0, [symbol(void 0, 'if')].concat([list.apply(void 0, [symbol(void 0, 'or')].concat([list.apply(void 0, [symbol(void 0, 'identical?')].concat([symbol(void 0, 'self')], [symbol(void 0, 'null')]))], [list.apply(void 0, [symbol(void 0, 'identical?')].concat([symbol(void 0, 'self')], [void 0]))]))], [list.apply(void 0, [symbol(void 0, '.-nil')].concat([idø2]))], [list.apply(void 0, [symbol(void 0, 'or')].concat([list.apply(void 0, [symbol(void 0, 'aget')].concat([symbol(void 0, 'self')], [list.apply(void 0, [symbol(void 0, 'quote')].concat([idø2]))]))], [list.apply(void 0, [symbol(void 0, 'aget')].concat([idø2], [expandTypestr(symbol(void 0, 'self'))]))], [list.apply(void 0, [symbol(void 0, '.-_')].concat([idø2]))]))]))], [notSupportedø1(name(idø2))]))], [symbol(void 0, 'self')], [symbol(void 0, 'arguments')]))]))
+                        };
                     }.call(this);
-                }, [], protocolMethodsø1);
+                }, protocolMethodsø1);
             var fnsø1 = map(function (form) {
                     return list.apply(void 0, [symbol(void 0, 'def')].concat([(form || 0)['id']], [list.apply(void 0, [symbol(void 0, 'aget')].concat([id], [list.apply(void 0, [symbol(void 0, 'quote')].concat([(form || 0)['id']]))]))]));
                 }, protocolø1);
-            var satisfyø1 = assoc({}, symbol(void 0, 'wisp_core$IProtocol$id'), '' + nsø1 + '/' + protocolNameø1);
+            var satisfyø1 = { 'wisp_core$IProtocol$id': '' + nsø1 + '/' + protocolNameø1 };
             var bodyø1 = reduce(function (body, method) {
                     return assoc(body, (method || 0)['id'], (method || 0)['fn']);
                 }, satisfyø1, protocolø1);
@@ -1460,12 +1504,12 @@ var fetchAndRunWispCode = exports.fetchAndRunWispCode = function fetchAndRunWisp
     };
 var __main__ = exports.__main__ = function __main__(ev) {
         [
-            _wisp_runtime,
+            _wisp_string,
             _wisp_sequence,
-            _wisp_string
-        ].map(function (f) {
-            return Object.keys(f).map(function (k) {
-                return (window || 0)[k] = (f || 0)[k];
+            _wisp_runtime
+        ].forEach(function (f) {
+            return Object.keys(f).forEach(function ($1) {
+                return (window || 0)[$1] = (f || 0)[$1];
             });
         });
         return function () {
@@ -9839,158 +9883,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"amdefine":4}],28:[function(require,module,exports){
-var indexOf = function (xs, item) {
-    if (xs.indexOf) return xs.indexOf(item);
-    else for (var i = 0; i < xs.length; i++) {
-        if (xs[i] === item) return i;
-    }
-    return -1;
-};
-var Object_keys = function (obj) {
-    if (Object.keys) return Object.keys(obj)
-    else {
-        var res = [];
-        for (var key in obj) res.push(key)
-        return res;
-    }
-};
-
-var forEach = function (xs, fn) {
-    if (xs.forEach) return xs.forEach(fn)
-    else for (var i = 0; i < xs.length; i++) {
-        fn(xs[i], i, xs);
-    }
-};
-
-var defineProp = (function() {
-    try {
-        Object.defineProperty({}, '_', {});
-        return function(obj, name, value) {
-            Object.defineProperty(obj, name, {
-                writable: true,
-                enumerable: false,
-                configurable: true,
-                value: value
-            })
-        };
-    } catch(e) {
-        return function(obj, name, value) {
-            obj[name] = value;
-        };
-    }
-}());
-
-var globals = ['Array', 'Boolean', 'Date', 'Error', 'EvalError', 'Function',
-'Infinity', 'JSON', 'Math', 'NaN', 'Number', 'Object', 'RangeError',
-'ReferenceError', 'RegExp', 'String', 'SyntaxError', 'TypeError', 'URIError',
-'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape',
-'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'undefined', 'unescape'];
-
-function Context() {}
-Context.prototype = {};
-
-var Script = exports.Script = function NodeScript (code) {
-    if (!(this instanceof Script)) return new Script(code);
-    this.code = code;
-};
-
-Script.prototype.runInContext = function (context) {
-    if (!(context instanceof Context)) {
-        throw new TypeError("needs a 'context' argument.");
-    }
-    
-    var iframe = document.createElement('iframe');
-    if (!iframe.style) iframe.style = {};
-    iframe.style.display = 'none';
-    
-    document.body.appendChild(iframe);
-    
-    var win = iframe.contentWindow;
-    var wEval = win.eval, wExecScript = win.execScript;
-
-    if (!wEval && wExecScript) {
-        // win.eval() magically appears when this is called in IE:
-        wExecScript.call(win, 'null');
-        wEval = win.eval;
-    }
-    
-    forEach(Object_keys(context), function (key) {
-        win[key] = context[key];
-    });
-    forEach(globals, function (key) {
-        if (context[key]) {
-            win[key] = context[key];
-        }
-    });
-    
-    var winKeys = Object_keys(win);
-
-    var res = wEval.call(win, this.code);
-    
-    forEach(Object_keys(win), function (key) {
-        // Avoid copying circular objects like `top` and `window` by only
-        // updating existing context properties or new properties in the `win`
-        // that was only introduced after the eval.
-        if (key in context || indexOf(winKeys, key) === -1) {
-            context[key] = win[key];
-        }
-    });
-
-    forEach(globals, function (key) {
-        if (!(key in context)) {
-            defineProp(context, key, win[key]);
-        }
-    });
-    
-    document.body.removeChild(iframe);
-    
-    return res;
-};
-
-Script.prototype.runInThisContext = function () {
-    return eval(this.code); // maybe...
-};
-
-Script.prototype.runInNewContext = function (context) {
-    var ctx = Script.createContext(context);
-    var res = this.runInContext(ctx);
-
-    if (context) {
-        forEach(Object_keys(ctx), function (key) {
-            context[key] = ctx[key];
-        });
-    }
-
-    return res;
-};
-
-forEach(Object_keys(Script.prototype), function (name) {
-    exports[name] = Script[name] = function (code) {
-        var s = Script(code);
-        return s[name].apply(s, [].slice.call(arguments, 1));
-    };
-});
-
-exports.isContext = function (context) {
-    return context instanceof Context;
-};
-
-exports.createScript = function (code) {
-    return exports.Script(code);
-};
-
-exports.createContext = Script.createContext = function (context) {
-    var copy = new Context();
-    if(typeof context === 'object') {
-        forEach(Object_keys(context), function (key) {
-            copy[key] = context[key];
-        });
-    }
-    return copy;
-};
-
-},{}],"wisp/analyzer":[function(require,module,exports){
+},{"amdefine":4}],"wisp/analyzer":[function(require,module,exports){
 {
     var _ns_ = {
             id: 'wisp.analyzer',
@@ -10384,11 +10277,11 @@ var analyzeLet_ = exports.analyzeLet_ = function analyzeLet_(env, form, isLoop) 
 var analyzeLet = exports.analyzeLet = function analyzeLet(env, form) {
         return analyzeLet_(env, form, false);
     };
-installSpecial('let', analyzeLet);
+installSpecial('let*', analyzeLet);
 var analyzeLoop = exports.analyzeLoop = function analyzeLoop(env, form) {
         return conj(analyzeLet_(env, form, true), { 'op': 'loop' });
     };
-installSpecial('loop', analyzeLoop);
+installSpecial('loop*', analyzeLoop);
 var analyzeRecur = exports.analyzeRecur = function analyzeRecur(env, form) {
         return function () {
             var paramsø1 = (env || 0)['params'];
@@ -10535,7 +10428,7 @@ var analyzeFn = exports.analyzeFn = function analyzeFn(env, form) {
             };
         }.call(this);
     };
-installSpecial('fn', analyzeFn);
+installSpecial('fn*', analyzeFn);
 var parseReferences = exports.parseReferences = function parseReferences(forms) {
         return reduce(function (references, form) {
             return isSeq(form) ? assoc(references, name(first(form)), vec(rest(form))) : references;
@@ -10672,6 +10565,7 @@ var analyze = exports.analyze = function analyze() {
     var first = wisp_sequence.first;
     var second = wisp_sequence.second;
     var count = wisp_sequence.count;
+    var isIdentitySet = wisp_sequence.isIdentitySet;
     var last = wisp_sequence.last;
     var map = wisp_sequence.map;
     var vec = wisp_sequence.vec;
@@ -10810,7 +10704,9 @@ var prStr = exports.prStr = function prStr(x, offset) {
                     var valueø1 = prStr(second(pair), 2 + offsetø2 + count(keyø1));
                     return '' + keyø1 + ' ' + valueø1;
                 }.call(this);
-            }, x)) + '}' : isSequential(x) ? '' + '(' + join(' ', map(function ($1) {
+            }, x)) + '}' : isIdentitySet(x) ? '' + '#{' + join(' ', map(function ($1) {
+                return prStr($1, inc(offsetø2));
+            }, vec(x))) + '}' : isSequential(x) ? '' + '(' + join(' ', map(function ($1) {
                 return prStr($1, inc(offsetø2));
             }, vec(x))) + ')' : isRePattern(x) ? '' + '#"' + join('\\/', split(x.source, '/')) + '"' : 'else' ? '' + x : void 0;
         }.call(this);
@@ -11128,10 +11024,12 @@ var evaluate = exports.evaluate = function evaluate(source) {
     var withMeta = wisp_ast.withMeta;
     var isSymbol = wisp_ast.isSymbol;
     var isKeyword = wisp_ast.isKeyword;
+    var keyword = wisp_ast.keyword;
     var isQuote = wisp_ast.isQuote;
     var symbol = wisp_ast.symbol;
     var namespace = wisp_ast.namespace;
     var name = wisp_ast.name;
+    var gensym = wisp_ast.gensym;
     var isUnquote = wisp_ast.isUnquote;
     var isUnquoteSplicing = wisp_ast.isUnquoteSplicing;
     var wisp_sequence = require('./sequence');
@@ -11140,9 +11038,12 @@ var evaluate = exports.evaluate = function evaluate(source) {
     var conj = wisp_sequence.conj;
     var partition = wisp_sequence.partition;
     var seq = wisp_sequence.seq;
+    var repeatedly = wisp_sequence.repeatedly;
     var isEmpty = wisp_sequence.isEmpty;
     var map = wisp_sequence.map;
+    var mapv = wisp_sequence.mapv;
     var vec = wisp_sequence.vec;
+    var set = wisp_sequence.set;
     var isEvery = wisp_sequence.isEvery;
     var concat = wisp_sequence.concat;
     var first = wisp_sequence.first;
@@ -11150,21 +11051,32 @@ var evaluate = exports.evaluate = function evaluate(source) {
     var third = wisp_sequence.third;
     var rest = wisp_sequence.rest;
     var last = wisp_sequence.last;
+    var mapcat = wisp_sequence.mapcat;
+    var nth = wisp_sequence.nth;
     var butlast = wisp_sequence.butlast;
     var interleave = wisp_sequence.interleave;
     var cons = wisp_sequence.cons;
     var count = wisp_sequence.count;
+    var take = wisp_sequence.take;
+    var dissoc = wisp_sequence.dissoc;
     var some = wisp_sequence.some;
     var assoc = wisp_sequence.assoc;
     var reduce = wisp_sequence.reduce;
     var filter = wisp_sequence.filter;
     var isSeq = wisp_sequence.isSeq;
+    var zipmap = wisp_sequence.zipmap;
+    var drop = wisp_sequence.drop;
     var lazySeq = wisp_sequence.lazySeq;
+    var range = wisp_sequence.range;
+    var reverse = wisp_sequence.reverse;
+    var dorun = wisp_sequence.dorun;
+    var mapIndexed = wisp_sequence.mapIndexed;
     var wisp_runtime = require('./runtime');
     var isNil = wisp_runtime.isNil;
     var isDictionary = wisp_runtime.isDictionary;
     var isVector = wisp_runtime.isVector;
     var keys = wisp_runtime.keys;
+    var get = wisp_runtime.get;
     var vals = wisp_runtime.vals;
     var isString = wisp_runtime.isString;
     var isNumber = wisp_runtime.isNumber;
@@ -11172,14 +11084,18 @@ var evaluate = exports.evaluate = function evaluate(source) {
     var isDate = wisp_runtime.isDate;
     var isRePattern = wisp_runtime.isRePattern;
     var isEven = wisp_runtime.isEven;
+    var isOdd = wisp_runtime.isOdd;
     var isEqual = wisp_runtime.isEqual;
     var max = wisp_runtime.max;
     var inc = wisp_runtime.inc;
     var dec = wisp_runtime.dec;
     var dictionary = wisp_runtime.dictionary;
+    var merge = wisp_runtime.merge;
     var subs = wisp_runtime.subs;
     var wisp_string = require('./string');
     var split = wisp_string.split;
+    var join = wisp_string.join;
+    var capitalize = wisp_string.capitalize;
 }
 var __macros__ = exports.__macros__ = {};
 var expand = function expand(expander, form, env) {
@@ -11200,6 +11116,9 @@ var installMacro = exports.installMacro = function installMacro(op, expander) {
 var macro = function macro(op) {
     return isSymbol(op) && (__macros__ || 0)[name(op)];
 };
+var isDotSyntax = exports.isDotSyntax = function isDotSyntax(op) {
+        return isSymbol(op) && '.' === name(op);
+    };
 var isMethodSyntax = exports.isMethodSyntax = function isMethodSyntax(op) {
         return function () {
             var idø1 = isSymbol(op) && name(op);
@@ -11259,6 +11178,19 @@ var fieldSyntax = exports.fieldSyntax = function fieldSyntax(field, target) {
             })() : list.apply(void 0, [symbol(void 0, 'aget')].concat([target], [list.apply(void 0, [symbol(void 0, 'quote')].concat([memberø1]))]));
         }.call(this);
     };
+var dotSyntax = exports.dotSyntax = function dotSyntax(op, target, field) {
+        var params = Array.prototype.slice.call(arguments, 3);
+        !isSymbol(field) ? (function () {
+            throw Error('Malformed . form');
+        })() : void 0;
+        return function () {
+            var _fieldø1 = name(field);
+            return ('-' === first(_fieldø1) ? fieldSyntax : methodSyntax).apply(void 0, [
+                symbol('' + '.' + _fieldø1),
+                target
+            ].concat(params));
+        }.call(this);
+    };
 var newSyntax = exports.newSyntax = function newSyntax(op) {
         var params = Array.prototype.slice.call(arguments, 1);
         return function () {
@@ -11280,8 +11212,20 @@ var newSyntax = exports.newSyntax = function newSyntax(op) {
             return list.apply(void 0, [symbol(void 0, 'new')].concat([constructorø1], vec(params)));
         }.call(this);
     };
-var keywordInvoke = exports.keywordInvoke = function keywordInvoke(keyword, target) {
-        return list.apply(void 0, [symbol(void 0, 'get')].concat([target], [keyword]));
+var keywordInvoke = exports.keywordInvoke = function keywordInvoke() {
+        switch (arguments.length) {
+        case 2:
+            var keyword = arguments[0];
+            var target = arguments[1];
+            return list.apply(void 0, [symbol(void 0, 'get')].concat([target], [keyword]));
+        case 3:
+            var keyword = arguments[0];
+            var target = arguments[1];
+            var default_ = arguments[2];
+            return list.apply(void 0, [symbol(void 0, 'get')].concat([target], [keyword], [default_]));
+        default:
+            throw RangeError('Wrong number of arguments passed');
+        }
     };
 var desugar = function desugar(expander, form) {
     return function () {
@@ -11294,7 +11238,7 @@ var macroexpand1 = exports.macroexpand1 = function macroexpand1(form, env) {
         return function () {
             var opø1 = isList(form) && first(form);
             var expanderø1 = macro(opø1);
-            return expanderø1 ? expand(expanderø1, form, env) : isKeyword(opø1) ? desugar(keywordInvoke, form) : isFieldSyntax(opø1) ? desugar(fieldSyntax, form) : isMethodSyntax(opø1) ? desugar(methodSyntax, form) : isNewSyntax(opø1) ? desugar(newSyntax, form) : 'else' ? form : void 0;
+            return expanderø1 ? expand(expanderø1, form, env) : isKeyword(opø1) ? desugar(keywordInvoke, form) : isDotSyntax(opø1) ? desugar(dotSyntax, form) : isFieldSyntax(opø1) ? desugar(fieldSyntax, form) : isMethodSyntax(opø1) ? desugar(methodSyntax, form) : isNewSyntax(opø1) ? desugar(newSyntax, form) : 'else' ? form : void 0;
         }.call(this);
     };
 var macroexpand = exports.macroexpand = function macroexpand(form, env) {
@@ -11320,17 +11264,16 @@ var sequenceExpand = exports.sequenceExpand = function sequenceExpand(forms) {
             return isUnquote(form) ? [second(form)] : isUnquoteSplicing(form) ? unquoteSplicingExpand(second(form)) : 'else' ? [syntaxQuoteExpand(form)] : void 0;
         }, forms);
     };
-installMacro('syntax-quote', syntaxQuote);
-var notEqual = exports.notEqual = function notEqual() {
+installMacro('syntax-quote', syntaxQuoteExpand);
+var expandNotEqual = exports.expandNotEqual = function expandNotEqual() {
         var body = Array.prototype.slice.call(arguments, 0);
         return list.apply(void 0, [symbol(void 0, 'not')].concat([list.apply(void 0, [symbol(void 0, '=')].concat(vec(body)))]));
     };
-installMacro('not=', notEqual);
-var ifNot = exports.ifNot = function ifNot(condition, truthy, alternative) {
-        'Complements the `if` exclusive conditional branch.';
+installMacro('not=', expandNotEqual);
+var expandIfNot = exports.expandIfNot = function expandIfNot(condition, truthy, alternative) {
         return list.apply(void 0, [symbol(void 0, 'if')].concat([list.apply(void 0, [symbol(void 0, 'not')].concat([condition]))], [truthy], [alternative]));
     };
-installMacro('if-not', ifNot);
+installMacro('if-not', expandIfNot);
 var expandComment = exports.expandComment = function expandComment() {
         var body = Array.prototype.slice.call(arguments, 0);
         return void 0;
@@ -11345,6 +11288,32 @@ var expandThreadFirst = exports.expandThreadFirst = function expandThreadFirst()
         }, rest(operations)));
     };
 installMacro('->', expandThreadFirst);
+var expandThreadLast = exports.expandThreadLast = function expandThreadLast() {
+        var operations = Array.prototype.slice.call(arguments, 0);
+        return reduce(function (form, operation) {
+            return concat(operation, [form]);
+        }, first(operations), map(function ($1) {
+            return isList($1) ? $1 : list.apply(void 0, [$1].concat());
+        }, rest(operations)));
+    };
+installMacro('->>', expandThreadLast);
+var expandDots = exports.expandDots = function expandDots(x) {
+        var forms = Array.prototype.slice.call(arguments, 1);
+        return list.apply(void 0, [symbol(void 0, '->')].concat([x], vec(map(function ($1) {
+            return isList($1) ? cons(symbol(void 0, '.'), $1) : list(symbol(void 0, '.'), $1);
+        }, forms))));
+    };
+installMacro('..', expandDots);
+var expandThreadAs = exports.expandThreadAs = function expandThreadAs(expr, name) {
+        var forms = Array.prototype.slice.call(arguments, 2);
+        return list.apply(void 0, [symbol(void 0, 'let')].concat([[name].concat([expr], vec(mapcat(function (form) {
+                return [
+                    name,
+                    form
+                ];
+            }, forms)))], [name]));
+    };
+installMacro('as->', expandThreadAs);
 var expandCond = exports.expandCond = function expandCond() {
         var clauses = Array.prototype.slice.call(arguments, 0);
         return !isEmpty(clauses) ? list(symbol(void 0, 'if'), first(clauses), isEmpty(rest(clauses)) ? (function () {
@@ -11352,6 +11321,107 @@ var expandCond = exports.expandCond = function expandCond() {
         })() : second(clauses), cons(symbol(void 0, 'cond'), rest(rest(clauses)))) : void 0;
     };
 installMacro('cond', expandCond);
+var expandCase = exports.expandCase = function expandCase(e) {
+        var clauses = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var symø1 = isSymbol(e) ? e : gensym('case-binding');
+            var pairsø1 = partition(2, clauses);
+            var eq_ø1 = function (c) {
+                return list.apply(void 0, [symbol(void 0, '=')].concat([symø1], [list.apply(void 0, [symbol(void 0, 'quote')].concat([c]))]));
+            };
+            var tailø1 = isOdd(count(clauses)) ? last(clauses) : list.apply(void 0, [symbol(void 0, 'throw')].concat([list.apply(void 0, [symbol(void 0, 'Error')].concat([list.apply(void 0, [symbol(void 0, 'str')].concat(['No matching clause: '], [symø1]))]))]));
+            return function loop() {
+                var recur = loop;
+                var pairsø2 = pairsø1;
+                var condsø1 = [];
+                do {
+                    recur = isEmpty(pairsø2) ? function () {
+                        var resultø1 = list.apply(void 0, [symbol(void 0, 'cond')].concat(vec(condsø1), ['\uA789else'], [tailø1]));
+                        return isEqual(e, symø1) ? resultø1 : list.apply(void 0, [symbol(void 0, 'let')].concat([[symø1].concat([e])], [resultø1]));
+                    }.call(this) : function () {
+                        var xø1 = first(pairsø2);
+                        var xsø1 = rest(pairsø2);
+                        var constsø1 = first(xø1);
+                        var resø1 = second(xø1);
+                        return loop[0] = xsø1, loop[1] = conj(condsø1, !isList(constsø1) ? eq_ø1(constsø1) : list.apply(void 0, [symbol(void 0, 'or')].concat(vec(map(eq_ø1, constsø1)))), resø1), loop;
+                    }.call(this);
+                } while (pairsø2 = loop[0], condsø1 = loop[1], recur === loop);
+                return recur;
+            }.call(this);
+        }.call(this);
+    };
+installMacro('case', expandCase);
+var expandCondp = exports.expandCondp = function expandCondp(pred, expr) {
+        var clauses = Array.prototype.slice.call(arguments, 2);
+        return function () {
+            var sym_ø1 = gensym('condp-binding');
+            var symø1 = isSymbol(expr) ? expr : sym_ø1;
+            var compareø1 = function (x) {
+                return list.apply(void 0, [pred].concat([x], [symø1]));
+            };
+            var splitsø1 = function splits(xs) {
+                return isEmpty(xs) ? list.apply(void 0, [symbol(void 0, 'throw')].concat([list.apply(void 0, [symbol(void 0, 'Error')].concat([list.apply(void 0, [symbol(void 0, 'str')].concat(['No matching clause: '], [symø1]))]))])) : isEqual(1, count(xs)) ? first(xs) : isEqual('\uA789>>', second(xs)) ? list.apply(void 0, [symbol(void 0, 'if-let')].concat([[sym_ø1].concat([compareø1(first(xs))])], [list.apply(void 0, [third(xs)].concat([sym_ø1]))], [splits(drop(3, xs))])) : 'else' ? list.apply(void 0, [symbol(void 0, 'if')].concat([compareø1(first(xs))], [second(xs)], [splits(drop(2, xs))])) : void 0;
+            };
+            return isEqual(symø1, expr) ? splitsø1(clauses) : list.apply(void 0, [symbol(void 0, 'let')].concat([[symø1].concat([expr])], [splitsø1(clauses)]));
+        }.call(this);
+    };
+installMacro('condp', expandCondp);
+var _thread = function _thread(insert, sym, test, form) {
+    return function () {
+        var formø2 = isList(form) ? form : list(form);
+        return list.apply(void 0, [symbol(void 0, 'if')].concat([test], [sym], [insert(sym, formø2)]));
+    }.call(this);
+};
+var _condThread = function _condThread(expr, clauses, insert) {
+    return function () {
+        var symø1 = gensym('cond-thread-binding');
+        return list.apply(void 0, [symbol(void 0, 'as->')].concat([expr], [symø1], vec(map(function ($1) {
+            return _thread(insert, symø1, list.apply(void 0, [symbol(void 0, 'not')].concat([first($1)])), second($1));
+        }, partition(2, clauses)))));
+    }.call(this);
+};
+var expandCondThreadFirst = exports.expandCondThreadFirst = function expandCondThreadFirst(expr) {
+        var clauses = Array.prototype.slice.call(arguments, 1);
+        return _condThread(expr, clauses, function (sym, form) {
+            return list.apply(void 0, [
+                first(form),
+                sym
+            ].concat(vec(rest(form))));
+        });
+    };
+installMacro('cond->', expandCondThreadFirst);
+var expandCondThreadLast = exports.expandCondThreadLast = function expandCondThreadLast(expr) {
+        var clauses = Array.prototype.slice.call(arguments, 1);
+        return _condThread(expr, clauses, function (sym, form) {
+            return list.apply(void 0, vec(concat(form, [sym])));
+        });
+    };
+installMacro('cond->>', expandCondThreadLast);
+var _someThread = function _someThread(expr, forms, insert) {
+    return function () {
+        var symø1 = gensym('some-thread-binding');
+        return list.apply(void 0, [symbol(void 0, 'as->')].concat([expr], [symø1], vec(map(function ($1) {
+            return _thread(insert, symø1, list.apply(void 0, [symbol(void 0, 'nil?')].concat([symø1])), $1);
+        }, forms))));
+    }.call(this);
+};
+var expandSomeThreadFirst = exports.expandSomeThreadFirst = function expandSomeThreadFirst(expr) {
+        var forms = Array.prototype.slice.call(arguments, 1);
+        return _someThread(expr, forms, function (sym, form) {
+            return list.apply(void 0, [
+                first(form),
+                sym
+            ].concat(vec(rest(form))));
+        });
+    };
+installMacro('some->', expandSomeThreadFirst);
+var expandSomeThreadLast = exports.expandSomeThreadLast = function expandSomeThreadLast(expr) {
+        var forms = Array.prototype.slice.call(arguments, 1);
+        return _someThread(expr, forms, function (sym, form) {
+            return list.apply(void 0, vec(concat(form, [sym])));
+        });
+    };
+installMacro('some->>', expandSomeThreadLast);
 var expandDefn = exports.expandDefn = function expandDefn(_andForm, name) {
         var docPlusMetaPlusBody = Array.prototype.slice.call(arguments, 2);
         return function () {
@@ -11379,6 +11449,349 @@ var expandLazySeq = exports.expandLazySeq = function expandLazySeq() {
         return list.apply(void 0, [symbol(void 0, '.call')].concat([symbol(void 0, 'lazy-seq')], [void 0], [false], [list.apply(void 0, [symbol(void 0, 'fn')].concat([[]], vec(body)))]));
     };
 installMacro('lazy-seq', expandLazySeq);
+var expandWhen = exports.expandWhen = function expandWhen(test) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return list.apply(void 0, [symbol(void 0, 'if')].concat([test], [list.apply(void 0, [symbol(void 0, 'do')].concat(vec(body)))]));
+    };
+installMacro('when', expandWhen);
+var expandWhenNot = exports.expandWhenNot = function expandWhenNot(test) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return list.apply(void 0, [symbol(void 0, 'when')].concat([list.apply(void 0, [symbol(void 0, 'not')].concat([test]))], vec(body)));
+    };
+installMacro('when-not', expandWhenNot);
+var expandIfLet = exports.expandIfLet = function expandIfLet(bindings, then, else_) {
+        return function () {
+            var nameø1 = first(bindings);
+            var testø1 = second(bindings);
+            var symø1 = gensym('if-let-binding');
+            return list.apply(void 0, [symbol(void 0, 'let')].concat([[symø1].concat([testø1])], [list.apply(void 0, [symbol(void 0, 'if')].concat([symø1], [list.apply(void 0, [symbol(void 0, 'let')].concat([[nameø1].concat([symø1])], [then]))], [else_]))]));
+        }.call(this);
+    };
+installMacro('if-let', expandIfLet);
+var expandWhenLet = exports.expandWhenLet = function expandWhenLet(bindings) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return list.apply(void 0, [symbol(void 0, 'if-let')].concat([bindings], [list.apply(void 0, [symbol(void 0, 'do')].concat(vec(body)))]));
+    };
+installMacro('when-let', expandWhenLet);
+var expandIfSome = exports.expandIfSome = function expandIfSome(bindings, then, else_) {
+        return function () {
+            var nameø1 = first(bindings);
+            var testø1 = second(bindings);
+            var symø1 = isSymbol(nameø1) ? nameø1 : gensym('if-some-binding');
+            return list.apply(void 0, [symbol(void 0, 'let')].concat([[symø1].concat([testø1])], [list.apply(void 0, [symbol(void 0, 'if-not')].concat([list.apply(void 0, [symbol(void 0, 'nil?')].concat([symø1]))], [list.apply(void 0, [symbol(void 0, 'let')].concat([[nameø1].concat([symø1])], [then]))], [else_]))]));
+        }.call(this);
+    };
+installMacro('if-some', expandIfSome);
+var expandWhenSome = exports.expandWhenSome = function expandWhenSome(bindings) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return list.apply(void 0, [symbol(void 0, 'if-some')].concat([bindings], [list.apply(void 0, [symbol(void 0, 'do')].concat(vec(body)))]));
+    };
+installMacro('when-some', expandWhenSome);
+var expandWhenFirst = exports.expandWhenFirst = function expandWhenFirst(bindings) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var nameø1 = first(bindings);
+            var testø1 = second(bindings);
+            return list.apply(void 0, [symbol(void 0, 'when-let')].concat([[[nameø1].concat()].concat([list.apply(void 0, [symbol(void 0, 'seq*')].concat([testø1]))])], vec(body)));
+        }.call(this);
+    };
+installMacro('when-first', expandWhenFirst);
+var expandWhile = exports.expandWhile = function expandWhile(test) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return list.apply(void 0, [symbol(void 0, 'loop')].concat([[]], [list.apply(void 0, [symbol(void 0, 'when')].concat([test], vec(body), [list.apply(void 0, [symbol(void 0, 'recur')].concat())]))]));
+    };
+installMacro('while', expandWhile);
+var expandDoto = exports.expandDoto = function expandDoto(x) {
+        var forms = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var symø1 = gensym('doto-binding');
+            return list.apply(void 0, [symbol(void 0, 'let')].concat([[symø1].concat([x])], vec(map(function ($1) {
+                return concat([
+                    first($1),
+                    symø1
+                ], rest($1));
+            }, forms)), [symø1]));
+        }.call(this);
+    };
+installMacro('doto', expandDoto);
+var expandDotimes = exports.expandDotimes = function expandDotimes(bindings) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var nameø1 = first(bindings);
+            var nø1 = second(bindings);
+            var symø1 = gensym('dotimes-binding');
+            return list.apply(void 0, [symbol(void 0, 'let')].concat([[symø1].concat([nø1])], [list.apply(void 0, [symbol(void 0, 'loop')].concat([[nameø1].concat([0])], [list.apply(void 0, [symbol(void 0, 'when')].concat([list.apply(void 0, [symbol(void 0, '<')].concat([nameø1], [symø1]))], vec(body), [list.apply(void 0, [symbol(void 0, 'recur')].concat([list.apply(void 0, [symbol(void 0, 'inc')].concat([nameø1]))]))]))]))]));
+        }.call(this);
+    };
+installMacro('dotimes', expandDotimes);
+var forStep = function forStep(context, loop) {
+    var modifiers = Array.prototype.slice.call(arguments, 2);
+    return function () {
+        var iterø1 = (context || 0)['iter'];
+        var collø1 = (context || 0)['coll'];
+        var bodyø1 = (context || 0)['body'];
+        var subseqø1 = (context || 0)['subseq'];
+        var body_ø1 = !subseqø1 ? bodyø1 : list.apply(void 0, [symbol(void 0, 'let')].concat([[subseqø1].concat([bodyø1])], [list.apply(void 0, [symbol(void 0, 'if')].concat([list.apply(void 0, [symbol(void 0, 'empty?')].concat([subseqø1]))], [list.apply(void 0, [symbol(void 0, 'recur')].concat([list.apply(void 0, [symbol(void 0, 'rest')].concat([collø1]))]))], [list.apply(void 0, [symbol(void 0, 'lazy-concat')].concat([subseqø1], [list.apply(void 0, [iterø1].concat([list.apply(void 0, [symbol(void 0, 'rest')].concat([collø1]))]))]))]))]));
+        var nextø1 = function loop() {
+                var recur = loop;
+                var modsø1 = reverse(modifiers);
+                var bodyø2 = body_ø1;
+                do {
+                    recur = isEmpty(modsø1) ? bodyø2 : function () {
+                        var mø1 = first(modsø1);
+                        var itemø1 = first(mø1);
+                        var argø1 = second(mø1);
+                        return loop[0] = rest(modsø1), loop[1] = isEqual(itemø1, '\uA789let') ? list.apply(void 0, [symbol(void 0, 'let')].concat([argø1], [bodyø2])) : isEqual(itemø1, '\uA789while') ? list.apply(void 0, [symbol(void 0, 'if')].concat([argø1], [bodyø2])) : isEqual(itemø1, '\uA789when') ? list.apply(void 0, [symbol(void 0, 'if')].concat([argø1], [bodyø2], [list.apply(void 0, [symbol(void 0, 'recur')].concat([list.apply(void 0, [symbol(void 0, 'rest')].concat([collø1]))]))])) : void 0, loop;
+                    }.call(this);
+                } while (modsø1 = loop[0], bodyø2 = loop[1], recur === loop);
+                return recur;
+            }.call(this);
+        return merge(context, {
+            'subseq': gensym('for-subseq'),
+            'body': list.apply(void 0, [list.apply(void 0, [symbol(void 0, 'fn')].concat([iterø1], [[collø1].concat()], [list.apply(void 0, [symbol(void 0, 'lazy-seq')].concat([list.apply(void 0, [symbol(void 0, 'loop')].concat([[collø1].concat([collø1])], [list.apply(void 0, [symbol(void 0, 'if-not')].concat([list.apply(void 0, [symbol(void 0, 'empty?')].concat([collø1]))], [list.apply(void 0, [symbol(void 0, 'let')].concat([[first(loop)].concat([list.apply(void 0, [symbol(void 0, 'first')].concat([collø1]))])], [nextø1]))]))]))]))]))].concat([second(loop)]))
+        });
+    }.call(this);
+};
+var forModifiers = set('\uA789let', '\uA789while', '\uA789when');
+var forParts = function forParts(seqExprPairs) {
+    return function () {
+        var nø1 = count(seqExprPairs);
+        var indicesø1 = filter(function ($1) {
+                return !forModifiers(first(seqExprPairs[$1]));
+            }, range(nø1));
+        var segmentsø1 = partition(2, 1, conj(indicesø1, nø1));
+        return map(function ($1) {
+            return seqExprPairs.slice(first($1), second($1));
+        }, segmentsø1);
+    }.call(this);
+};
+var expandFor = exports.expandFor = function expandFor(seqExprs, bodyExpr) {
+        return function () {
+            var iterø1 = gensym('for-iter');
+            var collø1 = gensym('for-coll');
+            var partsø1 = forParts(partition(2, seqExprs));
+            return (reduce(function ($1, $2) {
+                return forStep.apply(void 0, [$1].concat($2));
+            }, {
+                'iter': iterø1,
+                'coll': collø1,
+                'body': list.apply(void 0, [symbol(void 0, 'cons')].concat([bodyExpr], [list.apply(void 0, [iterø1].concat([list.apply(void 0, [symbol(void 0, 'rest')].concat([collø1]))]))]))
+            }, reverse(partsø1)) || 0)['body'];
+        }.call(this);
+    };
+installMacro('for', expandFor);
+var expandDoseq = exports.expandDoseq = function expandDoseq(seqExprs) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return list.apply(void 0, [symbol(void 0, 'dorun')].concat([list.apply(void 0, [symbol(void 0, 'for')].concat([seqExprs], [list.apply(void 0, [symbol(void 0, 'do')].concat(vec(body), [void 0]))]))]));
+    };
+installMacro('doseq', expandDoseq);
+var sym_ = function sym_(string) {
+    return function () {
+        var wordsø1 = split(name(string), /-/);
+        return join(cons(first(wordsø1), map(capitalize, rest(wordsø1))));
+    }.call(this);
+};
+var bindSym_ = function bindSym_(s, b) {
+    !isSymbol(s) ? (function () {
+        throw Error('' + 'Assert failed: ' + 'Expected a symbol here!' + '(symbol? s)');
+    })() : void 0;
+    return [
+        s,
+        b
+    ];
+};
+var conjSyms_ = function conjSyms_(get_, result, k, v, f, quote) {
+    return function () {
+        var kNsø1 = namespace(k);
+        var gø1 = function ($1) {
+            return f(kNsø1, name($1));
+        };
+        return vec(concat(result, mapcat(function ($1) {
+            return bindSym_($1, get_($1, gø1($1), quote));
+        }, v)));
+    }.call(this);
+};
+var dictGet_ = function dictGet_(dictName, defaults) {
+    return function (binding, key, quote) {
+        return function () {
+            var sø1 = name(key);
+            var kø1 = keyword(namespace(key), isSymbol(key) ? sym_(sø1) : sø1);
+            return list.apply(void 0, [symbol(void 0, 'get')].concat([dictName], [!quote ? kø1 : list.apply(void 0, [symbol(void 0, 'quote')].concat([kø1]))], [binding && defaults[binding]]));
+        }.call(this);
+    };
+};
+var destructureDict = exports.destructureDict = function destructureDict(binding, from) {
+        return function () {
+            var dictNameø1 = binding['\uA789as'] || gensym('destructure-bind');
+            var dictBindø1 = list.apply(void 0, [symbol(void 0, 'if')].concat([list.apply(void 0, [symbol(void 0, 'dictionary?')].concat([dictNameø1]))], [dictNameø1], [list.apply(void 0, [symbol(void 0, 'apply')].concat([symbol(void 0, 'dictionary')], [list.apply(void 0, [symbol(void 0, 'vec')].concat([dictNameø1]))]))]));
+            var get_ø1 = dictGet_(dictNameø1, get.apply(void 0, [
+                    binding,
+                    '\uA789or',
+                    {}
+                ]));
+            return function loop() {
+                var recur = loop;
+                var ksø1 = keys(dissoc(binding, '\uA789as', '\uA789or'));
+                var resultø1 = [
+                        dictNameø1,
+                        from,
+                        dictNameø1,
+                        dictBindø1
+                    ];
+                do {
+                    recur = isEmpty(ksø1) ? resultø1 : function () {
+                        var kø1 = first(ksø1);
+                        var vø1 = (binding || 0)[kø1];
+                        var k_ø1 = isKeyword(kø1) && name(kø1);
+                        !(isSymbol(kø1) || k_ø1 && set('keys', 'strs', 'syms')(k_ø1)) ? (function () {
+                            throw Error('' + 'Assert failed: ' + ('' + 'Invalid destructure key ' + kø1) + '(or (symbol? k) (and k* ((set :keys :strs :syms) k*)))');
+                        })() : void 0;
+                        return loop[0] = rest(ksø1), loop[1] = isEqual(k_ø1, 'strs') ? conjSyms_(get_ø1, resultø1, kø1, vø1, keyword) : isEqual(k_ø1, 'syms') ? conjSyms_(get_ø1, resultø1, kø1, vø1, function ($1, $2) {
+                            return symbol($1, sym_($2));
+                        }) : isEqual(k_ø1, 'keys') ? conjSyms_(get_ø1, resultø1, kø1, vø1, keyword, 'quote') : isNumber(vø1) ? conj(resultø1, kø1, get_ø1(kø1, symbol('' + vø1))) : 'else' ? conj(resultø1, kø1, get_ø1(kø1, vø1)) : void 0, loop;
+                    }.call(this);
+                } while (ksø1 = loop[0], resultø1 = loop[1], recur === loop);
+                return recur;
+            }.call(this);
+        }.call(this);
+    };
+var destructureSeq = exports.destructureSeq = function destructureSeq(binding, from) {
+        return function () {
+            var asø1 = binding.findIndex(function ($1) {
+                    return isEqual($1, '\uA789as');
+                });
+            var seqNameø1 = asø1 < 0 ? gensym('destructure-bind') : nth(binding, inc(asø1));
+            var binding1ø1 = asø1 < 0 ? binding : take(asø1, binding);
+            var moreø1 = binding1ø1.findIndex(function ($1) {
+                    return isEqual($1, symbol(void 0, '&'));
+                });
+            var tailø1 = moreø1 >= 0 ? nth(binding1ø1, inc(moreø1)) : void 0;
+            var binding2ø1 = moreø1 < 0 ? binding1ø1 : take(moreø1, binding);
+            !(asø1 < 0 || isEqual(asø1, count(binding) - 2)) ? (function () {
+                throw Error('' + 'Assert failed: ' + 'invalid :as in seq-destructuring' + '(or (< as 0) (= as (- (count binding) 2)))');
+            })() : void 0;
+            !(moreø1 < 0 || isEqual(moreø1, count(binding1ø1) - 2)) ? (function () {
+                throw Error('' + 'Assert failed: ' + 'invalid & in seq-destructuring' + '(or (< more 0) (= more (- (count binding1) 2)))');
+            })() : void 0;
+            return function loop() {
+                var recur = loop;
+                var xsø1 = binding2ø1;
+                var iø1 = 0;
+                var resultø1 = [
+                        seqNameø1,
+                        from
+                    ];
+                do {
+                    recur = function () {
+                        var xø1 = first(xsø1);
+                        return isEmpty(xsø1) ? !tailø1 ? resultø1 : conj(resultø1, tailø1, list.apply(void 0, [symbol(void 0, 'drop')].concat([moreø1], [seqNameø1]))) : isEqual(xø1, symbol(void 0, '_')) ? (loop[0] = rest(xsø1), loop[1] = inc(iø1), loop[2] = resultø1, loop) : 'else' ? (loop[0] = rest(xsø1), loop[1] = inc(iø1), loop[2] = conj(resultø1, xø1, list.apply(void 0, [symbol(void 0, 'nth')].concat([seqNameø1], [iø1]))), loop) : void 0;
+                    }.call(this);
+                } while (xsø1 = loop[0], iø1 = loop[1], resultø1 = loop[2], recur === loop);
+                return recur;
+            }.call(this);
+        }.call(this);
+    };
+var destructure = exports.destructure = function destructure(bindings) {
+        return function () {
+            var pairsø1 = partition(2, bindings);
+            return isEvery(function ($1) {
+                return isSymbol(first($1));
+            }, pairsø1) ? bindings : destructure(vec(mapcat(function ($1) {
+                return isVector(first($1)) ? destructureSeq.apply(void 0, $1) : isDictionary(first($1)) ? destructureDict.apply(void 0, $1) : isSymbol(first($1)) ? $1 : 'else' ? (function () {
+                    throw 'Invalid binding';
+                })() : void 0;
+            }, pairsø1)));
+        }.call(this);
+    };
+var bindNames_ = function bindNames_(keys) {
+    return zipmap(keys, repeatedly(count(keys), function () {
+        return gensym('destructure-bind');
+    }));
+};
+var bindIndices_ = function bindIndices_(names) {
+    return filter(function ($1) {
+        return !isSymbol(nth(names, $1));
+    }, range(count(names)));
+};
+var expandLet = exports.expandLet = function expandLet(bindings) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return list.apply(void 0, [symbol(void 0, 'let*')].concat([destructure(bindings)], vec(body)));
+    };
+installMacro('let', expandLet);
+var expandFn = exports.expandFn = function expandFn() {
+        var args = Array.prototype.slice.call(arguments, 0);
+        return function () {
+            var nameø1 = isSymbol(first(args)) ? first(args) : void 0;
+            var defsø1 = nameø1 ? rest(args) : args;
+            var mkfnø1 = function ($1) {
+                return nameø1 ? list.apply(void 0, [symbol(void 0, 'fn*')].concat([nameø1], vec($1))) : list.apply(void 0, [symbol(void 0, 'fn*')].concat(vec($1)));
+            };
+            var def_ø1 = function (args) {
+                var body = Array.prototype.slice.call(arguments, 1);
+                return function () {
+                    var indicesø1 = bindIndices_(args);
+                    var namesø1 = bindNames_(indicesø1);
+                    return isEmpty(namesø1) ? cons(args, body) : list.apply(void 0, [vec(mapIndexed(function ($1, $2) {
+                            return get.apply(void 0, [
+                                namesø1,
+                                $1,
+                                $2
+                            ]);
+                        }, args))].concat([list.apply(void 0, [symbol(void 0, 'let')].concat([vec(mapcat(function (i) {
+                                return [
+                                    args[i],
+                                    namesø1[i]
+                                ];
+                            }, indicesø1))], vec(body)))]));
+                }.call(this);
+            };
+            return isVector(first(defsø1)) ? mkfnø1(def_ø1.apply(void 0, defsø1)) : mkfnø1(map(function ($1) {
+                return def_ø1.apply(void 0, vec($1));
+            }, defsø1));
+        }.call(this);
+    };
+installMacro('fn', expandFn);
+var expandLoop = exports.expandLoop = function expandLoop(bindings) {
+        var body = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var pairsø1 = partition(2, bindings);
+            var indicesø1 = bindIndices_(mapv(first, pairsø1));
+            var namesø1 = bindNames_(indicesø1);
+            var get_ø1 = function ($1, $2) {
+                return function () {
+                    var ifLetBinding1ø1 = namesø1[$1];
+                    return ifLetBinding1ø1 ? function () {
+                        var xø1 = ifLetBinding1ø1;
+                        return [
+                            xø1,
+                            second($2),
+                            first($2),
+                            xø1
+                        ];
+                    }.call(this) : $2;
+                }.call(this);
+            };
+            return isEmpty(namesø1) ? list.apply(void 0, [symbol(void 0, 'loop*')].concat([bindings], vec(body))) : list.apply(void 0, [symbol(void 0, 'let')].concat([vec(concat.apply(void 0, mapIndexed(get_ø1, pairsø1)))], [list.apply(void 0, [symbol(void 0, 'loop*')].concat([vec(concat.apply(void 0, mapIndexed(function ($1, $2) {
+                        return function () {
+                            var xø1 = get.apply(void 0, [
+                                    namesø1,
+                                    $1,
+                                    first($2)
+                                ]);
+                            return [
+                                xø1,
+                                xø1
+                            ];
+                        }.call(this);
+                    }, pairsø1)))], [list.apply(void 0, [symbol(void 0, 'let')].concat([vec(mapcat(function (i) {
+                            return [
+                                first(pairsø1[i]),
+                                namesø1[i]
+                            ];
+                        }, indicesø1))], vec(body)))]))]));
+        }.call(this);
+    };
+installMacro('loop', expandLoop);
 
 
 },{"./ast":"wisp/ast","./runtime":"wisp/runtime","./sequence":"wisp/sequence","./string":"wisp/string"}],"wisp/reader":[function(require,module,exports){
@@ -11405,8 +11818,8 @@ installMacro('lazy-seq', expandLazySeq);
     var last = wisp_sequence.last;
     var butlast = wisp_sequence.butlast;
     var sort = wisp_sequence.sort;
-    var lazySeq = wisp_sequence.lazySeq;
     var reduce = wisp_sequence.reduce;
+    var set = wisp_sequence.set;
     var wisp_runtime = require('./runtime');
     var isOdd = wisp_runtime.isOdd;
     var dictionary = wisp_runtime.dictionary;
@@ -11874,7 +12287,10 @@ var readUuid = function readUuid(uuid) {
 var readQueue = function readQueue(items) {
     return isVector(items) ? list.apply(void 0, [symbol(void 0, 'PersistentQueue.')].concat([items])) : readerError(void 0, 'Queue literal expects a vector for its elements.');
 };
-var __tagTable__ = exports.__tagTable__ = dictionary('uuid', readUuid, 'queue', readQueue);
+var readDate = function readDate(date) {
+    return isString(date) ? list.apply(void 0, [symbol(void 0, 'Date.')].concat([date])) : readerError(void 0, 'Date literal expects a string as its representation.');
+};
+var __tagTable__ = exports.__tagTable__ = dictionary('uuid', readUuid, 'queue', readQueue, 'inst', readDate);
 var maybeReadTaggedType = exports.maybeReadTaggedType = function maybeReadTaggedType(reader, initch) {
         return function () {
             var tagø1 = readSymbol(reader, initch);
@@ -11884,108 +12300,27 @@ var maybeReadTaggedType = exports.maybeReadTaggedType = function maybeReadTagged
     };
 
 
-},{"./ast":"wisp/ast","./runtime":"wisp/runtime","./sequence":"wisp/sequence","./string":"wisp/string"}],"wisp/repl":[function(require,module,exports){
-{
-    var _ns_ = {
-            id: 'wisp.repl',
-            doc: void 0
-        };
-    var repl = require('repl');
-    var repl = repl;
-    var vm = require('vm');
-    var vm = vm;
-    var wisp_runtime = require('./runtime');
-    var subs = wisp_runtime.subs;
-    var isEqual = wisp_runtime.isEqual;
-    var keys = wisp_runtime.keys;
-    var wisp_sequence = require('./sequence');
-    var count = wisp_sequence.count;
-    var list = wisp_sequence.list;
-    var conj = wisp_sequence.conj;
-    var cons = wisp_sequence.cons;
-    var vec = wisp_sequence.vec;
-    var last = wisp_sequence.last;
-    var wisp_compiler = require('./compiler');
-    var compile = wisp_compiler.compile;
-    var readForms = wisp_compiler.readForms;
-    var analyzeForms = wisp_compiler.analyzeForms;
-    var generate = wisp_compiler.generate;
-    var wisp_ast = require('./ast');
-    var prStr = wisp_ast.prStr;
-    var base64Encode = require('base64-encode');
-    var btoa = base64Encode;
-}
-var evaluateCode = exports.evaluateCode = function evaluateCode(source, uri, context) {
-        return function () {
-            var sourceUriø1 = '' + 'data:application/wisp;charset=utf-8;base64,' + btoa(source);
-            var formsø1 = readForms(source, sourceUriø1);
-            var nodesø1 = (formsø1 || 0)['forms'] ? analyzeForms((formsø1 || 0)['forms']) : void 0;
-            var inputø1 = (nodesø1 || 0)['ast'] ? (function () {
-                    try {
-                        return generate.apply(void 0, vec(cons({ 'source-uri': sourceUriø1 }, (nodesø1 || 0)['ast'])));
-                    } catch (error) {
-                        return { 'error': error };
-                    }
-                })() : void 0;
-            var outputø1 = (inputø1 || 0)['code'] ? (function () {
-                    try {
-                        return { 'value': vm.runInContext((inputø1 || 0)['code'], context, uri) };
-                    } catch (error) {
-                        return { 'error': error };
-                    }
-                })() : void 0;
-            var resultø1 = conj(formsø1, nodesø1, inputø1, outputø1, { 'error': (outputø1 || 0)['error'] || (inputø1 || 0)['error'] || (nodesø1 || 0)['error'] || (formsø1 || 0)['error'] });
-            context._3 = context._2;
-            context._2 = context._1;
-            return context._1 = resultø1;
-        }.call(this);
-    };
-var evaluate = exports.evaluate = function () {
-        var inputø1 = void 0;
-        var outputø1 = void 0;
-        return function evaluate(code, context, file, callback) {
-            return !(inputø1 === code) ? (function () {
-                inputø1 = !(last(code) === '\n') ? subs(code, 0, count(code) - 1) : code;
-                outputø1 = evaluateCode(inputø1, file, context);
-                return callback((outputø1 || 0)['error'], (outputø1 || 0)['value']);
-            })() : callback((outputø1 || 0)['error']);
-        };
-    }.call(this);
-var start = exports.start = function start() {
-        return function () {
-            var sessionø1 = repl.start({
-                    'writer': prStr,
-                    'prompt': '=> ',
-                    'ignoreUndefined': true,
-                    'useGlobal': false,
-                    'eval': evaluate
-                });
-            var contextø1 = sessionø1.context;
-            [
-                'runtime',
-                'sequence',
-                'string'
-            ].map(function (n) {
-                return function () {
-                    var fø1 = require('' + './src/' + n + '.wisp');
-                    return keys(fø1).map(function (k) {
-                        return (contextø1 || 0)[k] = (fø1 || 0)[k];
-                    });
-                }.call(this);
-            });
-            contextø1.exports = {};
-            return sessionø1;
-        }.call(this);
-    };
-
-
-},{"./ast":"wisp/ast","./compiler":"wisp/compiler","./runtime":"wisp/runtime","./sequence":"wisp/sequence","base64-encode":5,"repl":7,"vm":28}],"wisp/runtime":[function(require,module,exports){
+},{"./ast":"wisp/ast","./runtime":"wisp/runtime","./sequence":"wisp/sequence","./string":"wisp/string"}],"wisp/runtime":[function(require,module,exports){
 {
     var _ns_ = {
             id: 'wisp.runtime',
             doc: 'Core primitives required for runtime'
         };
 }
+var _wispTypes = Object.freeze({
+        'list': 'wisp.list',
+        'lazy-seq': 'wisp.lazy.seq',
+        'set': 'wisp.identity-set'
+    });
+var isLazySeq = exports.isLazySeq = function isLazySeq(value) {
+        return value && (_wispTypes || 0)['lazy-seq'] === value.type;
+    };
+var isIdentitySet = exports.isIdentitySet = function isIdentitySet(value) {
+        return value && (_wispTypes || 0)['set'] === value.type;
+    };
+var isList = exports.isList = function isList(value) {
+        return value && (_wispTypes || 0)['list'] === value.type;
+    };
 var identity = exports.identity = function identity(x) {
         return x;
     };
@@ -12017,6 +12352,9 @@ var isOdd = exports.isOdd = function isOdd(n) {
     };
 var isEven = exports.isEven = function isEven(n) {
         return n % 2 === 0;
+    };
+var get = exports.get = function get(target, key, default_) {
+        return isSet(target) ? target.has(key) ? key : default_ : 'else' ? target && target.hasOwnProperty(key) ? target[key] : default_ : void 0;
     };
 var isDictionary = exports.isDictionary = function isDictionary(form) {
         return isObject(form) && isObject(Object.getPrototypeOf(form)) && isNil(Object.getPrototypeOf(Object.getPrototypeOf(form)));
@@ -12090,6 +12428,9 @@ var isNumber = exports.isNumber = function isNumber(x) {
 var isVector = exports.isVector = isFn(Array.isArray) ? Array.isArray : function (x) {
         return toString.call(x) === '[object Array]';
     };
+var isIterable = exports.isIterable = function isIterable(x) {
+        return isFn((x || 0)[Symbol.iterator]);
+    };
 var isDate = exports.isDate = function isDate(x) {
         return toString.call(x) === '[object Date]';
     };
@@ -12098,6 +12439,9 @@ var isBoolean = exports.isBoolean = function isBoolean(x) {
     };
 var isRePattern = exports.isRePattern = function isRePattern(x) {
         return toString.call(x) === '[object RegExp]';
+    };
+var isSet = exports.isSet = function isSet(x) {
+        return x instanceof Set;
     };
 var isObject = exports.isObject = function isObject(x) {
         return x && typeof(x) === 'object';
@@ -12142,7 +12486,7 @@ var char = exports.char = function char(code) {
         return String.fromCharCode(code);
     };
 var int = exports.int = function int(x) {
-        return isNumber(x) ? x >= 0 ? Math.floor(x) : Math.floor(x) : x.charCodeAt(0);
+        return isNumber(x) ? Math.floor(x) : isString(x) ? x.charCodeAt(0) : 'else' ? 0 : void 0;
     };
 var subs = exports.subs = function subs(string, start, end) {
         return string.substring(start, end);
@@ -12152,6 +12496,11 @@ var isPatternEqual = function isPatternEqual(x, y) {
 };
 var isDateEqual = function isDateEqual(x, y) {
     return isDate(x) && isDate(y) && Number(x) === Number(y);
+};
+var isSetEqual = function isSetEqual(x, y) {
+    return isSet(x) && isSet(y) && x.size === y.size && Array.from(x).every(function ($1) {
+        return y.has($1);
+    });
 };
 var isDictionaryEqual = function isDictionaryEqual(x, y) {
     return isObject(x) && isObject(y) && function () {
@@ -12171,19 +12520,6 @@ var isDictionaryEqual = function isDictionaryEqual(x, y) {
         }.call(this);
     }.call(this);
 };
-var isVectorEqual = function isVectorEqual(x, y) {
-    return isVector(x) && isVector(y) && x.length === y.length && function loop() {
-        var recur = loop;
-        var xsø1 = x;
-        var ysø1 = y;
-        var indexø1 = 0;
-        var countø1 = x.length;
-        do {
-            recur = indexø1 < countø1 ? isEquivalent((xsø1 || 0)[indexø1], (ysø1 || 0)[indexø1]) ? (loop[0] = xsø1, loop[1] = ysø1, loop[2] = inc(indexø1), loop[3] = countø1, loop) : false : true;
-        } while (xsø1 = loop[0], ysø1 = loop[1], indexø1 = loop[2], countø1 = loop[3], recur === loop);
-        return recur;
-    }.call(this);
-};
 var isEquivalent = function isEquivalent() {
     switch (arguments.length) {
     case 1:
@@ -12192,7 +12528,7 @@ var isEquivalent = function isEquivalent() {
     case 2:
         var x = arguments[0];
         var y = arguments[1];
-        return x === y || (isNil(x) ? isNil(y) : isNil(y) ? isNil(x) : isString(x) ? isString(y) && x.toString() === y.toString() : isNumber(x) ? isNumber(y) && x.valueOf() === y.valueOf() : isFn(x) ? false : isBoolean(x) ? false : isDate(x) ? isDateEqual(x, y) : isVector(x) ? isVectorEqual(x, y, [], []) : isRePattern(x) ? isPatternEqual(x, y) : 'else' ? isDictionaryEqual(x, y) : void 0);
+        return x === y || (isNil(x) ? isNil(y) : isNil(y) ? isNil(x) : isString(x) ? isString(y) && x.toString() === y.toString() : isNumber(x) ? isNumber(y) && x.valueOf() === y.valueOf() : isSet(x) ? isSetEqual(x, y) : isVector(x) || isList(x) || isLazySeq(x) ? (isVector(y) || isList(y) || isLazySeq(y)) && isEqual._seqEqual(x, y) : isFn(x) ? false : isBoolean(x) ? false : isDate(x) ? isDateEqual(x, y) : isRePattern(x) ? isPatternEqual(x, y) : 'else' ? isDictionaryEqual(x, y) : void 0);
     default:
         var x = arguments[0];
         var y = arguments[1];
@@ -12211,6 +12547,26 @@ var isEquivalent = function isEquivalent() {
     }
 };
 var isEqual = exports.isEqual = isEquivalent;
+isEqual._wispTypes = _wispTypes;
+var notEqual = exports.notEqual = function notEqual() {
+        switch (arguments.length) {
+        case 1:
+            var x = arguments[0];
+            return false;
+        case 2:
+            var x = arguments[0];
+            var y = arguments[1];
+            return !isEqual(x, y);
+        default:
+            var x = arguments[0];
+            var y = arguments[1];
+            var more = Array.prototype.slice.call(arguments, 2);
+            return !isEqual.apply(void 0, [
+                x,
+                y
+            ].concat(more));
+        }
+    };
 var isStrictEqual = exports.isStrictEqual = function isStrictEqual() {
         switch (arguments.length) {
         case 1:
@@ -12573,6 +12929,29 @@ var multiply = exports.multiply = function multiply() {
             }.call(this);
         }
     };
+var quot = exports.quot = function quot(num, div) {
+        return int(num / div);
+    };
+var mod = exports.mod = function mod(num, div) {
+        return num - div * quot(num, div);
+    };
+var rem_ = exports.rem_ = function rem_(num, div) {
+        return function () {
+            var mø1 = mod.apply(void 0, [
+                    num,
+                    div
+                ]);
+            return num >= 0 === div >= 0 ? mø1 : mø1 - div;
+        }.call(this);
+    };
+var rem = exports.rem = function () {
+        var remø1 = function () {
+            return identity(void 0);
+        };
+        return isNil(1 % 1);
+    }.call(this) ? rem_ : function (num, div) {
+        return num % div;
+    };
 var and = exports.and = function and() {
         switch (arguments.length) {
         case 0:
@@ -12709,53 +13088,132 @@ var isNan = exports.isNan = isNaN;
     var isNumber = wisp_runtime.isNumber;
     var isString = wisp_runtime.isString;
     var isDictionary = wisp_runtime.isDictionary;
+    var isSet = wisp_runtime.isSet;
     var keyValues = wisp_runtime.keyValues;
     var str = wisp_runtime.str;
+    var int = wisp_runtime.int;
     var dec = wisp_runtime.dec;
     var inc = wisp_runtime.inc;
+    var min = wisp_runtime.min;
     var merge = wisp_runtime.merge;
     var dictionary = wisp_runtime.dictionary;
+    var get = wisp_runtime.get;
+    var isIterable = wisp_runtime.isIterable;
+    var isEqual = wisp_runtime.isEqual;
+    var complement = wisp_runtime.complement;
+    var identity = wisp_runtime.identity;
+    var isList = wisp_runtime.isList;
+    var isLazySeq = wisp_runtime.isLazySeq;
+    var isIdentitySet = wisp_runtime.isIdentitySet;
 }
+var _wispTypes = isEqual._wispTypes;
+var listIterator = function listIterator() {
+    return function () {
+        var selfø1 = this;
+        return {
+            'next': function () {
+                return isEmpty(selfø1) ? { 'done': true } : function () {
+                    var xø1 = first(selfø1);
+                    selfø1 = rest(selfø1);
+                    return { 'value': xø1 };
+                }.call(this);
+            }
+        };
+    }.call(this);
+};
+var seqToString = function seqToString(lparen, rparen) {
+    return function () {
+        return function loop() {
+            var recur = loop;
+            var listø1 = this;
+            var resultø1 = '';
+            do {
+                recur = isEmpty(listø1) ? '' + lparen + resultø1.substr(1) + rparen : (loop[0] = rest(listø1), loop[1] = '' + resultø1 + ' ' + function () {
+                    var xø1 = first(listø1);
+                    return isVector(xø1) ? '' + '[' + xø1.join(' ') + ']' : isNil(xø1) ? 'nil' : isString(xø1) ? JSON.stringify(xø1) : isNumber(xø1) ? JSON.stringify(xø1) : 'else' ? xø1 : void 0;
+                }.call(this), loop);
+            } while (listø1 = loop[0], resultø1 = loop[1], recur === loop);
+            return recur;
+        }.call(this);
+    };
+};
 var List = function List(head, tail) {
     this.head = head;
     this.tail = tail || list();
-    this.length = inc(count(this.tail));
+    this.length = isNil(this.tail) || isDictionary(this.tail) || isNumber(this.tail.length) ? inc(count(this.tail)) : void 0;
     return this;
 };
 List.prototype.length = 0;
-List.type = 'wisp.list';
+List.type = (_wispTypes || 0)['list'];
 List.prototype.type = List.type;
 List.prototype.tail = Object.create(List.prototype);
-List.prototype.toString = function () {
-    return function loop() {
-        var recur = loop;
-        var resultø1 = '';
-        var listø1 = this;
-        do {
-            recur = isEmpty(listø1) ? '' + '(' + resultø1.substr(1) + ')' : (loop[0] = '' + resultø1 + ' ' + (isVector(first(listø1)) ? '' + '[' + first(listø1).join(' ') + ']' : isNil(first(listø1)) ? 'nil' : isString(first(listø1)) ? JSON.stringify(first(listø1)) : isNumber(first(listø1)) ? JSON.stringify(first(listø1)) : first(listø1)), loop[1] = rest(listø1), loop);
-        } while (resultø1 = loop[0], listø1 = loop[1], recur === loop);
-        return recur;
-    }.call(this);
-};
+List.prototype.toString = seqToString('(', ')');
+List.prototype[Symbol.iterator] = listIterator;
 var lazySeqValue = function lazySeqValue(lazySeq) {
-    return !lazySeq.realized ? (lazySeq.realized = true) && (lazySeq.x = lazySeq.x()) : lazySeq.x;
+    return lazySeq.realized ? lazySeq.x : function () {
+        var xø1 = lazySeq.x();
+        lazySeq.realized = true;
+        isEmpty(xø1) ? lazySeq.length = 0 : void 0;
+        return lazySeq.x = xø1;
+    }.call(this);
 };
 var LazySeq = function LazySeq(realized, x) {
     this.realized = realized || false;
     this.x = x;
     return this;
 };
-LazySeq.type = 'wisp.lazy.seq';
+LazySeq.type = (_wispTypes || 0)['lazy-seq'];
 LazySeq.prototype.type = LazySeq.type;
+LazySeq.prototype[Symbol.iterator] = listIterator;
 var lazySeq = exports.lazySeq = function lazySeq(realized, body) {
         return new LazySeq(realized, body);
     };
-var isLazySeq = exports.isLazySeq = function isLazySeq(value) {
-        return value && LazySeq.type === value.type;
+var cloneProtoProps = function cloneProtoProps(from, to) {
+    return Object.assign.apply(void 0, [to].concat(Object.getOwnPropertyNames(from.__proto__).map(function ($1) {
+        return function () {
+            var xø1 = from[$1];
+            return dictionary($1, isFn(xø1) ? xø1.bind(from) : xø1);
+        }.call(this);
+    })));
+};
+var identitySet = exports.identitySet = function identitySet() {
+        var items = Array.prototype.slice.call(arguments, 0);
+        return function () {
+            var jsSetø1 = new Set(items);
+            var fø1 = function ($1, $2) {
+                return get.apply(void 0, [
+                    jsSetø1,
+                    $1,
+                    $2
+                ]);
+            };
+            cloneProtoProps(jsSetø1, fø1);
+            fø1.toString = seqToString('#{', '}');
+            fø1.__proto__ = jsSetø1;
+            Object.defineProperty(fø1, 'length', { 'value': fø1.size });
+            fø1[Symbol.iterator] = fø1.values;
+            fø1['type'] = identitySet.type;
+            return fø1;
+        }.call(this);
     };
-var isList = exports.isList = function isList(value) {
-        return value && List.type === value.type;
-    };
+identitySet.type = (_wispTypes || 0)['set'];
+var set = exports.set = identitySet;
+var isLazySeq = exports.isLazySeq = isLazySeq;
+var isIdentitySet = exports.isIdentitySet = isIdentitySet;
+var isList = exports.isList = isList;
+isEqual._seqEqual = function (x, y) {
+    return (isVector(x) || isSeq(x)) && (isVector(y) || isSeq(y)) && function loop() {
+        var recur = loop;
+        var xø2 = seq(x);
+        var yø2 = seq(y);
+        do {
+            recur = isVector(xø2) && isVector(yø2) ? isEqual(count(xø2), count(yø2)) && xø2.every(function ($1, $2) {
+                return isEqual($1, yø2[$2]);
+            }) : isEmpty(xø2) || isEmpty(yø2) ? isEmpty(xø2) && isEmpty(yø2) : !isEqual(first(xø2), first(yø2)) ? false : 'else' ? (loop[0] = rest(xø2), loop[1] = rest(yø2), loop) : void 0;
+        } while (xø2 = loop[0], yø2 = loop[1], recur === loop);
+        return recur;
+    }.call(this);
+};
 var list = exports.list = function list() {
         return arguments.length === 0 ? Object.create(List.prototype) : Array.prototype.slice.call(arguments).reduceRight(function (tail, head) {
             return cons(head, tail);
@@ -12764,41 +13222,72 @@ var list = exports.list = function list() {
 var cons = exports.cons = function cons(head, tail) {
         return new List(head, tail);
     };
-var reverseList = function reverseList(sequence) {
-    return function loop() {
-        var recur = loop;
-        var itemsø1 = [];
-        var sourceø1 = sequence;
-        do {
-            recur = isEmpty(sourceø1) ? list.apply(void 0, itemsø1) : (loop[0] = [first(sourceø1)].concat(itemsø1), loop[1] = rest(sourceø1), loop);
-        } while (itemsø1 = loop[0], sourceø1 = loop[1], recur === loop);
-        return recur;
-    }.call(this);
-};
 var isSequential = exports.isSequential = function isSequential(x) {
-        return isList(x) || isVector(x) || isLazySeq(x) || isDictionary(x) || isString(x);
+        return isSeq(x) || isVector(x) || isDictionary(x) || isSet(x) || isString(x);
     };
-var reverse = exports.reverse = function reverse(sequence) {
-        return isList(sequence) ? reverseList(sequence) : isVector(sequence) ? sequence.reverse() : isNil(sequence) ? list() : 'else' ? reverse(seq(sequence)) : void 0;
-    };
-var map = exports.map = function map(f, sequence) {
-        return isVector(sequence) ? sequence.map(function ($1) {
-            return f($1);
-        }) : isList(sequence) ? mapList(f, sequence) : isNil(sequence) ? list() : 'else' ? map(f, seq(sequence)) : void 0;
-    };
-var mapList = function mapList(f, sequence) {
-    return function loop() {
-        var recur = loop;
-        var resultø1 = list();
-        var itemsø1 = sequence;
-        do {
-            recur = isEmpty(itemsø1) ? reverse(resultø1) : (loop[0] = cons(f(first(itemsø1)), resultø1), loop[1] = rest(itemsø1), loop);
-        } while (resultø1 = loop[0], itemsø1 = loop[1], recur === loop);
-        return recur;
-    }.call(this);
+var isNative = function isNative(sequence) {
+    return isVector(sequence) || isString(sequence) || isDictionary(sequence);
 };
+var reverse = exports.reverse = function reverse(sequence) {
+        return isVector(sequence) ? vec(sequence).reverse() : into(void 0, sequence);
+    };
+var range = exports.range = function range() {
+        switch (arguments.length) {
+        case 1:
+            var end = arguments[0];
+            return range(0, end, 1);
+        case 2:
+            var start = arguments[0];
+            var end = arguments[1];
+            return range(start, end, 1);
+        case 3:
+            var start = arguments[0];
+            var end = arguments[1];
+            var step = arguments[2];
+            return step < 0 ? range(0 - start, 0 - end, 0 - step).map(function ($1) {
+                return 0 - $1;
+            }) : Array.from({ 'length': (end + step - start - 1) / step }, function (_, i) {
+                return start + i * step;
+            });
+        default:
+            throw RangeError('Wrong number of arguments passed');
+        }
+    };
+var mapv = exports.mapv = function mapv(f) {
+        var sequences = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var vectorsø1 = sequences.map(vec);
+            var nø1 = min.apply(void 0, vectorsø1.map(count));
+            return range(nø1).map(function (i) {
+                return f.apply(void 0, vectorsø1.map(function ($1) {
+                    return $1[i];
+                }));
+            });
+        }.call(this);
+    };
+var map = exports.map = function map(f) {
+        var sequences = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var resultø1 = mapv.apply(void 0, [f].concat(sequences));
+            return isNative(first(sequences)) ? resultø1 : list.apply(void 0, resultø1);
+        }.call(this);
+    };
+var mapIndexed = exports.mapIndexed = function mapIndexed(f) {
+        var sequences = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var sequenceø1 = first(sequences);
+            var nø1 = count(sequenceø1);
+            var indicesø1 = range(nø1);
+            return map.apply(void 0, [
+                f,
+                isNative(sequenceø1) ? indicesø1 : list.apply(void 0, indicesø1)
+            ].concat(sequences));
+        }.call(this);
+    };
 var filter = exports.filter = function filter(isF, sequence) {
-        return isVector(sequence) ? sequence.filter(isF) : isList(sequence) ? filterList(isF, sequence) : isNil(sequence) ? list() : 'else' ? filter(isF, seq(sequence)) : void 0;
+        return isNil(sequence) ? list() : isSeq(sequence) ? filterList(isF, sequence) : isVector(sequence) ? sequence.filter(function ($1) {
+            return isF($1);
+        }) : 'else' ? filter(isF, seq(sequence)) : void 0;
     };
 var filterList = function filterList(isF, sequence) {
     return function loop() {
@@ -12811,31 +13300,32 @@ var filterList = function filterList(isF, sequence) {
         return recur;
     }.call(this);
 };
+var filterv = exports.filterv = function filterv(isF, sequence) {
+        return vec(filter(isF, sequence));
+    };
 var reduce = exports.reduce = function reduce(f) {
         var params = Array.prototype.slice.call(arguments, 1);
         return function () {
             var hasInitialø1 = count(params) >= 2;
             var initialø1 = hasInitialø1 ? first(params) : void 0;
             var sequenceø1 = hasInitialø1 ? second(params) : first(params);
-            return isNil(sequenceø1) ? initialø1 : isVector(sequenceø1) ? hasInitialø1 ? sequenceø1.reduce(f, initialø1) : sequenceø1.reduce(f) : isList(sequenceø1) ? hasInitialø1 ? reduceList(f, initialø1, sequenceø1) : reduceList(f, first(sequenceø1), rest(sequenceø1)) : 'else' ? reduce(f, initialø1, seq(sequenceø1)) : void 0;
+            return hasInitialø1 ? vec(sequenceø1).reduce(f, initialø1) : vec(sequenceø1).reduce(f);
         }.call(this);
     };
-var reduceList = function reduceList(f, initial, sequence) {
-    return function loop() {
-        var recur = loop;
-        var resultø1 = initial;
-        var itemsø1 = sequence;
-        do {
-            recur = isEmpty(itemsø1) ? resultø1 : (loop[0] = f(resultø1, first(itemsø1)), loop[1] = rest(itemsø1), loop);
-        } while (resultø1 = loop[0], itemsø1 = loop[1], recur === loop);
-        return recur;
-    }.call(this);
-};
 var count = exports.count = function count(sequence) {
-        return isNil(sequence) ? 0 : seq(sequence).length;
+        return sequence && isNumber(sequence.length) ? sequence.length : function () {
+            var itø1 = seq(sequence);
+            return isNil(itø1) ? 0 : isLazySeq(itø1) ? count(vec(itø1)) : 'else' ? itø1.length : void 0;
+        }.call(this);
     };
 var isEmpty = exports.isEmpty = function isEmpty(sequence) {
-        return count(sequence) === 0;
+        return function () {
+            var itø1 = seq(sequence);
+            return 0 === (!isLazySeq(itø1) ? count(itø1) : (function () {
+                first(itø1);
+                return itø1.length;
+            })());
+        }.call(this);
     };
 var first = exports.first = function first(sequence) {
         return isNil(sequence) ? void 0 : isList(sequence) ? sequence.head : isVector(sequence) || isString(sequence) ? (sequence || 0)[0] : isLazySeq(sequence) ? first(lazySeqValue(sequence)) : 'else' ? first(seq(sequence)) : void 0;
@@ -12866,38 +13356,26 @@ var last = exports.last = function last(sequence) {
 var butlast = exports.butlast = function butlast(sequence) {
         return function () {
             var itemsø1 = isNil(sequence) ? void 0 : isString(sequence) ? subs(sequence, 0, dec(count(sequence))) : isVector(sequence) ? sequence.slice(0, dec(count(sequence))) : isList(sequence) ? list.apply(void 0, butlast(vec(sequence))) : isLazySeq(sequence) ? butlast(lazySeqValue(sequence)) : 'else' ? butlast(seq(sequence)) : void 0;
-            return !(isNil(itemsø1) || isEmpty(itemsø1)) ? itemsø1 : void 0;
+            return !isEmpty(itemsø1) ? itemsø1 : void 0;
         }.call(this);
     };
 var take = exports.take = function take(n, sequence) {
-        return isNil(sequence) ? list() : isVector(sequence) ? takeFromVector(n, sequence) : isList(sequence) ? takeFromList(n, sequence) : isLazySeq(sequence) ? take(n, lazySeqValue(sequence)) : 'else' ? take(n, seq(sequence)) : void 0;
+        return isNil(sequence) ? list() : isVector(sequence) ? takeFromVector(n, sequence) : isList(sequence) ? takeFromList(n, sequence) : isLazySeq(sequence) ? n > 0 ? take(n, lazySeqValue(sequence)) : void 0 : 'else' ? take(n, seq(sequence)) : void 0;
     };
-var takeVectorWhile = function takeVectorWhile(predicate, vector) {
-    return function loop() {
-        var recur = loop;
-        var resultø1 = [];
-        var tailø1 = vector;
-        var headø1 = first(vector);
-        do {
-            recur = !isEmpty(tailø1) && predicate(headø1) ? (loop[0] = conj(resultø1, headø1), loop[1] = rest(tailø1), loop[2] = first(tailø1), loop) : resultø1;
-        } while (resultø1 = loop[0], tailø1 = loop[1], headø1 = loop[2], recur === loop);
-        return recur;
-    }.call(this);
-};
-var takeListWhile = function takeListWhile(predicate, items) {
-    return function loop() {
-        var recur = loop;
-        var resultø1 = [];
-        var tailø1 = items;
-        var headø1 = first(items);
-        do {
-            recur = !isEmpty(tailø1) && isPredicate(headø1) ? (loop[0] = conj(resultø1, headø1), loop[1] = rest(tailø1), loop[2] = first(tailø1), loop) : list.apply(void 0, resultø1);
-        } while (resultø1 = loop[0], tailø1 = loop[1], headø1 = loop[2], recur === loop);
-        return recur;
-    }.call(this);
-};
 var takeWhile = exports.takeWhile = function takeWhile(predicate, sequence) {
-        return isNil(sequence) ? list() : isVector(sequence) ? takeVectorWhile(predicate, sequence) : isList(sequence) ? takeVectorWhile(predicate, sequence) : 'else' ? takeWhile(predicate, lazySeqValue(sequence)) : void 0;
+        return function loop() {
+            var recur = loop;
+            var itemsø1 = sequence;
+            var resultø1 = [];
+            do {
+                recur = function () {
+                    var headø1 = first(itemsø1);
+                    var tailø1 = rest(itemsø1);
+                    return !isEmpty(itemsø1) && predicate(headø1) ? (loop[0] = tailø1, loop[1] = conj(resultø1, headø1), loop) : isNative(sequence) ? resultø1 : list.apply(void 0, resultø1);
+                }.call(this);
+            } while (itemsø1 = loop[0], resultø1 = loop[1], recur === loop);
+            return recur;
+        }.call(this);
     };
 var takeFromVector = function takeFromVector(n, vector) {
     return vector.slice(0, n);
@@ -12907,9 +13385,9 @@ var takeFromList = function takeFromList(n, sequence) {
         var recur = loop;
         var takenø1 = list();
         var itemsø1 = sequence;
-        var nø2 = n;
+        var nø2 = int(n) || 0;
         do {
-            recur = nø2 === 0 || isEmpty(itemsø1) ? reverse(takenø1) : (loop[0] = cons(first(itemsø1), takenø1), loop[1] = rest(itemsø1), loop[2] = dec(nø2), loop);
+            recur = nø2 <= 0 || isEmpty(itemsø1) ? reverse(takenø1) : (loop[0] = cons(first(itemsø1), takenø1), loop[1] = rest(itemsø1), loop[2] = dec(nø2), loop);
         } while (takenø1 = loop[0], itemsø1 = loop[1], nø2 = loop[2], recur === loop);
         return recur;
     }.call(this);
@@ -12928,86 +13406,158 @@ var dropFromList = function dropFromList(n, sequence) {
 var drop = exports.drop = function drop(n, sequence) {
         return n <= 0 ? sequence : isString(sequence) ? sequence.substr(n) : isVector(sequence) ? sequence.slice(n) : isList(sequence) ? dropFromList(n, sequence) : isNil(sequence) ? list() : isLazySeq(sequence) ? drop(n, lazySeqValue(sequence)) : 'else' ? drop(n, seq(sequence)) : void 0;
     };
+var dropWhile = exports.dropWhile = function dropWhile(predicate, sequence) {
+        return function loop() {
+            var recur = loop;
+            var itemsø1 = seq(sequence);
+            do {
+                recur = isEmpty(itemsø1) || !predicate(first(itemsø1)) ? itemsø1 : (loop[0] = rest(itemsø1), loop);
+            } while (itemsø1 = loop[0], recur === loop);
+            return recur;
+        }.call(this);
+    };
 var conjList = function conjList(sequence, items) {
     return reduce(function (result, item) {
         return cons(item, result);
     }, sequence, items);
 };
+var ensureDictionary = function ensureDictionary(x) {
+    return !isVector(x) ? x : dictionary(first(x), second(x));
+};
 var conj = exports.conj = function conj(sequence) {
         var items = Array.prototype.slice.call(arguments, 1);
-        return isVector(sequence) ? sequence.concat(items) : isString(sequence) ? '' + sequence + str.apply(void 0, items) : isNil(sequence) ? list.apply(void 0, reverse(items)) : isList(sequence) || isLazySeq() ? conjList(sequence, items) : isDictionary(sequence) ? merge(sequence, merge.apply(void 0, items)) : 'else' ? (function () {
+        return isVector(sequence) ? sequence.concat(items) : isString(sequence) ? '' + sequence + str.apply(void 0, items) : isNil(sequence) ? list.apply(void 0, reverse(items)) : isSeq(sequence) ? conjList(sequence, items) : isDictionary(sequence) ? merge(sequence, merge.apply(void 0, mapv(ensureDictionary, items))) : isSet(sequence) ? identitySet.apply(void 0, into(vec(sequence), items)) : 'else' ? (function () {
             throw TypeError('' + 'Type can\'t be conjoined ' + sequence);
         })() : void 0;
+    };
+var disj = exports.disj = function disj(coll) {
+        var ks = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            var predicateø1 = complement(identitySet.apply(void 0, ks));
+            return isEmpty(ks) ? coll : isSet(coll) ? identitySet.apply(void 0, filterv(predicateø1, coll)) : isDictionary(coll) ? into({}, filter(function ($1) {
+                return predicateø1(first($1));
+            }, coll)) : 'else' ? (function () {
+                throw TypeError('' + 'Type can\'t be disjoined ' + coll);
+            })() : void 0;
+        }.call(this);
+    };
+var into = exports.into = function into(to, from) {
+        return conj.apply(void 0, [to].concat(vec(from)));
+    };
+var zipmap = exports.zipmap = function zipmap(keys, vals) {
+        return into({}, map(vector, keys, vals));
     };
 var assoc = exports.assoc = function assoc(source) {
         var keyValues = Array.prototype.slice.call(arguments, 1);
         return conj(source, dictionary.apply(void 0, keyValues));
     };
+var dissoc = exports.dissoc = function dissoc(coll) {
+        var ks = Array.prototype.slice.call(arguments, 1);
+        return isDictionary(coll) ? disj.apply(void 0, [coll].concat(ks)) : (function () {
+            throw TypeError('' + 'Can only dissoc on dictionaries');
+        })();
+    };
 var concat = exports.concat = function concat() {
         var sequences = Array.prototype.slice.call(arguments, 0);
-        return reverse(reduce(function (result, sequence) {
-            return reduce(function (result, item) {
-                return cons(item, result);
-            }, result, seq(sequence));
-        }, list(), sequences));
+        return reduce(function ($1, $2) {
+            return conjList($1, reverse($2));
+        }, function () {
+            var tailø1 = last(sequences);
+            return isLazySeq(tailø1) ? tailø1 : list.apply(void 0, vec(tailø1));
+        }.call(this), rest(reverse(sequences)));
+    };
+var mapcat = exports.mapcat = function mapcat(f) {
+        var colls = Array.prototype.slice.call(arguments, 1);
+        return concat.apply(void 0, mapv.apply(void 0, [f].concat(colls)));
+    };
+var empty = exports.empty = function empty(sequence) {
+        return isList(sequence) ? list() : isVector(sequence) ? [] : isString(sequence) ? '' : isDictionary(sequence) ? {} : isSet(sequence) ? set() : isLazySeq(sequence) ? lazySeq.call(void 0, false, function () {
+            return void 0;
+        }) : void 0;
     };
 var seq = exports.seq = function seq(sequence) {
-        return isNil(sequence) ? void 0 : isVector(sequence) || isList(sequence) || isLazySeq(sequence) ? sequence : isString(sequence) ? Array.prototype.slice.call(sequence) : isDictionary(sequence) ? keyValues(sequence) : 'default' ? (function () {
+        return isNil(sequence) ? void 0 : isVector(sequence) || isSeq(sequence) ? sequence : isString(sequence) ? Array.prototype.slice.call(sequence) : isDictionary(sequence) ? keyValues(sequence) : isIterable(sequence) ? iteratorToLseq((sequence || 0)[Symbol.iterator]()) : 'default' ? (function () {
             throw TypeError('' + 'Can not seq ' + sequence);
         })() : void 0;
+    };
+var seq_ = exports.seq_ = function seq_(sequence) {
+        return function () {
+            var itø1 = seq(sequence);
+            return !isEmpty(itø1) ? itø1 : void 0;
+        }.call(this);
     };
 var isSeq = exports.isSeq = function isSeq(sequence) {
         return isList(sequence) || isLazySeq(sequence);
     };
-var listToVector = function listToVector(source) {
-    return function loop() {
-        var recur = loop;
-        var resultø1 = [];
-        var listø1 = source;
-        do {
-            recur = isEmpty(listø1) ? resultø1 : (loop[0] = (function () {
-                resultø1.push(first(listø1));
-                return resultø1;
-            })(), loop[1] = rest(listø1), loop);
-        } while (resultø1 = loop[0], listø1 = loop[1], recur === loop);
-        return recur;
-    }.call(this);
+var iteratorToLseq = function iteratorToLseq(iterator) {
+    return unfold(function ($1) {
+        return function () {
+            var xø1 = $1.next();
+            return !xø1.done ? [
+                xø1.value,
+                $1
+            ] : void 0;
+        }.call(this);
+    }, iterator);
 };
 var vec = exports.vec = function vec(sequence) {
-        return isNil(sequence) ? [] : isVector(sequence) ? sequence : isList(sequence) || isLazySeq(sequence) ? listToVector(sequence) : 'else' ? vec(seq(sequence)) : void 0;
+        return isNil(sequence) ? [] : isVector(sequence) || isList(sequence) ? Array.from(sequence) : isLazySeq(sequence) ? function () {
+            var xsø1 = Array.from(sequence);
+            sequence.length = xsø1.length;
+            return xsø1;
+        }.call(this) : 'else' ? vec(seq(sequence)) : void 0;
+    };
+var vector = exports.vector = function vector() {
+        var sequence = Array.prototype.slice.call(arguments, 0);
+        return sequence;
+    };
+var sortComparator = isEqual([
+        1,
+        2,
+        3
+    ], [
+        2,
+        1,
+        3
+    ].sort(function (a, b) {
+        return a < b ? 0 : 1;
+    })) ? function ($1) {
+        return function (a, b) {
+            return $1(b, a) ? 1 : 0;
+        };
+    } : function ($1) {
+        return function (a, b) {
+            return $1(a, b) ? -1 : 0;
+        };
     };
 var sort = exports.sort = function sort(f, items) {
         return function () {
             var hasComparatorø1 = isFn(f);
             var itemsø2 = !hasComparatorø1 && isNil(items) ? f : items;
-            var compareø1 = hasComparatorø1 ? function (a, b) {
-                    return f(a, b) ? 0 : 1;
-                } : void 0;
-            return isNil(itemsø2) ? list() : isVector(itemsø2) ? itemsø2.sort(compareø1) : isList(itemsø2) ? list.apply(void 0, vec(itemsø2).sort(compareø1)) : isDictionary(itemsø2) ? seq(itemsø2).sort(compareø1) : 'else' ? sort(f, seq(itemsø2)) : void 0;
+            var compareø1 = hasComparatorø1 ? sortComparator(f) : void 0;
+            var resultø1 = vec(itemsø2).sort(compareø1);
+            return isNil(itemsø2) ? list() : isVector(itemsø2) ? resultø1 : 'else' ? list.apply(void 0, resultø1) : void 0;
         }.call(this);
     };
+var repeatedly = exports.repeatedly = function repeatedly(n, f) {
+        return Array.from({ 'length': n }, f);
+    };
 var repeat = exports.repeat = function repeat(n, x) {
-        return function loop() {
-            var recur = loop;
-            var nø2 = n;
-            var resultø1 = [];
-            do {
-                recur = nø2 <= 0 ? resultø1 : (loop[0] = dec(nø2), loop[1] = conj(resultø1, x), loop);
-            } while (nø2 = loop[0], resultø1 = loop[1], recur === loop);
-            return recur;
-        }.call(this);
+        return repeatedly(n, function () {
+            return x;
+        });
     };
 var isEvery = exports.isEvery = function isEvery(predicate, sequence) {
         return vec(sequence).every(function ($1) {
             return predicate($1);
         });
     };
-var some = exports.some = function some(predicate, sequence) {
+var some = exports.some = function some(pred, coll) {
         return function loop() {
             var recur = loop;
-            var itemsø1 = sequence;
+            var itemsø1 = seq(coll);
             do {
-                recur = isEmpty(itemsø1) ? false : predicate(first(itemsø1)) ? true : 'else' ? (loop[0] = rest(itemsø1), loop) : void 0;
+                recur = !isEmpty(itemsø1) ? pred(first(itemsø1)) || (loop[0] = rest(itemsø1), loop) : void 0;
             } while (itemsø1 = loop[0], recur === loop);
             return recur;
         }.call(this);
@@ -13046,37 +13596,199 @@ var partition = exports.partition = function partition() {
         }
     };
 var interleave = exports.interleave = function interleave() {
-        switch (arguments.length) {
-        case 2:
-            var ax = arguments[0];
-            var bx = arguments[1];
-            return function loop() {
-                var recur = loop;
-                var cxø1 = [];
-                var axø2 = ax;
-                var bxø2 = bx;
-                do {
-                    recur = isEmpty(axø2) || isEmpty(bxø2) ? seq(cxø1) : (loop[0] = conj(cxø1, first(axø2), first(bxø2)), loop[1] = rest(axø2), loop[2] = rest(bxø2), loop);
-                } while (cxø1 = loop[0], axø2 = loop[1], bxø2 = loop[2], recur === loop);
-                return recur;
-            }.call(this);
-        default:
-            var sequences = Array.prototype.slice.call(arguments, 0);
-            return function loop() {
-                var recur = loop;
-                var resultø1 = [];
-                var sequencesø2 = sequences;
-                do {
-                    recur = some(isEmpty, sequencesø2) ? resultø1 : (loop[0] = concat(resultø1, map(first, sequencesø2)), loop[1] = map(rest, sequencesø2), loop);
-                } while (resultø1 = loop[0], sequencesø2 = loop[1], recur === loop);
-                return recur;
-            }.call(this);
-        }
+        var sequences = Array.prototype.slice.call(arguments, 0);
+        return isEmpty(sequences) ? [] : function loop() {
+            var recur = loop;
+            var resultø1 = [];
+            var sequencesø2 = sequences;
+            do {
+                recur = some(isEmpty, sequencesø2) ? vec(resultø1) : (loop[0] = concat(resultø1, map(first, sequencesø2)), loop[1] = map(rest, sequencesø2), loop);
+            } while (resultø1 = loop[0], sequencesø2 = loop[1], recur === loop);
+            return recur;
+        }.call(this);
     };
 var nth = exports.nth = function nth(sequence, index, notFound) {
-        return isNil(sequence) ? notFound : isList(sequence) ? index < count(sequence) ? first(drop(index, sequence)) : notFound : isVector(sequence) || isString(sequence) ? index < count(sequence) ? sequence[index] : notFound : isLazySeq(sequence) ? nth(lazySeqValue(sequence), index, notFound) : 'else' ? (function () {
-            throw TypeError('Unsupported type');
-        })() : void 0;
+        return function () {
+            var sequenceø2 = seq_(sequence);
+            return isNil(sequenceø2) ? notFound : isSeq(sequenceø2) ? function () {
+                var ifLetBinding1ø1 = seq_(drop(index, sequenceø2));
+                return ifLetBinding1ø1 ? function () {
+                    var itø1 = ifLetBinding1ø1;
+                    return first(itø1);
+                }.call(this) : notFound;
+            }.call(this) : isVector(sequenceø2) || isString(sequenceø2) ? index < count(sequenceø2) ? sequenceø2[index] : notFound : 'else' ? (function () {
+                throw TypeError('Unsupported type');
+            })() : void 0;
+        }.call(this);
+    };
+var isContains = exports.isContains = function isContains(coll, v) {
+        return isSet(coll) ? coll.has(v) : isDictionary(coll) || isVector(coll) || isString(coll) ? coll.hasOwnProperty(v) : 'else' ? false : void 0;
+    };
+var union = exports.union = function union() {
+        var sets = Array.prototype.slice.call(arguments, 0);
+        return into(set(), concat.apply(void 0, sets));
+    };
+var difference = exports.difference = function difference(s1) {
+        var sets = Array.prototype.slice.call(arguments, 1);
+        return into(set(), filter(complement(union.apply(void 0, sets)), s1));
+    };
+var intersection = exports.intersection = function intersection() {
+        var sets = Array.prototype.slice.call(arguments, 0);
+        return function () {
+            var setsø2 = mapv(function ($1) {
+                    return into(set(), $1);
+                }, sets);
+            var isInEachø1 = function (x) {
+                return isEvery(function ($1) {
+                    return $1.has(x);
+                }, setsø2);
+            };
+            var minSizeø1 = min.apply(void 0, mapv(count, setsø2));
+            var smallestø1 = setsø2.find(function ($1) {
+                    return isEqual(minSizeø1, count($1));
+                });
+            return into(set(), filter(isInEachø1, smallestø1));
+        }.call(this);
+    };
+var isSubset = exports.isSubset = function isSubset(set1, set2) {
+        return isSet(set2) ? isEvery(function ($1) {
+            return set2.has($1);
+        }, set1) : isSubset(set1, into(set(), set2));
+    };
+var isSuperset = exports.isSuperset = function isSuperset(set1, set2) {
+        return isSubset(set2, set1);
+    };
+var unfold = exports.unfold = function unfold(f, x) {
+        return lazySeq.call(void 0, false, function () {
+            return function () {
+                var ifLetBinding2ø1 = f(x);
+                return ifLetBinding2ø1 ? function () {
+                    var nextø1 = ifLetBinding2ø1;
+                    return cons(first(nextø1), unfold(f, second(nextø1)));
+                }.call(this) : void 0;
+            }.call(this);
+        });
+    };
+var iterate = exports.iterate = function iterate(f, x) {
+        return lazySeq.call(void 0, false, function () {
+            return cons(x, iterate(f, f(x)));
+        });
+    };
+var cycle = exports.cycle = function cycle(coll) {
+        return lazySeq.call(void 0, false, function () {
+            return !isEmpty(coll) ? concat(coll, cycle(coll)) : void 0;
+        });
+    };
+var infiniteRange = exports.infiniteRange = function infiniteRange() {
+        switch (arguments.length) {
+        case 0:
+            return infiniteRange(0);
+        case 1:
+            var n = arguments[0];
+            return iterate(inc, n);
+        case 2:
+            var n = arguments[0];
+            var step = arguments[1];
+            return iterate(function ($1) {
+                return $1 + step;
+            }, n);
+        default:
+            throw RangeError('Wrong number of arguments passed');
+        }
+    };
+var lazyMap = exports.lazyMap = function lazyMap(f) {
+        var sequences = Array.prototype.slice.call(arguments, 1);
+        return unfold(function ($1) {
+            return !some(isEmpty, $1) ? [
+                f.apply(void 0, mapv(first, $1)),
+                mapv(rest, $1)
+            ] : void 0;
+        }, sequences);
+    };
+var lazyFilter = exports.lazyFilter = function lazyFilter(f, sequence) {
+        return unfold(function ($1) {
+            return function loop() {
+                var recur = loop;
+                var xsø1 = $1;
+                do {
+                    recur = isEmpty(xsø1) ? void 0 : f(first(xsø1)) ? [
+                        first(xsø1),
+                        rest(xsø1)
+                    ] : 'else' ? (loop[0] = rest(xsø1), loop) : void 0;
+                } while (xsø1 = loop[0], recur === loop);
+                return recur;
+            }.call(this);
+        }, seq(sequence));
+    };
+var lazyConcat = exports.lazyConcat = function lazyConcat() {
+        var sequences = Array.prototype.slice.call(arguments, 0);
+        return !isEmpty(sequences) ? function iter(xs) {
+            return lazySeq.call(void 0, false, function () {
+                return isEmpty(xs) ? lazyConcat.apply(void 0, rest(sequences)) : cons(first(xs), iter(rest(xs)));
+            });
+        }(seq(first(sequences))) : void 0;
+    };
+var lazyPartition = exports.lazyPartition = function lazyPartition() {
+        switch (arguments.length) {
+        case 2:
+            var n = arguments[0];
+            var coll = arguments[1];
+            return lazyPartition(n, n, coll);
+        case 3:
+            var n = arguments[0];
+            var step = arguments[1];
+            var coll = arguments[2];
+            return lazyPartition(n, step, [], coll);
+        case 4:
+            var n = arguments[0];
+            var step = arguments[1];
+            var pad = arguments[2];
+            var coll = arguments[3];
+            return unfold(function ($1) {
+                return function () {
+                    var chunkø1 = take(n, concat(take(n, $1), pad));
+                    return !isEmpty($1) && n === count(chunkø1) ? [
+                        chunkø1,
+                        drop(step, $1)
+                    ] : void 0;
+                }.call(this);
+            }, coll);
+        default:
+            throw RangeError('Wrong number of arguments passed');
+        }
+    };
+var run = exports.run = function run(proc, coll) {
+        return reduce(function (_, x) {
+            proc(x);
+            return void 0;
+        }, void 0, coll);
+    };
+var dorun = exports.dorun = function dorun() {
+        switch (arguments.length) {
+        case 1:
+            var coll = arguments[0];
+            return dorun(Infinity, coll);
+        case 2:
+            var n = arguments[0];
+            var coll = arguments[1];
+            return run(identity, take(n, coll));
+        default:
+            throw RangeError('Wrong number of arguments passed');
+        }
+    };
+var doall = exports.doall = function doall() {
+        switch (arguments.length) {
+        case 1:
+            var coll = arguments[0];
+            return doall(Infinity, coll);
+        case 2:
+            var n = arguments[0];
+            var coll = arguments[1];
+            dorun(n, coll);
+            return coll;
+        default:
+            throw RangeError('Wrong number of arguments passed');
+        }
     };
 
 
@@ -13087,18 +13799,65 @@ var nth = exports.nth = function nth(sequence, index, notFound) {
             doc: void 0
         };
     var wisp_runtime = require('./runtime');
+    var isFn = wisp_runtime.isFn;
     var str = wisp_runtime.str;
     var subs = wisp_runtime.subs;
     var reMatches = wisp_runtime.reMatches;
     var isNil = wisp_runtime.isNil;
     var isString = wisp_runtime.isString;
     var isRePattern = wisp_runtime.isRePattern;
+    var dec = wisp_runtime.dec;
+    var max = wisp_runtime.max;
     var wisp_sequence = require('./sequence');
+    var seq = wisp_sequence.seq;
+    var lazySeq = wisp_sequence.lazySeq;
     var vec = wisp_sequence.vec;
+    var conj = wisp_sequence.conj;
+    var cons = wisp_sequence.cons;
+    var first = wisp_sequence.first;
+    var rest = wisp_sequence.rest;
+    var take = wisp_sequence.take;
+    var count = wisp_sequence.count;
     var isEmpty = wisp_sequence.isEmpty;
 }
+var reFindAll = exports.reFindAll = isFn(''.matchAll) ? function reFindAll(re, s) {
+        return seq(s.matchAll(RegExp(re, 'g')));
+    } : function reFindAll(re, s) {
+        return function rec(suffix, prefix) {
+            return function () {
+                var xø1 = suffix.match(re);
+                return xø1 ? function () {
+                    var posø1 = xø1.index + max(1, count(first(xø1)));
+                    Object.assign(xø1, {
+                        'input': s,
+                        'index': prefix + xø1.index
+                    });
+                    return isEmpty(suffix) ? lazySeq.call(void 0, false, function () {
+                        return [xø1];
+                    }) : lazySeq.call(void 0, false, function () {
+                        return cons(xø1, rec(subs(suffix, posø1), prefix + posø1));
+                    });
+                }.call(this) : void 0;
+            }.call(this);
+        }(s, 0);
+    };
+var clojureSplit = function clojureSplit(string, pattern, limit) {
+    return function loop() {
+        var recur = loop;
+        var matchesø1 = take(dec(limit), reFindAll(pattern, string));
+        var resø1 = [];
+        var indexø1 = 0;
+        do {
+            recur = isEmpty(matchesø1) ? conj(resø1, subs(string, indexø1)) : function () {
+                var xø1 = first(matchesø1);
+                return loop[0] = rest(matchesø1), loop[1] = conj(resø1, subs(string, indexø1, xø1.index)), loop[2] = xø1.index + count(first(xø1)), loop;
+            }.call(this);
+        } while (matchesø1 = loop[0], resø1 = loop[1], indexø1 = loop[2], recur === loop);
+        return recur;
+    }.call(this);
+};
 var split = exports.split = function split(string, pattern, limit) {
-        return string.split(pattern, limit);
+        return !limit ? string.split(pattern) : clojureSplit(string, pattern, limit > 0 ? limit : Infinity);
     };
 var splitLines = exports.splitLines = function splitLines(s) {
         return split(s, /\n|\r\n/);
