@@ -1,10 +1,12 @@
 (ns wisp.compiler
   (:require [wisp.analyzer :refer [analyze]]
+            [wisp.expander :refer [install-macro!]]
             [wisp.reader :refer [read* read push-back-reader]]
             [wisp.string :refer [replace]]
-            [wisp.sequence :refer [map reduce conj cons vec first rest empty? count]]
-            [wisp.runtime :refer [error? =]]
-            [wisp.ast :refer [name symbol pr-str]]
+            [wisp.sequence :refer [map reduce conj cons vec first second rest
+                                   empty? count nth drop list]]
+            [wisp.runtime :refer [error? string? dictionary? =]]
+            [wisp.ast :refer [name meta with-meta  symbol pr-str]]
 
             [wisp.backend.escodegen.generator :refer [generate]
                                               :rename {generate generate-js}]
@@ -108,3 +110,62 @@
     (if (:error output)
       (throw (:error output))
       (eval (:code output)))))
+
+
+
+;; defmacro
+
+(defn with-doc
+  [doc & body]
+  (if (string? doc)
+    `[~doc ~@body]
+    `[" "  ~doc ~@body]))
+
+
+(defn with-metadata
+  [doc metadata & body]
+  (if (dictionary? metadata)
+    `[~doc ~metadata ~@body]
+    `[~doc {} ~metadata ~@body]))
+
+
+(defn parse-defmacro
+  [forms]
+  (let [body (apply with-metadata (apply with-doc forms))
+        params (nth body 2)
+        include-form (= (first params) '&form)
+        include-env (= (second params) '&env)]
+    {:doc (first body)
+     :metadata (second body)
+     :params params
+     :body (drop 3 body)
+     :include-form include-form
+     :inclued-env include-env}))
+
+(def define-macro
+  (fn [&form &env id & body]
+    (let [node (parse-defmacro body)
+          doc (:doc node)
+          params (:params node)
+          metadata (:metadata node)
+          body (:body node)
+          ns-id (name (:name (:ns &env)))
+          macro-id (str ns-id "$" (name id))
+
+          macro `(do
+                   (defn ~id
+                     ~doc
+                     ~metadata
+                     ~params
+                     ~@body)
+                   (set! (aget this ~macro-id) ~id)
+                   ~id)
+
+          ast (analyze macro)
+          code (:code (generate {:no-map true} ast))]
+      (do
+        (install-macro! id (eval code))
+        macro))))
+(install-macro! 'define-macro (with-meta define-macro {:implicit [:&form :&env]}))
+
+

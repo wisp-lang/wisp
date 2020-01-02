@@ -22,7 +22,6 @@
   "Applies macro registered with given `name` to a given `form`"
   [expander form env]
   (let [metadata (or (meta form) {})
-        parmas (rest form)
         implicit (map #(cond (= :&form %) form
                              (= :&env %) env
                              :else %)
