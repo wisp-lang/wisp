@@ -910,7 +910,7 @@
 ;; ns
 
 
-(is (= (transpile "(ns foo.bar
+(is (= (transpile "(ns foo.bar.baz
                       \"hello world\"
                       (:require lib.a
                                 [lib.b]
@@ -918,11 +918,14 @@
                                 [lib.d :refer [foo bar]]
                                 [lib.e :refer [beep baz] :as e]
                                 [lib.f :refer [faz] :rename {faz saz}]
-                                [lib.g :refer [beer] :rename {beer coffee} :as booze]))")
+                                [lib.g :refer [beer] :rename {beer coffee} :as booze]
+                                foo.bar.foo
+                                foo.baz
+                                [\"../test/bar\" :as test]))")
 
 "{
     var _ns_ = {
-            id: 'foo.bar',
+            id: 'foo.bar.baz',
             doc: 'hello world'
         };
     var lib_a = require('lib/a');
@@ -941,6 +944,10 @@
     var lib_g = require('lib/g');
     var booze = lib_g;
     var coffee = lib_g.beer;
+    var foo_bar_foo = require('./foo');
+    var foo_baz = require('./../baz');
+    var ___test_bar = require('../test/bar');
+    var test = ___test_bar;
 }"))
 
 (is (= (transpile "(ns wisp.example.main

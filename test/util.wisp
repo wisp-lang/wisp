@@ -42,8 +42,9 @@
        (do
          (.push *failed* '~form)
          (console.error (str "Fail: " ~msg "\n"
-                     "expected: "
                      (pr-str '~form) "\n"
+                     "expected: "
+                     (pr-str '~expected) "\n"
                      "  actual: "
                      (pr-str (try ~actual (catch error (list 'throw (list 'Error (.-message error))))))))
          false)))))
