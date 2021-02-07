@@ -1,5 +1,5 @@
 (ns wisp.test.ast
-  (:require [wisp.test.util :refe [is thrown?]]
+  (:require [wisp.test.util :refer [is thrown?]]
             [wisp.src.reader :refer [read-from-string]]
             [wisp.src.sequence :refer [list]]
             [wisp.src.runtime :refer [str =]]

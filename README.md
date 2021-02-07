@@ -15,6 +15,18 @@ A little Clojure-like LISP in JavaScript.
 
 <!-- Load from a file: -->
 <script type="application/wisp" src="my-script.wisp"></script>
+
+<!-- Using from JS: -->
+<script>
+  var wisp = require('wisp/compiler');
+  var {code, error} = wisp.compile(`	; this transpiles wisp into JS
+    (alert "Hello world!")
+  `);
+  (code ? console.log(code) : console.error(error));
+  wisp.evaluate(`			; this evaluates the script
+    (alert "Hello world!")
+  `);
+</script>
 ```
 
 3. Or install the binary with npm:

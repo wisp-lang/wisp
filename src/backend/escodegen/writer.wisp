@@ -711,30 +711,32 @@
 
 (defn resolve
   [from to]
-  (let [requirer (split (name from) \.)
-        requirement (split (name to) \.)
-        relative? (and (not (identical? (name from)
-                                        (name to)))
-                       (identical? (first requirer)
-                                   (first requirement)))]
-    (if relative?
-      (loop [from requirer
-             to requirement]
-        (if (identical? (first from)
-                        (first to))
-          (recur (rest from) (rest to))
-          (join \/
-                (concat [\.]
-                        (repeat (dec (count from)) "..")
-                        to))))
-      (join \/ requirement))))
+  (if (string? to)
+    to
+    (let [requirer (split (name from) \.)
+          requirement (split (name to) \.)
+          relative? (and (not (identical? (name from)
+                                          (name to)))
+                         (identical? (first requirer)
+                                     (first requirement)))]
+      (if-not relative?
+        (join \/ requirement)
+        (loop [from requirer
+               to requirement]
+          (if (identical? (first from)
+                          (first to))
+            (recur (rest from) (rest to))
+            (join \/
+                  (concat [\.]
+                          (repeat (dec (count from)) "..")
+                          to))))))))
 
 (defn id->ns
   "Takes namespace identifier symbol and translates to new
   symbol without . special characters
   wisp.core -> wisp*core"
   [id]
-  (symbol nil (join \* (split (name id) \.))))
+  (symbol nil (join \* (split (name id) #"[./]"))))
 
 
 (defn write-require

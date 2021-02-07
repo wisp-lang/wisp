@@ -656,8 +656,8 @@ approach and supports only one essential way of importing modules:
             [fs]
             [wisp.backend.javascript.writer :as writer]
             [wisp.sequence
-             :refer [first rest]
-             :rename {first car rest cdr}]))
+              :refer [first rest]
+              :rename {first car rest cdr}]))
 ```
 
 Let's go through the above example to get a complete picture regarding
@@ -674,20 +674,23 @@ and is completely optional.
 3. The `(:require ...)` form defines dependencies that will be
 imported at runtime, and the example above imports multiple modules:
 
-  1. First it imports the `start-host!` function from the
-     `interactivate.host` module. That will be loaded from the
-     `../host` location, since because module paths are resolved
-     relative to a name, but only if they share the same root.
-  2. The second form imports `fs` module and makes it available under
-     the same name. Note that in this case it could have been
-     written without wrapping it in brackets.
-  3. The third form imports `wisp.backend.javascript.writer` module
-     from `wisp/backend/javascript/writer` and makes it available
-     via the name `writer`.
-  4. The last and most complex form imports `first` and `rest`
-     functions from the `wisp.sequence` module, although it also
-     renames them and there for makes available under different
-     `car` and `cdr` names.
+   1. First it imports the `start-host!` function from the
+      `interactivate.host` module. That will be loaded from the
+      `../host` location, since because module paths are resolved
+      relative to a name, but only if they share the same root.
+   2. The second form imports `fs` module and makes it available under
+      the same name. Note that in this case it could have been
+      written without wrapping it in brackets.
+   3. The third form imports `wisp.backend.javascript.writer` module
+      from `wisp/backend/javascript/writer` and makes it available
+      via the name `writer`.
+   4. The last and most complex form imports `first` and `rest`
+      functions from the `wisp.sequence` module, although it also
+      renames them and there for makes available under different
+      `car` and `cdr` names.
+
+It's also possible to specify a string literal instead of a module name;
+this allows for providing custom require paths when you're having trouble with generated ones.
 
 While Clojure has many other kinds of reference forms they are
 not recognized by _wisp_ and will therefore be ignored.
